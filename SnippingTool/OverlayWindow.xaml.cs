@@ -27,8 +27,30 @@ public partial class OverlayWindow : Window
         _screenCapture = screenCapture;
         InitializeComponent();
         DataContext = _vm;
-        _renderer = new AnnotationCanvasRenderer(AnnotationCanvas, _vm, _ => { }, loggerFactory.CreateLogger<AnnotationCanvasRenderer>());
+        _renderer = new AnnotationCanvasRenderer(AnnotationCanvas, _vm, el => _vm.TrackElement(el), loggerFactory.CreateLogger<AnnotationCanvasRenderer>());
 
+        _vm.UndoApplied += group =>
+        {
+            foreach (var el in group.Cast<UIElement>())
+            {
+                AnnotationCanvas.Children.Remove(el);
+            }
+
+            _vm.ResetNumberCounter(AnnotationCanvas.Children
+                .OfType<TextBlock>()
+                .Count(tb => tb.Tag is "number"));
+        };
+        _vm.RedoApplied += group =>
+        {
+            foreach (var el in group.Cast<UIElement>())
+            {
+                AnnotationCanvas.Children.Add(el);
+            }
+
+            _vm.ResetNumberCounter(AnnotationCanvas.Children
+                .OfType<TextBlock>()
+                .Count(tb => tb.Tag is "number"));
+        };
         _vm.CopyRequested += DoCopy;
         _vm.CloseRequested += Close;
 
@@ -230,15 +252,18 @@ public partial class OverlayWindow : Window
     private void Annot_Down(object sender, MouseButtonEventArgs e)
     {
         var p = e.GetPosition(AnnotationCanvas);
+        _vm.BeginGroup();
         if (_vm.SelectedTool == AnnotationTool.Text)
         {
             _renderer.PlaceTextBox(p);
+            _vm.CommitGroup();
             return;
         }
 
         if (_vm.SelectedTool == AnnotationTool.Number)
         {
             _renderer.PlaceNumberLabel(p);
+            _vm.CommitGroup();
             return;
         }
 
@@ -271,6 +296,7 @@ public partial class OverlayWindow : Window
         AnnotationCanvas.ReleaseMouseCapture();
         _renderer.CommitShape(p);
         _vm.CommitDrawing();
+        _vm.CommitGroup();
     }
 
     private void Tool_Click(object sender, RoutedEventArgs e)
@@ -341,6 +367,14 @@ public partial class OverlayWindow : Window
             case Key.C when e.KeyboardDevice.Modifiers == ModifierKeys.Control
                          && _vm.CurrentPhase == OverlayViewModel.Phase.Annotating:
                 DoCopy();
+                break;
+            case Key.Z when e.KeyboardDevice.Modifiers == ModifierKeys.Control
+                         && _vm.CurrentPhase == OverlayViewModel.Phase.Annotating:
+                _vm.UndoCommand.Execute(null);
+                break;
+            case Key.Y when e.KeyboardDevice.Modifiers == ModifierKeys.Control
+                         && _vm.CurrentPhase == OverlayViewModel.Phase.Annotating:
+                _vm.RedoCommand.Execute(null);
                 break;
         }
     }
