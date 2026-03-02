@@ -447,5 +447,6 @@ public class AnnotationViewModelTests
 
     // Concrete subclass so we can instantiate the abstract-like partial base
     private sealed partial class TestAnnotationViewModel(AnnotationGeometryService geom)
-        : AnnotationViewModel(geom, NullLogger<AnnotationViewModel>.Instance) { }
+        : AnnotationViewModel(geom, NullLogger<AnnotationViewModel>.Instance)
+    { }
 }
