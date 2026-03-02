@@ -2,6 +2,8 @@ name: CD
 
 on:
   push:
+    branches:
+      - master
     tags:
       - "v*"
 
@@ -17,19 +19,33 @@ jobs:
         with:
           dotnet-version: "10.0.x"
 
-      # Strip the leading "v" from the tag to get a plain semver (e.g. v1.2.0 → 1.2.0)
-      - name: Extract version
+      # Display version: 1.DDMMYYYY  (e.g. 1.02032026) — used for installer and artifact name.
+      # On a tag push the tag wins (e.g. v1.02032026 → 1.02032026).
+      # Dotnet version: must be numeric components ≤ 65535 each, so we use YYYY.MM.DD
+      # (e.g. 2026.3.2) which embeds the same date in a format the CLR accepts.
+      - name: Compute version
         id: version
         shell: pwsh
         run: |
-          $ver = "${{ github.ref_name }}" -replace '^v', ''
-          echo "value=$ver" >> $env:GITHUB_OUTPUT
+          $is_tag = "${{ github.ref }}" -match '^refs/tags/v'
+          if ($is_tag) {
+            $display = "${{ github.ref_name }}" -replace '^v', ''
+          } else {
+            $d = Get-Date
+            $display = "1.$($d.ToString('ddMMyyyy'))"
+          }
+          $d      = Get-Date
+          $dotnet = "$($d.Year).$($d.Month).$($d.Day)"
+          echo "display=$display"           >> $env:GITHUB_OUTPUT
+          echo "dotnet=$dotnet"             >> $env:GITHUB_OUTPUT
+          echo "is_tag=$($is_tag.ToString().ToLower())" >> $env:GITHUB_OUTPUT
 
       - name: Publish (self-contained single-file)
         run: >
           dotnet publish SnippingTool/SnippingTool.csproj
           /p:PublishProfile=win-x64
-          /p:Version=${{ steps.version.outputs.value }}
+          /p:Version=${{ steps.version.outputs.dotnet }}
+          /p:InformationalVersion=${{ steps.version.outputs.display }}
           --nologo
 
       - name: Install Inno Setup 6
@@ -40,7 +56,7 @@ jobs:
         run: |
           $iscc = "C:\Program Files (x86)\Inno Setup 6\ISCC.exe"
           & $iscc `
-            /DAppVersion=${{ steps.version.outputs.value }} `
+            /DAppVersion=${{ steps.version.outputs.display }} `
             /O"installer\output" `
             installer\SnippingTool.iss
           if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
@@ -48,11 +64,12 @@ jobs:
       - name: Upload installer artifact
         uses: actions/upload-artifact@v4
         with:
-          name: SnippingTool-${{ github.ref_name }}-Setup
-          path: installer/output/SnippingTool-${{ steps.version.outputs.value }}-Setup.exe
+          name: SnippingTool-${{ steps.version.outputs.display }}-Setup
+          path: installer/output/SnippingTool-${{ steps.version.outputs.display }}-Setup.exe
 
       - name: Create GitHub Release
+        if: steps.version.outputs.is_tag == 'true'
         uses: softprops/action-gh-release@v2
         with:
-          files: installer/output/SnippingTool-${{ steps.version.outputs.value }}-Setup.exe
+          files: installer/output/SnippingTool-${{ steps.version.outputs.display }}-Setup.exe
           generate_release_notes: true
