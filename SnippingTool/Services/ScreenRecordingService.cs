@@ -85,9 +85,8 @@ public sealed class ScreenRecordingService : IScreenRecordingService
         {
             _captureLoop?.Wait(TimeSpan.FromSeconds(3));
         }
-        catch (AggregateException)
+        catch (AggregateException ae) when (ae.InnerExceptions.All(ex => ex is OperationCanceledException))
         {
-            // Capture loop was cancelled — expected
         }
         finally
         {

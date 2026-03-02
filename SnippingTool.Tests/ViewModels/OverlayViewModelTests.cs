@@ -6,7 +6,7 @@ using Xunit;
 
 namespace SnippingTool.Tests.ViewModels;
 
-public class OverlayViewModelTests
+public sealed class OverlayViewModelTests
 {
     private static OverlayViewModel Vm() => new(new AnnotationGeometryService(), NullLogger<OverlayViewModel>.Instance);
 

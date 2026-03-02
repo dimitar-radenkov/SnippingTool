@@ -61,11 +61,17 @@ public partial class RecordingHudWindow : Window
 
     private async Task RunElapsedTimerAsync(CancellationToken ct)
     {
-        using var timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
-        while (await timer.WaitForNextTickAsync(ct).ConfigureAwait(false))
+        try
         {
-            var elapsed = DateTime.UtcNow - _startTime;
-            await Dispatcher.InvokeAsync(() => ElapsedText.Text = elapsed.ToString(@"mm\:ss"));
+            using var timer = new PeriodicTimer(TimeSpan.FromSeconds(1));
+            while (await timer.WaitForNextTickAsync(ct).ConfigureAwait(false))
+            {
+                var elapsed = DateTime.UtcNow - _startTime;
+                await Dispatcher.InvokeAsync(() => ElapsedText.Text = elapsed.ToString(@"mm\:ss"));
+            }
+        }
+        catch (OperationCanceledException)
+        {
         }
     }
 

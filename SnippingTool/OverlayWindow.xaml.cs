@@ -25,6 +25,8 @@ public partial class OverlayWindow : Window
     private readonly ILoggerFactory _loggerFactory;
     private readonly IOptions<RecordingOptions> _recordingOptions;
     private AnnotationCanvasRenderer _renderer = null!;
+    private RecordingBorderWindow? _recordingBorder;
+    private RecordingHudWindow? _recordingHud;
 
     public OverlayWindow(
         OverlayViewModel vm,
@@ -358,26 +360,31 @@ public partial class OverlayWindow : Window
         Visibility = Visibility.Hidden;
 
         var regionRect = new Rect(Left + sel.X, Top + sel.Y, sel.Width, sel.Height);
-        var border = new RecordingBorderWindow(regionRect.Left, regionRect.Top, regionRect.Width, regionRect.Height);
-        border.Show();
+        _recordingBorder = new RecordingBorderWindow(regionRect.Left, regionRect.Top, regionRect.Width, regionRect.Height);
+        _recordingBorder.Show();
 
-        var hud = new RecordingHudWindow(_recorder, path, _loggerFactory.CreateLogger<RecordingHudWindow>(), regionRect, _recordingOptions);
-        hud.StopCompleted += () => Dispatcher.Invoke(() =>
+        _recordingHud = new RecordingHudWindow(_recorder, path, _loggerFactory.CreateLogger<RecordingHudWindow>(), regionRect, _recordingOptions);
+        _recordingHud.StopCompleted += () => Dispatcher.Invoke(() =>
         {
-            border.Close();
+            _recordingBorder?.Close();
+            _recordingBorder = null;
+            _recordingHud = null;
             Close();
         });
-        hud.Show();
+        _recordingHud.Show();
     }
 
     protected override void OnClosed(EventArgs e)
     {
-        // If the overlay is closed while recording is still active (e.g. via Escape or hotkey),
-        // stop the capture loop so it doesn't run in the background indefinitely.
         if (_recorder.IsRecording)
         {
             _recorder.Stop();
         }
+
+        _recordingHud?.Close();
+        _recordingHud = null;
+        _recordingBorder?.Close();
+        _recordingBorder = null;
 
         base.OnClosed(e);
     }

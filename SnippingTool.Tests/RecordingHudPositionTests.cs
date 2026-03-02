@@ -3,7 +3,7 @@ using Xunit;
 
 namespace SnippingTool.Tests;
 
-public class RecordingHudPositionTests
+public sealed class RecordingHudPositionTests
 {
     // Work area used by all tests: 0,0 → 1920×1040
     private static readonly Rect WorkArea = new(0, 0, 1920, 1040);

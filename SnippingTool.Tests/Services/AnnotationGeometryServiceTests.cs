@@ -4,7 +4,7 @@ using Xunit;
 
 namespace SnippingTool.Tests.Services;
 
-public class AnnotationGeometryServiceTests
+public sealed class AnnotationGeometryServiceTests
 {
     private readonly AnnotationGeometryService _sut = new();
 

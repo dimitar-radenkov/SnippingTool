@@ -6,7 +6,7 @@ using Xunit;
 
 namespace SnippingTool.Tests.ViewModels;
 
-public class AnnotationViewModelTests
+public sealed class AnnotationViewModelTests
 {
     private static AnnotationGeometryService Geom() => new();
 

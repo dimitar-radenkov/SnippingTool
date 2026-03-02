@@ -6,7 +6,7 @@ using Xunit;
 
 namespace SnippingTool.Tests.Services;
 
-public class ScreenRecordingServiceTests
+public sealed class ScreenRecordingServiceTests
 {
     private static ScreenRecordingService CreateSut() =>
         new(NullLogger<ScreenRecordingService>.Instance, Options.Create(new RecordingOptions()));
