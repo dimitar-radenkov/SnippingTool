@@ -1,0 +1,42 @@
+[
+  {
+    "persistent_name": "Keaton",
+    "role": "Lead",
+    "universe": "the-usual-suspects",
+    "created_at": "2026-03-02",
+    "legacy_named": false,
+    "status": "active"
+  },
+  {
+    "persistent_name": "Fenster",
+    "role": "WPF Dev",
+    "universe": "the-usual-suspects",
+    "created_at": "2026-03-02",
+    "legacy_named": false,
+    "status": "active"
+  },
+  {
+    "persistent_name": "Hockney",
+    "role": "Tester",
+    "universe": "the-usual-suspects",
+    "created_at": "2026-03-02",
+    "legacy_named": false,
+    "status": "active"
+  },
+  {
+    "persistent_name": "Scribe",
+    "role": "Scribe",
+    "universe": "exempt",
+    "created_at": "2026-03-02",
+    "legacy_named": false,
+    "status": "active"
+  },
+  {
+    "persistent_name": "Ralph",
+    "role": "Work Monitor",
+    "universe": "exempt",
+    "created_at": "2026-03-02",
+    "legacy_named": false,
+    "status": "active"
+  }
+]
