@@ -1,4 +1,5 @@
 using System.Windows;
+using SnippingTool.Services;
 using SnippingTool.ViewModels;
 using Xunit;
 
@@ -6,24 +7,26 @@ namespace SnippingTool.Tests.ViewModels;
 
 public class OverlayViewModelTests
 {
+    private static OverlayViewModel Vm() => new(new AnnotationGeometryService());
+
     [Fact]
     public void InitialPhase_IsSelecting()
     {
-        var vm = new OverlayViewModel();
+        var vm = Vm();
         Assert.Equal(OverlayViewModel.Phase.Selecting, vm.CurrentPhase);
     }
 
     [Fact]
     public void InitialSelectionRect_IsEmpty()
     {
-        var vm = new OverlayViewModel();
+        var vm = Vm();
         Assert.Equal(Rect.Empty, vm.SelectionRect);
     }
 
     [Fact]
     public void CommitSelection_SetsSelectionRect()
     {
-        var vm = new OverlayViewModel();
+        var vm = Vm();
         var rect = new Rect(10, 20, 300, 200);
 
         vm.CommitSelection(rect);
@@ -34,7 +37,7 @@ public class OverlayViewModelTests
     [Fact]
     public void CommitSelection_TransitionsToAnnotating()
     {
-        var vm = new OverlayViewModel();
+        var vm = Vm();
 
         vm.CommitSelection(new Rect(0, 0, 100, 100));
 
@@ -44,7 +47,9 @@ public class OverlayViewModelTests
     [Fact]
     public void UpdateSizeLabel_FormatsWithDpi()
     {
-        var vm = new OverlayViewModel { DpiX = 2.0, DpiY = 2.0 };
+        var vm = Vm();
+        vm.DpiX = 2.0;
+        vm.DpiY = 2.0;
 
         vm.UpdateSizeLabel(100, 50);
 
@@ -54,7 +59,7 @@ public class OverlayViewModelTests
     [Fact]
     public void UpdateSizeLabel_DefaultDpi_FormatsCorrectly()
     {
-        var vm = new OverlayViewModel();
+        var vm = Vm();
 
         vm.UpdateSizeLabel(640, 480);
 
@@ -64,7 +69,7 @@ public class OverlayViewModelTests
     [Fact]
     public void CopyCommand_FiresCopyRequested()
     {
-        var vm = new OverlayViewModel();
+        var vm = Vm();
         var fired = false;
         vm.CopyRequested += () => fired = true;
 
@@ -76,7 +81,7 @@ public class OverlayViewModelTests
     [Fact]
     public void CloseCommand_FiresCloseRequested()
     {
-        var vm = new OverlayViewModel();
+        var vm = Vm();
         var fired = false;
         vm.CloseRequested += () => fired = true;
 
@@ -88,7 +93,7 @@ public class OverlayViewModelTests
     [Fact]
     public void CurrentPhase_PropertyChanged_FiredOnCommit()
     {
-        var vm = new OverlayViewModel();
+        var vm = Vm();
         var raised = false;
         vm.PropertyChanged += (_, e) =>
         {

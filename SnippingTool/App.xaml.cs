@@ -44,6 +44,7 @@ public partial class App : Application
     private static void ConfigureServices(IServiceCollection services)
     {
         services.AddTransient<IScreenCaptureService, ScreenCaptureService>();
+        services.AddSingleton<IAnnotationGeometryService, AnnotationGeometryService>();
         services.AddTransient<OverlayViewModel>();
         services.AddTransient<PreviewViewModel>();
         services.AddTransient<OverlayWindow>();

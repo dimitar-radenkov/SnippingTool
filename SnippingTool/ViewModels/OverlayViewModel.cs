@@ -1,11 +1,14 @@
 using System.Windows;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using SnippingTool.Services;
 
 namespace SnippingTool.ViewModels;
 
 public partial class OverlayViewModel : AnnotationViewModel
 {
+    public OverlayViewModel(IAnnotationGeometryService geometry) : base(geometry) { }
+
     public enum Phase { Selecting, Annotating }
 
     [ObservableProperty]

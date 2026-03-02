@@ -4,6 +4,9 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
+using SnippingTool.Models;
+using SnippingTool.Services;
+using SnippingTool.ViewModels;
 using Brushes = System.Windows.Media.Brushes;
 using Color = System.Windows.Media.Color;
 using Cursors = System.Windows.Input.Cursors;
@@ -12,8 +15,6 @@ using MouseEventArgs = System.Windows.Input.MouseEventArgs;
 using Point = System.Windows.Point;
 using Size = System.Windows.Size;
 using TextBox = System.Windows.Controls.TextBox;
-using SnippingTool.Services;
-using SnippingTool.ViewModels;
 
 namespace SnippingTool;
 
@@ -22,8 +23,6 @@ public partial class OverlayWindow : Window
     private readonly OverlayViewModel _vm;
     private readonly IScreenCaptureService _screenCapture;
 
-    private bool _annotDragging;
-    private Point _annotStart;
     private Line? _arrowShaft;
     private Polyline? _arrowHead;
     private Line? _currentLine;
@@ -233,32 +232,35 @@ public partial class OverlayWindow : Window
     {
         var p = e.GetPosition(AnnotationCanvas);
         if (_vm.SelectedTool == AnnotationTool.Text) { PlaceTextBox(p); return; }
-        _annotStart = p;
-        _annotDragging = true;
+        _vm.BeginDrawing(p);
         AnnotationCanvas.CaptureMouse();
         BeginShape(p);
     }
 
     private void Annot_Move(object sender, MouseEventArgs e)
     {
-        if (!_annotDragging)
+        if (!_vm.IsDragging)
         {
             return;
         }
 
-        UpdateShape(e.GetPosition(AnnotationCanvas));
+        var p = e.GetPosition(AnnotationCanvas);
+        _vm.UpdateDrawing(p);
+        UpdateShape(p);
     }
 
     private void Annot_Up(object sender, MouseButtonEventArgs e)
     {
-        if (!_annotDragging)
+        if (!_vm.IsDragging)
         {
             return;
         }
 
-        _annotDragging = false;
+        var p = e.GetPosition(AnnotationCanvas);
+        _vm.UpdateDrawing(p);
         AnnotationCanvas.ReleaseMouseCapture();
-        CommitShape(e.GetPosition(AnnotationCanvas));
+        CommitShape(p);
+        _vm.CommitDrawing();
     }
 
     private SolidColorBrush ActiveBrush() => new(_vm.ActiveColor);
@@ -301,29 +303,41 @@ public partial class OverlayWindow : Window
 
     private void UpdateShape(Point p)
     {
-        switch (_vm.SelectedTool)
+        var @params = _vm.TryGetShapeParameters();
+        if (@params == null)
         {
-            case AnnotationTool.Arrow when _arrowShaft != null && _arrowHead != null:
-                _arrowShaft.X2 = p.X; _arrowShaft.Y2 = p.Y;
-                RefreshArrowHead(_arrowShaft, _arrowHead);
+            return;
+        }
+
+        switch (@params)
+        {
+            case ArrowShapeParameters arr when _arrowShaft != null && _arrowHead != null:
+                _arrowShaft.X2 = arr.P2.X;
+                _arrowShaft.Y2 = arr.P2.Y;
+                _arrowHead.Points.Clear();
+                foreach (var pt in arr.ArrowHead)
+                {
+                    _arrowHead.Points.Add(pt);
+                }
                 break;
-            case AnnotationTool.Line when _currentLine != null:
-                _currentLine.X2 = p.X; _currentLine.Y2 = p.Y;
+            case LineShapeParameters line when _currentLine != null:
+                _currentLine.X2 = line.P2.X;
+                _currentLine.Y2 = line.P2.Y;
                 break;
-            case AnnotationTool.Highlight when _currentRect != null:
-                _currentRect.Width = Math.Abs(p.X - _annotStart.X);
-                _currentRect.Height = Math.Abs(p.Y - _annotStart.Y);
-                Canvas.SetLeft(_currentRect, Math.Min(p.X, _annotStart.X));
-                Canvas.SetTop(_currentRect, Math.Min(p.Y, _annotStart.Y));
+            case RectShapeParameters rect when _currentRect != null:
+                Canvas.SetLeft(_currentRect, rect.Left);
+                Canvas.SetTop(_currentRect, rect.Top);
+                _currentRect.Width = rect.Width;
+                _currentRect.Height = rect.Height;
                 break;
-            case AnnotationTool.Pen when _currentPen != null:
+            case EllipseShapeParameters ellipse when _currentEllipse != null:
+                Canvas.SetLeft(_currentEllipse, ellipse.Left);
+                Canvas.SetTop(_currentEllipse, ellipse.Top);
+                _currentEllipse.Width = ellipse.Width;
+                _currentEllipse.Height = ellipse.Height;
+                break;
+            case PenShapeParameters when _currentPen != null:
                 _currentPen.Points.Add(p);
-                break;
-            case AnnotationTool.Circle when _currentEllipse != null:
-                _currentEllipse.Width = Math.Abs(p.X - _annotStart.X);
-                _currentEllipse.Height = Math.Abs(p.Y - _annotStart.Y);
-                Canvas.SetLeft(_currentEllipse, Math.Min(p.X, _annotStart.X));
-                Canvas.SetTop(_currentEllipse, Math.Min(p.Y, _annotStart.Y));
                 break;
         }
     }
@@ -334,17 +348,6 @@ public partial class OverlayWindow : Window
         _arrowShaft = null; _arrowHead = null;
         _currentLine = null; _currentRect = null;
         _currentEllipse = null; _currentPen = null;
-    }
-
-    private static void RefreshArrowHead(Line shaft, Polyline head)
-    {
-        const double headLen = 12.0;
-        const double headAngle = 25.0 * Math.PI / 180.0;
-        var angle = Math.Atan2(shaft.Y2 - shaft.Y1, shaft.X2 - shaft.X1);
-        head.Points.Clear();
-        head.Points.Add(new Point(shaft.X2 - headLen * Math.Cos(angle + headAngle), shaft.Y2 - headLen * Math.Sin(angle + headAngle)));
-        head.Points.Add(new Point(shaft.X2, shaft.Y2));
-        head.Points.Add(new Point(shaft.X2 - headLen * Math.Cos(angle - headAngle), shaft.Y2 - headLen * Math.Sin(angle - headAngle)));
     }
 
     private void PlaceTextBox(Point p)
