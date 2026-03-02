@@ -52,6 +52,8 @@ Name: "startupicon"; Description: "Start automatically with Windows"; GroupDescr
 [Files]
 ; The single-file publish exe — everything is bundled inside it
 Source: "{#PublishDir}\{#AppExeName}"; DestDir: "{app}"; Flags: ignoreversion
+; Configuration file — ships alongside the exe
+Source: "{#PublishDir}\appsettings.json"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeName}"

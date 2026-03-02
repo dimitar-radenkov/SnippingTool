@@ -38,7 +38,7 @@ public partial class App : Application
 
         var config = new ConfigurationBuilder()
             .SetBasePath(AppContext.BaseDirectory)
-            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: false)
+            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: false)
             .Build();
 
         var logPath = System.IO.Path.Combine(
