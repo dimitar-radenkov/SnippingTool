@@ -1,0 +1,25 @@
+name: CI
+
+on:
+  push:
+    branches: [ master, "feature/**" ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "10.0.x"
+
+      - name: Restore
+        run: dotnet restore SnippingTool/SnippingTool.csproj
+
+      - name: Build
+        run: dotnet build SnippingTool/SnippingTool.csproj --no-restore --configuration Release
