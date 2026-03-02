@@ -39,12 +39,20 @@ public partial class RecordingHudWindow : Window
     protected override void OnContentRendered(EventArgs e)
     {
         base.OnContentRendered(e);
-        // Centre the HUD below the recorded region, clamped inside the work area.
-        var wa = SystemParameters.WorkArea;
-        Left = Math.Max(wa.Left, Math.Min(_regionRect.Left + (_regionRect.Width - ActualWidth) / 2, wa.Right - ActualWidth));
-        Top = Math.Min(_regionRect.Bottom + 8, wa.Bottom - ActualHeight);
+        var (left, top) = ComputePosition(_regionRect, ActualWidth, ActualHeight, SystemParameters.WorkArea);
+        Left = left;
+        Top = top;
         _logger.LogInformation("RecordingHudWindow rendered: ActualSize={W}x{H}, Position=({Left},{Top})",
             ActualWidth, ActualHeight, Left, Top);
+    }
+
+    // Extracted for unit testability.
+    internal static (double Left, double Top) ComputePosition(
+        Rect region, double hudWidth, double hudHeight, Rect workArea)
+    {
+        var left = Math.Max(workArea.Left, Math.Min(region.Left + (region.Width - hudWidth) / 2, workArea.Right - hudWidth));
+        var top = Math.Min(region.Bottom + 8, workArea.Bottom - hudHeight);
+        return (left, top);
     }
 
     private async Task RunElapsedTimerAsync(CancellationToken ct)
