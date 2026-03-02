@@ -1,4 +1,3 @@
-using System.Windows;
 using Point = System.Windows.Point;
 
 namespace SnippingTool.Services;

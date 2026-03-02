@@ -294,6 +294,12 @@ public partial class OverlayWindow : Window
                 Canvas.SetTop(_currentRect, p.Y);
                 AnnotationCanvas.Children.Add(_currentRect);
                 break;
+            case AnnotationTool.Rectangle:
+                _currentRect = new System.Windows.Shapes.Rectangle { Stroke = ActiveBrush(), StrokeThickness = thick, Fill = Brushes.Transparent };
+                Canvas.SetLeft(_currentRect, p.X);
+                Canvas.SetTop(_currentRect, p.Y);
+                AnnotationCanvas.Children.Add(_currentRect);
+                break;
             case AnnotationTool.Pen:
                 _currentPen = new Polyline { Stroke = ActiveBrush(), StrokeThickness = thick, StrokeLineJoin = PenLineJoin.Round, StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round };
                 _currentPen.Points.Add(p);

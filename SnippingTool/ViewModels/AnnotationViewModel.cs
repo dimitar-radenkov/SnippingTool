@@ -1,4 +1,3 @@
-using System.Windows;
 using System.Windows.Media;
 using CommunityToolkit.Mvvm.ComponentModel;
 using SnippingTool.Models;
