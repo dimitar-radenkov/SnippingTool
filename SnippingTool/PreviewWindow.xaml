@@ -170,7 +170,7 @@
 
               <!-- Arrow -->
               <RadioButton x:Name="ArrowTool" Style="{StaticResource ToolBtn}"
-                           GroupName="Tool" IsChecked="True"
+                           GroupName="Tool"
                            Tag="Arrow" Click="Tool_Click" ToolTip="Draw arrow">
                 <StackPanel>
                   <TextBlock Text="➤" FontSize="13" HorizontalAlignment="Center"/>
@@ -178,12 +178,13 @@
                 </StackPanel>
               </RadioButton>
 
-              <!-- Rectangle -->
+              <!-- Rectangle (outline only) -->
               <RadioButton x:Name="RectTool" Style="{StaticResource ToolBtn}"
-                           GroupName="Tool"
+                           GroupName="Tool" IsChecked="True"
                            Tag="Rectangle" Click="Tool_Click" ToolTip="Draw rectangle">
                 <StackPanel>
-                  <TextBlock Text="▭" FontSize="13" HorizontalAlignment="Center"/>
+                  <Border Width="18" Height="12" BorderBrush="#555" BorderThickness="2"
+                          Background="Transparent" HorizontalAlignment="Center" Margin="0,3,0,1"/>
                   <TextBlock Text="Rect" FontSize="8" Foreground="#666" HorizontalAlignment="Center"/>
                 </StackPanel>
               </RadioButton>
@@ -237,6 +238,22 @@
                 <StackPanel>
                   <TextBlock Text="⬭" FontSize="13" HorizontalAlignment="Center"/>
                   <TextBlock Text="Circle" FontSize="8" Foreground="#666" HorizontalAlignment="Center"/>
+                </StackPanel>
+              </RadioButton>
+
+              <!-- Number -->
+              <RadioButton x:Name="NumberTool" Style="{StaticResource ToolBtn}"
+                           GroupName="Tool"
+                           Tag="Number" Click="Tool_Click" ToolTip="Place numbered label">
+                <StackPanel>
+                  <Border Width="18" Height="18" BorderBrush="#555" BorderThickness="1.5"
+                          CornerRadius="9" Background="Transparent"
+                          HorizontalAlignment="Center" Margin="0,2,0,0">
+                    <TextBlock Text="1" FontSize="9" FontWeight="Bold"
+                               HorizontalAlignment="Center" VerticalAlignment="Center"
+                               Foreground="#555"/>
+                  </Border>
+                  <TextBlock Text="Num" FontSize="8" Foreground="#666" HorizontalAlignment="Center"/>
                 </StackPanel>
               </RadioButton>
 

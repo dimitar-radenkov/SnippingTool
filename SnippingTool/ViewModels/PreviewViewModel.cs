@@ -1,10 +1,13 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using SnippingTool.Services;
 
 namespace SnippingTool.ViewModels;
 
 public partial class PreviewViewModel : AnnotationViewModel
 {
+    public PreviewViewModel(IAnnotationGeometryService geometry) : base(geometry) { }
+
     private readonly List<List<object>> _undoStack = [];
     private readonly List<List<object>> _redoStack = [];
     private List<object>? _currentGroup;

@@ -125,8 +125,26 @@
 
         <RadioButton Style="{StaticResource ToolBtn}"
                      GroupName="AnnotTool"
-                     Tag="Text" Click="Tool_Click" ToolTip="Text">
-          <TextBlock Text="T" FontSize="15" FontWeight="Bold"/>
+                     Tag="Line" Click="Tool_Click" ToolTip="Line">
+          <TextBlock Text="╱" FontSize="14"/>
+        </RadioButton>
+
+        <RadioButton Style="{StaticResource ToolBtn}"
+                     GroupName="AnnotTool"
+                     Tag="Rectangle" Click="Tool_Click" ToolTip="Rectangle">
+          <Border Width="16" Height="12" BorderBrush="#555" BorderThickness="1.5" Background="Transparent"/>
+        </RadioButton>
+
+        <RadioButton Style="{StaticResource ToolBtn}"
+                     GroupName="AnnotTool"
+                     Tag="Circle" Click="Tool_Click" ToolTip="Circle">
+          <TextBlock Text="⬭" FontSize="14"/>
+        </RadioButton>
+
+        <RadioButton Style="{StaticResource ToolBtn}"
+                     GroupName="AnnotTool"
+                     Tag="Pen" Click="Tool_Click" ToolTip="Pen">
+          <TextBlock Text="✏" FontSize="14"/>
         </RadioButton>
 
         <RadioButton Style="{StaticResource ToolBtn}"
@@ -138,20 +156,14 @@
 
         <RadioButton Style="{StaticResource ToolBtn}"
                      GroupName="AnnotTool"
-                     Tag="Pen" Click="Tool_Click" ToolTip="Pen">
-          <TextBlock Text="✏" FontSize="14"/>
+                     Tag="Text" Click="Tool_Click" ToolTip="Text">
+          <TextBlock Text="T" FontSize="15" FontWeight="Bold"/>
         </RadioButton>
 
         <RadioButton Style="{StaticResource ToolBtn}"
                      GroupName="AnnotTool"
-                     Tag="Line" Click="Tool_Click" ToolTip="Line">
-          <TextBlock Text="╱" FontSize="14"/>
-        </RadioButton>
-
-        <RadioButton Style="{StaticResource ToolBtn}"
-                     GroupName="AnnotTool"
-                     Tag="Circle" Click="Tool_Click" ToolTip="Circle">
-          <TextBlock Text="⬭" FontSize="14"/>
+                     Tag="Number" Click="Tool_Click" ToolTip="Place numbered label">
+          <TextBlock Text="①" FontSize="15"/>
         </RadioButton>
 
         <!-- Divider -->

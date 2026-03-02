@@ -3,38 +3,23 @@ using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Shapes;
-using Microsoft.Win32;
-using Brushes = System.Windows.Media.Brushes;
+using SnippingTool.Services;
+using SnippingTool.ViewModels;
 using Clipboard = System.Windows.Clipboard;
 using Color = System.Windows.Media.Color;
-using Cursors = System.Windows.Input.Cursors;
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;
 using Point = System.Windows.Point;
 using RadioButton = System.Windows.Controls.RadioButton;
 using SaveFileDialog = Microsoft.Win32.SaveFileDialog;
 using Size = System.Windows.Size;
-using TextBox = System.Windows.Controls.TextBox;
-using SnippingTool.ViewModels;
 
 namespace SnippingTool;
-
-public enum AnnotationTool { Arrow, Rectangle, Text, Highlight, Pen, Line, Circle }
 
 public partial class PreviewWindow : Window
 {
     private readonly PreviewViewModel _vm;
-
-    private bool _isDragging;
-    private Point _dragStart;
-
-    private Line? _arrowLine;
-    private Polyline? _arrowHead;
-    private System.Windows.Shapes.Rectangle? _currentRect;
-    private Line? _currentLine;
-    private Ellipse? _currentEllipse;
-    private Polyline? _currentPen;
+    private AnnotationCanvasRenderer _renderer = null!;
 
     public PreviewWindow(PreviewViewModel vm, BitmapSource bitmap, System.Windows.Rect snipScreenRect = default)
     {
@@ -45,16 +30,30 @@ public partial class PreviewWindow : Window
         _vm.UndoApplied += group =>
         {
             foreach (var el in group.Cast<UIElement>())
+            {
                 AnnotationCanvas.Children.Remove(el);
+            }
+
+            _vm.ResetNumberCounter(AnnotationCanvas.Children
+                .OfType<TextBlock>()
+                .Count(tb => tb.Tag is "number"));
         };
         _vm.RedoApplied += group =>
         {
             foreach (var el in group.Cast<UIElement>())
+            {
                 AnnotationCanvas.Children.Add(el);
+            }
+
+            _vm.ResetNumberCounter(AnnotationCanvas.Children
+                .OfType<TextBlock>()
+                .Count(tb => tb.Tag is "number"));
         };
         _vm.CopyRequested += () => Clipboard.SetImage(RenderComposite());
         _vm.SaveRequested += DoSave;
         _vm.CloseRequested += Close;
+
+        _renderer = new AnnotationCanvasRenderer(AnnotationCanvas, _vm, el => _vm.TrackElement(el));
 
         SnipImage.Source = bitmap;
         AnnotationCanvas.Width = bitmap.PixelWidth;
@@ -80,11 +79,13 @@ public partial class PreviewWindow : Window
         {
             left = workArea.Right - Width;
         }
+
         left = Math.Max(workArea.Left, left);
         if (top + Height > workArea.Bottom)
         {
             top = snip.Top - Height - gap;
         }
+
         top = Math.Max(workArea.Top, top);
         Left = left;
         Top = top;
@@ -102,16 +103,28 @@ public partial class PreviewWindow : Window
 
     private void Window_KeyDown(object sender, KeyEventArgs e)
     {
-        if (e.Key == Key.Escape) { Close(); return; }
+        if (e.Key == Key.Escape)
+        {
+            Close();
+            return;
+        }
 
         if (e.KeyboardDevice.Modifiers == ModifierKeys.Control)
         {
             switch (e.Key)
             {
-                case Key.C: _vm.CopyCommand.Execute(null); break;
-                case Key.S: _vm.SaveCommand.Execute(null); break;
-                case Key.Z: _vm.UndoCommand.Execute(null); break;
-                case Key.Y: _vm.RedoCommand.Execute(null); break;
+                case Key.C:
+                    _vm.CopyCommand.Execute(null);
+                    break;
+                case Key.S:
+                    _vm.SaveCommand.Execute(null);
+                    break;
+                case Key.Z:
+                    _vm.UndoCommand.Execute(null);
+                    break;
+                case Key.Y:
+                    _vm.RedoCommand.Execute(null);
+                    break;
             }
         }
     }
@@ -129,19 +142,7 @@ public partial class PreviewWindow : Window
             return;
         }
 
-        _vm.ActiveColor = border.Tag switch
-        {
-            "Red" => Colors.Red,
-            "Blue" => Colors.DodgerBlue,
-            "Black" => Color.FromRgb(0x1A, 0x1A, 0x1A),
-            "Green" => Color.FromRgb(0x22, 0xA4, 0x22),
-            "Orange" => Colors.Orange,
-            "Purple" => Color.FromRgb(0x8B, 0x2B, 0xE2),
-            "White" => Colors.White,
-            "Pink" => Colors.HotPink,
-            _ => Colors.Red
-        };
-
+        _vm.SetColorFromTag(border.Tag as string);
         ColorIndicator.Fill = _vm.ActiveBrush;
         ColorPopup.IsOpen = false;
     }
@@ -172,9 +173,7 @@ public partial class PreviewWindow : Window
     {
         if (StrokeThickness.SelectedItem is ComboBoxItem item)
         {
-            var text = item.Content?.ToString()?.Split(' ')[0];
-            if (double.TryParse(text, out var t))
-                _vm.StrokeThickness = t;
+            _vm.SetStrokeThicknessFromText(item.Content?.ToString()?.Split(' ')[0]);
         }
     }
 
@@ -183,162 +182,55 @@ public partial class PreviewWindow : Window
 
     private void Canvas_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
     {
-        _dragStart = e.GetPosition(AnnotationCanvas);
-        _isDragging = true;
-        AnnotationCanvas.CaptureMouse();
+        var pt = e.GetPosition(AnnotationCanvas);
         _vm.BeginGroup();
 
         if (_vm.SelectedTool == AnnotationTool.Text)
         {
-            PlaceTextBox(_dragStart);
-            _isDragging = false;
-            AnnotationCanvas.ReleaseMouseCapture();
+            _renderer.PlaceTextBox(pt);
+            _vm.CommitDrawing();
             _vm.CommitGroup();
             return;
         }
 
-        var brush = new SolidColorBrush(_vm.ActiveColor);
-        var thick = _vm.StrokeThickness;
-
-        switch (_vm.SelectedTool)
+        if (_vm.SelectedTool == AnnotationTool.Number)
         {
-            case AnnotationTool.Arrow:
-                _arrowLine = new Line { X1 = _dragStart.X, Y1 = _dragStart.Y, X2 = _dragStart.X, Y2 = _dragStart.Y, Stroke = brush, StrokeThickness = thick, StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round };
-                _arrowHead = new Polyline { Stroke = brush, StrokeThickness = thick, StrokeLineJoin = PenLineJoin.Round };
-                AddToCanvas(_arrowLine);
-                AddToCanvas(_arrowHead);
-                break;
-            case AnnotationTool.Rectangle:
-                _currentRect = new System.Windows.Shapes.Rectangle { Stroke = brush, StrokeThickness = thick, Fill = Brushes.Transparent };
-                Canvas.SetLeft(_currentRect, _dragStart.X);
-                Canvas.SetTop(_currentRect, _dragStart.Y);
-                AddToCanvas(_currentRect);
-                break;
-            case AnnotationTool.Highlight:
-                _currentRect = new System.Windows.Shapes.Rectangle { Fill = new SolidColorBrush(Color.FromArgb(80, 255, 255, 0)), Stroke = Brushes.Transparent };
-                Canvas.SetLeft(_currentRect, _dragStart.X);
-                Canvas.SetTop(_currentRect, _dragStart.Y);
-                AddToCanvas(_currentRect);
-                break;
-            case AnnotationTool.Pen:
-                _currentPen = new Polyline { Stroke = brush, StrokeThickness = thick, StrokeLineJoin = PenLineJoin.Round, StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round };
-                _currentPen.Points.Add(_dragStart);
-                AddToCanvas(_currentPen);
-                break;
-            case AnnotationTool.Line:
-                _currentLine = new Line { X1 = _dragStart.X, Y1 = _dragStart.Y, X2 = _dragStart.X, Y2 = _dragStart.Y, Stroke = brush, StrokeThickness = thick, StrokeStartLineCap = PenLineCap.Round, StrokeEndLineCap = PenLineCap.Round };
-                AddToCanvas(_currentLine);
-                break;
-            case AnnotationTool.Circle:
-                _currentEllipse = new Ellipse { Stroke = brush, StrokeThickness = thick, Fill = Brushes.Transparent };
-                Canvas.SetLeft(_currentEllipse, _dragStart.X);
-                Canvas.SetTop(_currentEllipse, _dragStart.Y);
-                AddToCanvas(_currentEllipse);
-                break;
+            _renderer.PlaceNumberLabel(pt);
+            _vm.CommitDrawing();
+            _vm.CommitGroup();
+            return;
         }
+
+        _vm.BeginDrawing(pt);
+        AnnotationCanvas.CaptureMouse();
+        _renderer.BeginShape(pt);
     }
 
     private void Canvas_MouseMove(object sender, MouseEventArgs e)
     {
-        if (!_isDragging)
+        if (!_vm.IsDragging)
         {
             return;
         }
 
         var current = e.GetPosition(AnnotationCanvas);
-
-        switch (_vm.SelectedTool)
-        {
-            case AnnotationTool.Arrow when _arrowLine != null:
-                _arrowLine.X2 = current.X; _arrowLine.Y2 = current.Y;
-                UpdateArrowHead(_arrowLine, _arrowHead!);
-                break;
-            case AnnotationTool.Rectangle when _currentRect != null:
-            case AnnotationTool.Highlight when _currentRect != null:
-                UpdateRect(_currentRect, _dragStart, current);
-                break;
-            case AnnotationTool.Circle when _currentEllipse != null:
-                UpdateEllipse(_currentEllipse, _dragStart, current);
-                break;
-            case AnnotationTool.Line when _currentLine != null:
-                _currentLine.X2 = current.X; _currentLine.Y2 = current.Y;
-                break;
-            case AnnotationTool.Pen when _currentPen != null:
-                _currentPen.Points.Add(current);
-                break;
-        }
+        _vm.UpdateDrawing(current);
+        _renderer.UpdateShape(current);
     }
 
     private void Canvas_MouseLeftButtonUp(object sender, MouseButtonEventArgs e)
     {
-        if (!_isDragging)
+        if (!_vm.IsDragging)
         {
             return;
         }
 
-        _isDragging = false;
+        var current = e.GetPosition(AnnotationCanvas);
+        _vm.UpdateDrawing(current);
         AnnotationCanvas.ReleaseMouseCapture();
-
-        if (_vm.SelectedTool == AnnotationTool.Arrow && _arrowLine != null)
-            UpdateArrowHead(_arrowLine, _arrowHead!);
-
-        _arrowLine = null; _arrowHead = null;
-        _currentRect = null; _currentLine = null;
-        _currentEllipse = null; _currentPen = null;
-
+        _renderer.CommitShape(current);
+        _vm.CommitDrawing();
         _vm.CommitGroup();
-    }
-
-    private void AddToCanvas(UIElement element)
-    {
-        AnnotationCanvas.Children.Add(element);
-        _vm.TrackElement(element);
-    }
-
-    private static void UpdateRect(System.Windows.Shapes.Rectangle rect, Point start, Point end)
-    {
-        Canvas.SetLeft(rect, Math.Min(start.X, end.X));
-        Canvas.SetTop(rect, Math.Min(start.Y, end.Y));
-        rect.Width = Math.Abs(end.X - start.X);
-        rect.Height = Math.Abs(end.Y - start.Y);
-    }
-
-    private static void UpdateEllipse(Ellipse ellipse, Point start, Point end)
-    {
-        Canvas.SetLeft(ellipse, Math.Min(start.X, end.X));
-        Canvas.SetTop(ellipse, Math.Min(start.Y, end.Y));
-        ellipse.Width = Math.Abs(end.X - start.X);
-        ellipse.Height = Math.Abs(end.Y - start.Y);
-    }
-
-    private static void UpdateArrowHead(Line line, Polyline head)
-    {
-        const double headLen = 14;
-        const double angle = 25 * Math.PI / 180;
-        var theta = Math.Atan2(line.Y2 - line.Y1, line.X2 - line.X1);
-        head.Points.Clear();
-        head.Points.Add(new Point(line.X2 - headLen * Math.Cos(theta - angle), line.Y2 - headLen * Math.Sin(theta - angle)));
-        head.Points.Add(new Point(line.X2, line.Y2));
-        head.Points.Add(new Point(line.X2 - headLen * Math.Cos(theta + angle), line.Y2 - headLen * Math.Sin(theta + angle)));
-    }
-
-    private void PlaceTextBox(Point position)
-    {
-        var tb = new TextBox
-        {
-            FontSize = 16,
-            Foreground = new SolidColorBrush(_vm.ActiveColor),
-            Background = Brushes.Transparent,
-            BorderThickness = new Thickness(1),
-            BorderBrush = Brushes.Gray,
-            MinWidth = 80,
-            AcceptsReturn = false
-        };
-        tb.LostFocus += (_, _) => { tb.IsReadOnly = true; tb.BorderThickness = new Thickness(0); tb.Cursor = Cursors.Arrow; };
-        Canvas.SetLeft(tb, position.X);
-        Canvas.SetTop(tb, position.Y);
-        AddToCanvas(tb);
-        tb.Focus();
     }
 
     private void Copy_Click(object sender, RoutedEventArgs e) => _vm.CopyCommand.Execute(null);

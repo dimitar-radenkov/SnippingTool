@@ -1,3 +1,4 @@
+using SnippingTool.Services;
 using SnippingTool.ViewModels;
 using Xunit;
 
@@ -5,24 +6,26 @@ namespace SnippingTool.Tests.ViewModels;
 
 public class PreviewViewModelTests
 {
+    private static PreviewViewModel Vm() => new(new AnnotationGeometryService());
+
     [Fact]
     public void UndoCommand_CannotExecute_WhenStackEmpty()
     {
-        var vm = new PreviewViewModel();
+        var vm = Vm();
         Assert.False(vm.UndoCommand.CanExecute(null));
     }
 
     [Fact]
     public void RedoCommand_CannotExecute_WhenStackEmpty()
     {
-        var vm = new PreviewViewModel();
+        var vm = Vm();
         Assert.False(vm.RedoCommand.CanExecute(null));
     }
 
     [Fact]
     public void CommitGroup_WithElements_EnablesUndo()
     {
-        var vm = new PreviewViewModel();
+        var vm = Vm();
         vm.BeginGroup();
         vm.TrackElement(new object());
         vm.CommitGroup();
@@ -33,7 +36,7 @@ public class PreviewViewModelTests
     [Fact]
     public void CommitGroup_Empty_DoesNotEnableUndo()
     {
-        var vm = new PreviewViewModel();
+        var vm = Vm();
         vm.BeginGroup();
         vm.CommitGroup();
 
@@ -43,7 +46,7 @@ public class PreviewViewModelTests
     [Fact]
     public void Undo_MovesGroupToRedoStack()
     {
-        var vm = new PreviewViewModel();
+        var vm = Vm();
         var element = new object();
         vm.BeginGroup();
         vm.TrackElement(element);
@@ -58,7 +61,7 @@ public class PreviewViewModelTests
     [Fact]
     public void Undo_FiresUndoApplied_WithCorrectGroup()
     {
-        var vm = new PreviewViewModel();
+        var vm = Vm();
         var element = new object();
         vm.BeginGroup();
         vm.TrackElement(element);
@@ -75,7 +78,7 @@ public class PreviewViewModelTests
     [Fact]
     public void Redo_MovesGroupBackToUndoStack()
     {
-        var vm = new PreviewViewModel();
+        var vm = Vm();
         vm.BeginGroup();
         vm.TrackElement(new object());
         vm.CommitGroup();
@@ -90,7 +93,7 @@ public class PreviewViewModelTests
     [Fact]
     public void Redo_FiresRedoApplied_WithCorrectGroup()
     {
-        var vm = new PreviewViewModel();
+        var vm = Vm();
         var element = new object();
         vm.BeginGroup();
         vm.TrackElement(element);
@@ -108,7 +111,7 @@ public class PreviewViewModelTests
     [Fact]
     public void CommitGroup_ClearsRedoStack()
     {
-        var vm = new PreviewViewModel();
+        var vm = Vm();
         vm.BeginGroup();
         vm.TrackElement(new object());
         vm.CommitGroup();
@@ -125,12 +128,16 @@ public class PreviewViewModelTests
     [Fact]
     public void UndoCount_TracksStackDepth()
     {
-        var vm = new PreviewViewModel();
+        var vm = Vm();
 
-        vm.BeginGroup(); vm.TrackElement(new object()); vm.CommitGroup();
+        vm.BeginGroup();
+        vm.TrackElement(new object());
+        vm.CommitGroup();
         Assert.Equal(1, vm.UndoCount);
 
-        vm.BeginGroup(); vm.TrackElement(new object()); vm.CommitGroup();
+        vm.BeginGroup();
+        vm.TrackElement(new object());
+        vm.CommitGroup();
         Assert.Equal(2, vm.UndoCount);
 
         vm.UndoCommand.Execute(null);
@@ -140,7 +147,7 @@ public class PreviewViewModelTests
     [Fact]
     public void CopyCommand_FiresCopyRequested()
     {
-        var vm = new PreviewViewModel();
+        var vm = Vm();
         var fired = false;
         vm.CopyRequested += () => fired = true;
 
@@ -152,7 +159,7 @@ public class PreviewViewModelTests
     [Fact]
     public void SaveCommand_FiresSaveRequested()
     {
-        var vm = new PreviewViewModel();
+        var vm = Vm();
         var fired = false;
         vm.SaveRequested += () => fired = true;
 
@@ -164,7 +171,7 @@ public class PreviewViewModelTests
     [Fact]
     public void CloseCommand_FiresCloseRequested()
     {
-        var vm = new PreviewViewModel();
+        var vm = Vm();
         var fired = false;
         vm.CloseRequested += () => fired = true;
 
@@ -176,7 +183,7 @@ public class PreviewViewModelTests
     [Fact]
     public void TrackElement_BeforeBeginGroup_IsIgnored()
     {
-        var vm = new PreviewViewModel();
+        var vm = Vm();
         vm.TrackElement(new object()); // no active group — should not throw
 
         vm.BeginGroup();

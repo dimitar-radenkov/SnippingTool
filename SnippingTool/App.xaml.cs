@@ -1,6 +1,5 @@
 using System.Runtime.InteropServices;
 using System.Windows;
-using System.Windows.Controls;
 using System.Windows.Interop;
 using System.Windows.Media.Imaging;
 using Hardcodet.Wpf.TaskbarNotification;
@@ -44,6 +43,7 @@ public partial class App : Application
     private static void ConfigureServices(IServiceCollection services)
     {
         services.AddTransient<IScreenCaptureService, ScreenCaptureService>();
+        services.AddSingleton<IAnnotationGeometryService, AnnotationGeometryService>();
         services.AddTransient<OverlayViewModel>();
         services.AddTransient<PreviewViewModel>();
         services.AddTransient<OverlayWindow>();
@@ -58,6 +58,7 @@ public partial class App : Application
             UnregisterHotKey(_hotkeySource.Handle, HotkeyId);
             _hotkeySource.Dispose();
         }
+
         _trayIcon?.Dispose();
         _services.Dispose();
         base.OnExit(e);
@@ -84,6 +85,7 @@ public partial class App : Application
             StartSnip();
             handled = true;
         }
+
         return IntPtr.Zero;
     }
 
