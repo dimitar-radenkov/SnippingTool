@@ -65,6 +65,12 @@ public partial class RecordingHudWindow : Window
         }
     }
 
+    protected override void OnClosed(EventArgs e)
+    {
+        _elapsedCts?.Cancel();
+        base.OnClosed(e);
+    }
+
     private void Stop_Click(object sender, RoutedEventArgs e)
     {
         _logger.LogInformation("Stop button clicked");
@@ -74,7 +80,7 @@ public partial class RecordingHudWindow : Window
         _svc.Stop();
 
         var fileName = Path.GetFileName(_outputPath);
-        SavedText.Text = $"Saved → {fileName}";
+        SavedText.Text = $"Saved \u2192 {fileName}";
         SavedText.Visibility = Visibility.Visible;
         _logger.LogInformation("Recording saved to {Path}", _outputPath);
 
@@ -86,6 +92,11 @@ public partial class RecordingHudWindow : Window
         await Task.Delay(TimeSpan.FromSeconds(2));
         await Dispatcher.InvokeAsync(() =>
         {
+            if (!IsLoaded)
+            {
+                return;
+            }
+
             _logger.LogDebug("RecordingHudWindow closing");
             StopCompleted?.Invoke();
             Close();

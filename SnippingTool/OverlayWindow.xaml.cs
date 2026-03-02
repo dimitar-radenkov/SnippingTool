@@ -23,7 +23,11 @@ public partial class OverlayWindow : Window
     private readonly ILoggerFactory _loggerFactory;
     private AnnotationCanvasRenderer _renderer = null!;
 
-    public OverlayWindow(OverlayViewModel vm, IScreenCaptureService screenCapture, IScreenRecordingService recorder, ILoggerFactory loggerFactory)
+    public OverlayWindow(
+        OverlayViewModel vm,
+        IScreenCaptureService screenCapture,
+        IScreenRecordingService recorder,
+        ILoggerFactory loggerFactory)
     {
         _vm = vm;
         _screenCapture = screenCapture;
@@ -348,13 +352,29 @@ public partial class OverlayWindow : Window
         _recorder.Start(screenX, screenY, screenW, screenH, path);
         Visibility = Visibility.Hidden;
 
-        var border = new RecordingBorderWindow(Left + sel.X, Top + sel.Y, sel.Width, sel.Height);
+        var regionRect = new Rect(Left + sel.X, Top + sel.Y, sel.Width, sel.Height);
+        var border = new RecordingBorderWindow(regionRect.Left, regionRect.Top, regionRect.Width, regionRect.Height);
         border.Show();
 
-        var regionRect = new Rect(Left + sel.X, Top + sel.Y, sel.Width, sel.Height);
         var hud = new RecordingHudWindow(_recorder, path, _loggerFactory.CreateLogger<RecordingHudWindow>(), regionRect);
-        hud.StopCompleted += () => Dispatcher.Invoke(() => { border.Close(); Close(); });
+        hud.StopCompleted += () => Dispatcher.Invoke(() =>
+        {
+            border.Close();
+            Close();
+        });
         hud.Show();
+    }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        // If the overlay is closed while recording is still active (e.g. via Escape or hotkey),
+        // stop the capture loop so it doesn't run in the background indefinitely.
+        if (_recorder.IsRecording)
+        {
+            _recorder.Stop();
+        }
+
+        base.OnClosed(e);
     }
 
     private void DoCopy()
