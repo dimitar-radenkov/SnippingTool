@@ -27,7 +27,7 @@ public partial class App : Application
     private LowLevelKeyboardProc? _keyboardProc; // keep delegate alive to prevent GC
     private IntPtr _keyboardHook = IntPtr.Zero;
 
-    [DllImport("user32.dll")] private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelKeyboardProc lpfn, IntPtr hMod, uint dwThreadId);
+    [DllImport("user32.dll", SetLastError = true)] private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelKeyboardProc lpfn, IntPtr hMod, uint dwThreadId);
     [DllImport("user32.dll")] private static extern bool UnhookWindowsHookEx(IntPtr hhk);
     [DllImport("user32.dll")] private static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
     [DllImport("user32.dll")] private static extern IntPtr GetForegroundWindow();
@@ -115,6 +115,11 @@ public partial class App : Application
         using var process = Process.GetCurrentProcess();
         var hMod = GetModuleHandle(process.MainModule?.ModuleName);
         _keyboardHook = SetWindowsHookEx(WH_KEYBOARD_LL, _keyboardProc, hMod, 0);
+        if (_keyboardHook == IntPtr.Zero)
+        {
+            _logger?.LogWarning("Failed to register low-level keyboard hook (error {Code}); Print Screen hotkey will not work",
+                Marshal.GetLastWin32Error());
+        }
     }
 
     private IntPtr KeyboardHookCallback(int nCode, IntPtr wParam, IntPtr lParam)
