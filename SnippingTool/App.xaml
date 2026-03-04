@@ -14,6 +14,8 @@
                     <MenuItem Header="Full Screen" Click="FullScreen_Click" />
                     <MenuItem Header="Active Window" Click="ActiveWindow_Click" />
                     <Separator />
+                    <MenuItem Header="Settings" Click="Settings_Click" />
+                    <Separator />
                     <MenuItem Header="Exit" Click="Exit_Click" />
                 </ContextMenu>
             </tb:TaskbarIcon.ContextMenu>

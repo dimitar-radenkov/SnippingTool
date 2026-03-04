@@ -6,7 +6,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Serilog;
-using SnippingTool.Models;
 using SnippingTool.Services;
 using SnippingTool.ViewModels;
 using Application = System.Windows.Application;
@@ -19,6 +18,7 @@ public partial class App : Application
     private HwndSource? _hotkeySource;
     private ServiceProvider _services = null!;
     private ILogger<App>? _logger;
+    private SettingsWindow? _settingsWindow;
 
     private const int HotkeyId = 9000;
     private const uint VK_PRINTSCREEN = 0x2C;
@@ -68,6 +68,7 @@ public partial class App : Application
 
         Current.DispatcherUnhandledException += OnDispatcherUnhandledException;
         AppDomain.CurrentDomain.UnhandledException += OnAppDomainUnhandledException;
+        TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
 
         _trayIcon = (TaskbarIcon)FindResource("TrayIcon");
         RegisterGlobalHotkey();
@@ -76,13 +77,15 @@ public partial class App : Application
 
     private static void ConfigureServices(IServiceCollection services, IConfiguration config)
     {
-        services.Configure<RecordingOptions>(config.GetSection(RecordingOptions.Section));
         services.AddLogging(b => b.AddSerilog(dispose: false));
+        services.AddSingleton<IUserSettingsService, UserSettingsService>();
         services.AddTransient<IScreenCaptureService, ScreenCaptureService>();
         services.AddTransient<IScreenRecordingService, ScreenRecordingService>();
         services.AddSingleton<IAnnotationGeometryService, AnnotationGeometryService>();
         services.AddTransient<OverlayViewModel>();
         services.AddTransient<OverlayWindow>();
+        services.AddTransient<SettingsViewModel>();
+        services.AddTransient<SettingsWindow>();
     }
 
     protected override void OnExit(ExitEventArgs e)
@@ -128,6 +131,19 @@ public partial class App : Application
     private void TrayIcon_LeftClick(object sender, RoutedEventArgs e) => StartSnip();
     private void NewSnip_Click(object sender, RoutedEventArgs e) => StartSnip();
     private void Exit_Click(object sender, RoutedEventArgs e) => Current.Shutdown();
+
+    private void Settings_Click(object sender, RoutedEventArgs e)
+    {
+        if (_settingsWindow is not null)
+        {
+            _settingsWindow.Activate();
+            return;
+        }
+
+        _settingsWindow = _services.GetRequiredService<SettingsWindow>();
+        _settingsWindow.Closed += (_, _) => _settingsWindow = null;
+        _settingsWindow.Show();
+    }
 
     private void FullScreen_Click(object sender, RoutedEventArgs e)
     {
@@ -181,10 +197,22 @@ public partial class App : Application
     {
         _logger?.LogError(e.Exception, "Unhandled dispatcher exception");
         e.Handled = true;
+        System.Windows.MessageBox.Show(
+            $"An unexpected error occurred:\n\n{e.Exception.Message}\n\nDetails have been written to the log file.",
+            "SnippingTool — Unexpected Error",
+            System.Windows.MessageBoxButton.OK,
+            System.Windows.MessageBoxImage.Error);
     }
 
     private void OnAppDomainUnhandledException(object sender, UnhandledExceptionEventArgs e)
     {
-        _logger?.LogCritical(e.ExceptionObject as Exception, "Unhandled AppDomain exception \u2014 application will terminate");
+        _logger?.LogCritical(e.ExceptionObject as Exception, "Unhandled AppDomain exception — application will terminate");
+        Log.CloseAndFlush();
+    }
+
+    private void OnUnobservedTaskException(object? sender, UnobservedTaskExceptionEventArgs e)
+    {
+        _logger?.LogError(e.Exception, "Unobserved task exception");
+        e.SetObserved();
     }
 }

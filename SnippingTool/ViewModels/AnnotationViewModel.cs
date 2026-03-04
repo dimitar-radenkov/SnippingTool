@@ -14,20 +14,31 @@ public partial class AnnotationViewModel : ObservableObject
     private readonly IAnnotationGeometryService _geometry;
     protected readonly ILogger _logger;
 
-    public AnnotationViewModel(IAnnotationGeometryService geometry, ILogger logger)
+    public AnnotationViewModel(IAnnotationGeometryService geometry, ILogger logger, IUserSettingsService settings)
     {
         _geometry = geometry;
         _logger = logger;
+
+        try
+        {
+            _activeColor = (Color)System.Windows.Media.ColorConverter.ConvertFromString(settings.Current.DefaultAnnotationColor);
+        }
+        catch
+        {
+            _activeColor = Colors.Red;
+        }
+
+        _strokeThickness = settings.Current.DefaultStrokeThickness;
     }
 
     [ObservableProperty]
     private AnnotationTool _selectedTool = AnnotationTool.Rectangle;
 
     [ObservableProperty]
-    private Color _activeColor = Colors.Red;
+    private Color _activeColor;
 
     [ObservableProperty]
-    private double _strokeThickness = 2.5;
+    private double _strokeThickness;
 
     public SolidColorBrush ActiveBrush => new(ActiveColor);
 

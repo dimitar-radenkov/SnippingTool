@@ -1,5 +1,4 @@
 using Microsoft.Extensions.Logging.Abstractions;
-using Microsoft.Extensions.Options;
 using SnippingTool.Models;
 using SnippingTool.Services;
 using Xunit;
@@ -8,8 +7,14 @@ namespace SnippingTool.Tests.Services;
 
 public sealed class ScreenRecordingServiceTests
 {
+    private sealed class FakeUserSettingsService : IUserSettingsService
+    {
+        public UserSettings Current { get; } = new UserSettings();
+        public void Save(UserSettings settings) { }
+    }
+
     private static ScreenRecordingService CreateSut() =>
-        new(NullLogger<ScreenRecordingService>.Instance, Options.Create(new RecordingOptions()));
+        new(NullLogger<ScreenRecordingService>.Instance, new FakeUserSettingsService());
 
     [Fact]
     public void IsRecording_IsFalse_BeforeStart()

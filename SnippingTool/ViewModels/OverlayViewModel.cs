@@ -8,8 +8,8 @@ namespace SnippingTool.ViewModels;
 
 public partial class OverlayViewModel : AnnotationViewModel
 {
-    public OverlayViewModel(IAnnotationGeometryService geometry, ILogger<OverlayViewModel> logger)
-        : base(geometry, logger) { }
+    public OverlayViewModel(IAnnotationGeometryService geometry, ILogger<OverlayViewModel> logger, IUserSettingsService settings)
+        : base(geometry, logger, settings) { }
 
     public enum Phase { Selecting, Annotating }
 

@@ -4,8 +4,6 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
-using SnippingTool.Models;
 using SnippingTool.Services;
 using SnippingTool.ViewModels;
 using Color = System.Windows.Media.Color;
@@ -23,7 +21,7 @@ public partial class OverlayWindow : Window
     private readonly IScreenCaptureService _screenCapture;
     private readonly IScreenRecordingService _recorder;
     private readonly ILoggerFactory _loggerFactory;
-    private readonly IOptions<RecordingOptions> _recordingOptions;
+    private readonly IUserSettingsService _userSettings;
     private AnnotationCanvasRenderer _renderer = null!;
     private RecordingBorderWindow? _recordingBorder;
     private RecordingHudWindow? _recordingHud;
@@ -33,13 +31,13 @@ public partial class OverlayWindow : Window
         IScreenCaptureService screenCapture,
         IScreenRecordingService recorder,
         ILoggerFactory loggerFactory,
-        IOptions<RecordingOptions> recordingOptions)
+        IUserSettingsService userSettings)
     {
         _vm = vm;
         _screenCapture = screenCapture;
         _recorder = recorder;
         _loggerFactory = loggerFactory;
-        _recordingOptions = recordingOptions;
+        _userSettings = userSettings;
         InitializeComponent();
         DataContext = _vm;
         _renderer = new AnnotationCanvasRenderer(AnnotationCanvas, _vm, el => _vm.TrackElement(el), loggerFactory.CreateLogger<AnnotationCanvasRenderer>());
@@ -350,9 +348,7 @@ public partial class OverlayWindow : Window
         var screenW = (int)(sel.Width * _vm.DpiX);
         var screenH = (int)(sel.Height * _vm.DpiY);
 
-        var videosDir = System.IO.Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "SnippingTool", _recordingOptions.Value.OutputSubfolder);
+        var videosDir = _userSettings.Current.RecordingOutputPath;
         System.IO.Directory.CreateDirectory(videosDir);
         var path = System.IO.Path.Combine(videosDir, $"SnipRec-{DateTime.Now:yyyyMMdd-HHmmss}.avi");
 
@@ -363,7 +359,7 @@ public partial class OverlayWindow : Window
         _recordingBorder = new RecordingBorderWindow(regionRect.Left, regionRect.Top, regionRect.Width, regionRect.Height);
         _recordingBorder.Show();
 
-        _recordingHud = new RecordingHudWindow(_recorder, path, _loggerFactory.CreateLogger<RecordingHudWindow>(), regionRect, _recordingOptions);
+        _recordingHud = new RecordingHudWindow(_recorder, path, _loggerFactory.CreateLogger<RecordingHudWindow>(), regionRect, _userSettings);
         _recordingHud.StopCompleted += () => Dispatcher.Invoke(() =>
         {
             _recordingBorder?.Close();
@@ -416,6 +412,18 @@ public partial class OverlayWindow : Window
         var final = new RenderTargetBitmap(screenBmp.PixelWidth, screenBmp.PixelHeight, 96, 96, PixelFormats.Pbgra32);
         final.Render(dv);
         System.Windows.Clipboard.SetImage(final);
+
+        if (_userSettings.Current.AutoSaveScreenshots)
+        {
+            var saveDir = _userSettings.Current.ScreenshotSavePath;
+            System.IO.Directory.CreateDirectory(saveDir);
+            var savePath = System.IO.Path.Combine(saveDir, $"Snip_{DateTime.Now:yyyyMMdd_HHmmss}.png");
+            using var fs = System.IO.File.OpenWrite(savePath);
+            var encoder = new PngBitmapEncoder();
+            encoder.Frames.Add(BitmapFrame.Create(final));
+            encoder.Save(fs);
+        }
+
         Close();
     }
 
