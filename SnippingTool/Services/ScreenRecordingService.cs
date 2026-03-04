@@ -1,17 +1,15 @@
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 using SharpAvi.Codecs;
 using SharpAvi.Output;
-using SnippingTool.Models;
 
 namespace SnippingTool.Services;
 
 public sealed class ScreenRecordingService : IScreenRecordingService
 {
     private readonly ILogger<ScreenRecordingService> _logger;
-    private readonly IOptions<RecordingOptions> _options;
+    private readonly IUserSettingsService _settings;
     private AviWriter? _writer;
     private IAviVideoStream? _stream;
     private CancellationTokenSource? _cts;
@@ -25,15 +23,15 @@ public sealed class ScreenRecordingService : IScreenRecordingService
 
     public bool IsRecording { get; private set; }
 
-    public ScreenRecordingService(ILogger<ScreenRecordingService> logger, IOptions<RecordingOptions> options)
+    public ScreenRecordingService(ILogger<ScreenRecordingService> logger, IUserSettingsService settings)
     {
         _logger = logger;
-        _options = options;
+        _settings = settings;
     }
 
     public void Start(int x, int y, int width, int height, string outputPath)
     {
-        var fps = _options.Value.Fps;
+        var fps = _settings.Current.RecordingFps;
         _logger.LogInformation("Recording Start requested: region=({X},{Y},{W},{H}), fps={Fps}, path={Path}",
             x, y, width, height, fps, outputPath);
 
@@ -60,7 +58,7 @@ public sealed class ScreenRecordingService : IScreenRecordingService
         _buffer = new byte[width * height * 4];
 
         _writer = new AviWriter(outputPath) { FramesPerSecond = fps, EmitIndex1 = true };
-        var encoder = new MotionJpegVideoEncoderWpf(width, height, _options.Value.JpegQuality);
+        var encoder = new MotionJpegVideoEncoderWpf(width, height, _settings.Current.RecordingJpegQuality);
         _stream = _writer.AddEncodingVideoStream(encoder, ownsEncoder: true, width, height);
 
         _cts = new CancellationTokenSource();

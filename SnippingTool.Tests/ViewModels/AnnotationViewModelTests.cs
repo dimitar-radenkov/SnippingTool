@@ -1,6 +1,8 @@
 using System.Windows.Media;
 using Microsoft.Extensions.Logging.Abstractions;
+using SnippingTool.Models;
 using SnippingTool.Services;
+using SnippingTool.Tests;
 using SnippingTool.ViewModels;
 using Xunit;
 
@@ -527,6 +529,6 @@ public sealed class AnnotationViewModelTests
 
     // Concrete subclass so we can instantiate the abstract-like partial base
     private sealed partial class TestAnnotationViewModel(AnnotationGeometryService geom)
-        : AnnotationViewModel(geom, NullLogger<AnnotationViewModel>.Instance)
+        : AnnotationViewModel(geom, NullLogger<AnnotationViewModel>.Instance, new FakeUserSettingsService())
     { }
 }
