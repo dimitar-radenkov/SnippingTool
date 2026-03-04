@@ -17,6 +17,7 @@
 *.userprefs
 
 *.md
+!README.md
 
 # Mono auto generated files
 mono_crash.*
