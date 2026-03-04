@@ -38,7 +38,9 @@ public partial class App : Application
     private struct RECT { public int Left, Top, Right, Bottom; }
 
     [StructLayout(LayoutKind.Sequential)]
+#pragma warning disable IDE1006 // P/Invoke struct fields must match Windows API names exactly
     private struct KBDLLHOOKSTRUCT { public uint vkCode, scanCode, flags, time; public IntPtr dwExtraInfo; }
+#pragma warning restore IDE1006
 
     protected override void OnStartup(StartupEventArgs e)
     {
