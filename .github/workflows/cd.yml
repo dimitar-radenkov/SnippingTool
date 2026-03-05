@@ -13,6 +13,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Setup .NET
         uses: actions/setup-dotnet@v4
@@ -26,33 +28,25 @@ jobs:
           key: nuget-${{ runner.os }}-${{ hashFiles('**/*.csproj') }}
           restore-keys: nuget-${{ runner.os }}-
 
-      # Display version: 1.DDMMYYYY  (e.g. 1.02032026) — used for installer and artifact name.
-      # On a tag push the tag wins (e.g. v1.02032026 → 1.02032026).
-      # Dotnet version: must be numeric components ≤ 65535 each, so we use YYYY.MM.DD
-      # (e.g. 2026.3.2) which embeds the same date in a format the CLR accepts.
+      - name: Restore tools
+        run: dotnet tool restore
+
+      # Display version comes from version.json + commit height via Nerdbank.GitVersioning.
+      # On a tag push the tag wins (e.g. v1.2.5 → publicRelease=true, no pre-release suffix).
       - name: Compute version
         id: version
         shell: pwsh
         run: |
+          $json = dotnet nbgv get-version --format json | ConvertFrom-Json
+          $display = $json.NuGetPackageVersion   # e.g. "1.2.5" or "1.2.5-g1234abc"
           $is_tag = "${{ github.ref }}" -match '^refs/tags/v'
-          if ($is_tag) {
-            $display = "${{ github.ref_name }}" -replace '^v', ''
-          } else {
-            $d = Get-Date
-            $display = "1.$($d.ToString('ddMMyyyy'))"
-          }
-          $d      = Get-Date
-          $dotnet = "$($d.Year).$($d.Month).$($d.Day)"
-          echo "display=$display"           >> $env:GITHUB_OUTPUT
-          echo "dotnet=$dotnet"             >> $env:GITHUB_OUTPUT
-          echo "is_tag=$($is_tag.ToString().ToLower())" >> $env:GITHUB_OUTPUT
+          echo "display=$display"                          >> $env:GITHUB_OUTPUT
+          echo "is_tag=$($is_tag.ToString().ToLower())"   >> $env:GITHUB_OUTPUT
 
       - name: Publish (self-contained single-file)
-        run: >
+        run: >-
           dotnet publish SnippingTool/SnippingTool.csproj
           /p:PublishProfile=win-x64
-          /p:Version=${{ steps.version.outputs.dotnet }}
-          /p:InformationalVersion=${{ steps.version.outputs.display }}
           --nologo
 
       # Sign the published exe if a code-signing certificate is available.
