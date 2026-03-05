@@ -16,6 +16,7 @@
                     <Separator />
                     <MenuItem Header="Settings" Click="Settings_Click" />
                     <MenuItem Header="Check for Updates" Click="CheckForUpdates_Click" />
+                    <MenuItem Header="About" Click="About_Click" />
                     <Separator />
                     <MenuItem Header="Exit" Click="Exit_Click" />
                 </ContextMenu>

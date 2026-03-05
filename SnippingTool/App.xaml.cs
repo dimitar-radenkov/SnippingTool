@@ -18,6 +18,7 @@ public partial class App : Application
     private ServiceProvider _services = null!;
     private ILogger<App>? _logger;
     private SettingsWindow? _settingsWindow;
+    private AboutWindow? _aboutWindow;
 
     private const int WH_KEYBOARD_LL = 13;
     private const int WM_KEYDOWN = 0x0100;
@@ -217,6 +218,19 @@ public partial class App : Application
         _settingsWindow = _services.GetRequiredService<SettingsWindow>();
         _settingsWindow.Closed += (_, _) => _settingsWindow = null;
         _settingsWindow.Show();
+    }
+
+    private void About_Click(object sender, RoutedEventArgs e)
+    {
+        if (_aboutWindow is not null)
+        {
+            _aboutWindow.Activate();
+            return;
+        }
+
+        _aboutWindow = new AboutWindow();
+        _aboutWindow.Closed += (_, _) => _aboutWindow = null;
+        _aboutWindow.Show();
     }
 
     private void FullScreen_Click(object sender, RoutedEventArgs e)
