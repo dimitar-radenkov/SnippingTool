@@ -18,6 +18,7 @@ public partial class App : Application
     private ServiceProvider _services = null!;
     private ILogger<App>? _logger;
     private SettingsWindow? _settingsWindow;
+    private AboutWindow? _aboutWindow;
 
     private const int WH_KEYBOARD_LL = 13;
     private const int WM_KEYDOWN = 0x0100;
@@ -89,6 +90,7 @@ public partial class App : Application
     private static void ConfigureServices(IServiceCollection services)
     {
         services.AddLogging(b => b.AddSerilog(dispose: false));
+        services.AddSingleton<IAppVersionService, AppVersionService>();
         services.AddSingleton<IUserSettingsService, UserSettingsService>();
         services.AddTransient<IScreenCaptureService, ScreenCaptureService>();
         services.AddTransient<IScreenRecordingService, ScreenRecordingService>();
@@ -97,6 +99,8 @@ public partial class App : Application
         services.AddTransient<OverlayWindow>();
         services.AddTransient<SettingsViewModel>();
         services.AddTransient<SettingsWindow>();
+        services.AddTransient<AboutViewModel>();
+        services.AddTransient<AboutWindow>();
         services.AddSingleton<IUpdateService, GitHubUpdateService>();
     }
 
@@ -159,7 +163,7 @@ public partial class App : Application
 
             if (!result.IsUpdateAvailable)
             {
-                var current = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version ?? new Version(1, 0, 0);
+                var current = _services.GetRequiredService<IAppVersionService>().Current;
                 System.Windows.MessageBox.Show(
                     $"You're already on the latest version (v{current.Major}.{current.Minor}.{current.Build}).",
                     "Check for Updates",
@@ -217,6 +221,19 @@ public partial class App : Application
         _settingsWindow = _services.GetRequiredService<SettingsWindow>();
         _settingsWindow.Closed += (_, _) => _settingsWindow = null;
         _settingsWindow.Show();
+    }
+
+    private void About_Click(object sender, RoutedEventArgs e)
+    {
+        if (_aboutWindow is not null)
+        {
+            _aboutWindow.Activate();
+            return;
+        }
+
+        _aboutWindow = _services.GetRequiredService<AboutWindow>();
+        _aboutWindow.Closed += (_, _) => _aboutWindow = null;
+        _aboutWindow.Show();
     }
 
     private void FullScreen_Click(object sender, RoutedEventArgs e)
