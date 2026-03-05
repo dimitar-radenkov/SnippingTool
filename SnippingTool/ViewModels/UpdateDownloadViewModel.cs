@@ -59,23 +59,24 @@ public partial class UpdateDownloadViewModel : ObservableObject
             var buffer = new byte[81920];
             var downloaded = 0L;
 
-            await using var src = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
-            await using var dest = File.Create(destPath);
-
-            int read;
-            while ((read = await src.ReadAsync(buffer, cancellationToken).ConfigureAwait(false)) > 0)
+            await using (var src = await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false))
+            await using (var dest = File.Create(destPath))
             {
-                await dest.WriteAsync(buffer.AsMemory(0, read), cancellationToken).ConfigureAwait(false);
-                downloaded += read;
+                int read;
+                while ((read = await src.ReadAsync(buffer, cancellationToken).ConfigureAwait(false)) > 0)
+                {
+                    await dest.WriteAsync(buffer.AsMemory(0, read), cancellationToken).ConfigureAwait(false);
+                    downloaded += read;
 
-                if (totalBytes > 0)
-                {
-                    ProgressPercent = downloaded * 100.0 / totalBytes;
-                    StatusText = $"Downloading… {ProgressPercent:F0}%";
-                }
-                else
-                {
-                    StatusText = $"Downloading… {downloaded / 1024:N0} KB";
+                    if (totalBytes > 0)
+                    {
+                        ProgressPercent = downloaded * 100.0 / totalBytes;
+                        StatusText = $"Downloading… {ProgressPercent:F0}%";
+                    }
+                    else
+                    {
+                        StatusText = $"Downloading… {downloaded / 1024:N0} KB";
+                    }
                 }
             }
 
