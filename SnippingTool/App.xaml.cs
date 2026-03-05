@@ -105,7 +105,10 @@ public partial class App : Application
         services.AddTransient<SettingsWindow>();
         services.AddTransient<AboutViewModel>();
         services.AddTransient<AboutWindow>();
-        services.AddTransient<UpdateDownloadViewModel>();
+        services.AddTransient<UpdateDownloadViewModel>(sp =>
+            new UpdateDownloadViewModel(
+                sp.GetRequiredService<IProcessService>(),
+                sp.GetService<ILogger<UpdateDownloadViewModel>>()));
         services.AddTransient<Func<UpdateDownloadViewModel>>(sp => () => sp.GetRequiredService<UpdateDownloadViewModel>());
         services.AddTransient<Func<UpdateDownloadViewModel, UpdateDownloadWindow>>(_ => vm => new UpdateDownloadWindow(vm));
         services.AddTransient<IUpdateDownloadService, UpdateDownloadWindowService>();

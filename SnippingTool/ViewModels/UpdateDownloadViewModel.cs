@@ -34,11 +34,10 @@ public partial class UpdateDownloadViewModel : ObservableObject
     public event Action? RequestClose;
 
     public UpdateDownloadViewModel(
-        HttpClient http,
         IProcessService process,
         ILogger<UpdateDownloadViewModel>? logger = null)
     {
-        _http = http;
+        _http = SharedHttp;
         _process = process;
         _logger = logger;
     }
