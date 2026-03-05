@@ -90,6 +90,7 @@ public partial class App : Application
     private static void ConfigureServices(IServiceCollection services)
     {
         services.AddLogging(b => b.AddSerilog(dispose: false));
+        services.AddSingleton<IAppVersionService, AppVersionService>();
         services.AddSingleton<IUserSettingsService, UserSettingsService>();
         services.AddTransient<IScreenCaptureService, ScreenCaptureService>();
         services.AddTransient<IScreenRecordingService, ScreenRecordingService>();
@@ -98,6 +99,8 @@ public partial class App : Application
         services.AddTransient<OverlayWindow>();
         services.AddTransient<SettingsViewModel>();
         services.AddTransient<SettingsWindow>();
+        services.AddTransient<AboutViewModel>();
+        services.AddTransient<AboutWindow>();
         services.AddSingleton<IUpdateService, GitHubUpdateService>();
     }
 
@@ -160,7 +163,7 @@ public partial class App : Application
 
             if (!result.IsUpdateAvailable)
             {
-                var current = System.Reflection.Assembly.GetEntryAssembly()?.GetName().Version ?? new Version(1, 0, 0);
+                var current = _services.GetRequiredService<IAppVersionService>().Current;
                 System.Windows.MessageBox.Show(
                     $"You're already on the latest version (v{current.Major}.{current.Minor}.{current.Build}).",
                     "Check for Updates",
@@ -228,7 +231,7 @@ public partial class App : Application
             return;
         }
 
-        _aboutWindow = new AboutWindow();
+        _aboutWindow = _services.GetRequiredService<AboutWindow>();
         _aboutWindow.Closed += (_, _) => _aboutWindow = null;
         _aboutWindow.Show();
     }

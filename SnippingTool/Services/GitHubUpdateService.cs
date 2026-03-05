@@ -1,6 +1,5 @@
 using System.Net.Http;
 using System.Net.Http.Json;
-using System.Reflection;
 using System.Text.Json.Serialization;
 using Microsoft.Extensions.Logging;
 using SnippingTool.Models;
@@ -26,16 +25,18 @@ public sealed class GitHubUpdateService : IUpdateService
 
     private readonly HttpClient _http;
     private readonly ILogger<GitHubUpdateService>? _logger;
+    private readonly IAppVersionService _appVersion;
 
-    public GitHubUpdateService(ILogger<GitHubUpdateService> logger) : this(Http, logger) { }
+    public GitHubUpdateService(IAppVersionService appVersion, ILogger<GitHubUpdateService> logger) : this(Http, appVersion, logger) { }
 
-    private GitHubUpdateService(HttpClient http, ILogger<GitHubUpdateService>? logger)
+    private GitHubUpdateService(HttpClient http, IAppVersionService appVersion, ILogger<GitHubUpdateService>? logger)
     {
         _http = http;
+        _appVersion = appVersion;
         _logger = logger;
     }
 
-    public static GitHubUpdateService CreateForTesting(HttpClient http) => new(http, null);
+    public static GitHubUpdateService CreateForTesting(HttpClient http) => new(http, new AppVersionService(), null);
 
     public async Task<UpdateCheckResult> CheckForUpdatesAsync(CancellationToken cancellationToken = default)
     {
@@ -46,8 +47,7 @@ public sealed class GitHubUpdateService : IUpdateService
         if (response.StatusCode == System.Net.HttpStatusCode.NotFound)
         {
             _logger?.LogInformation("No releases found on GitHub (404) — assuming up to date");
-            var current = Assembly.GetEntryAssembly()?.GetName().Version ?? new Version(0, 0, 0);
-            return new UpdateCheckResult(false, current, string.Empty);
+            return new UpdateCheckResult(false, _appVersion.Current, string.Empty);
         }
 
         response.EnsureSuccessStatusCode();
@@ -56,7 +56,7 @@ public sealed class GitHubUpdateService : IUpdateService
             ?? throw new InvalidOperationException("Empty response from GitHub API.");
 
         var latestVersion = ParseVersion(release.TagName);
-        var currentVersion = Assembly.GetEntryAssembly()?.GetName().Version ?? new Version(0, 0, 0);
+        var currentVersion = _appVersion.Current;
 
         _logger?.LogDebug("Current version: {Current}, latest: {Latest}", currentVersion, latestVersion);
 

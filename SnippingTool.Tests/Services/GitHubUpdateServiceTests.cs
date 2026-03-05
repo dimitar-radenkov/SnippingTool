@@ -1,6 +1,5 @@
 using System.Net;
 using System.Net.Http;
-using System.Reflection;
 using SnippingTool.Services;
 using Xunit;
 
@@ -22,7 +21,8 @@ public sealed class GitHubUpdateServiceTests
     [Fact]
     public async Task CurrentIsLatest_ReturnsNoUpdate()
     {
-        var current = Assembly.GetAssembly(typeof(GitHubUpdateService))?.GetName().Version ?? new Version(1, 0, 0);
+        var appVersion = new AppVersionService();
+        var current = appVersion.Current;
         var json = $$"""
             {
               "tag_name": "v{{current.Major}}.{{current.Minor}}.{{current.Build}}",
@@ -149,7 +149,9 @@ public sealed class GitHubUpdateServiceTests
     {
         // Requires network access and the public repo to exist.
         // Will return 404 (no releases) or a real release — either is valid.
-        var service = new GitHubUpdateService(Microsoft.Extensions.Logging.Abstractions.NullLogger<GitHubUpdateService>.Instance);
+        var service = new GitHubUpdateService(
+            new AppVersionService(),
+            Microsoft.Extensions.Logging.Abstractions.NullLogger<GitHubUpdateService>.Instance);
 
         var result = await service.CheckForUpdatesAsync();
 
