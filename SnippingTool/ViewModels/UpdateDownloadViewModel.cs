@@ -10,7 +10,7 @@ namespace SnippingTool.ViewModels;
 
 public partial class UpdateDownloadViewModel : ObservableObject
 {
-    private static readonly HttpClient SharedHttp = new()
+    internal static readonly HttpClient SharedHttp = new()
     {
         DefaultRequestHeaders = { { "User-Agent", "SnippingTool" } },
     };
