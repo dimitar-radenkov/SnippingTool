@@ -3,7 +3,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media.Imaging;
-using KeyEventArgs  = System.Windows.Input.KeyEventArgs;
+using KeyEventArgs = System.Windows.Input.KeyEventArgs;
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;
 
 namespace SnippingTool;
@@ -11,15 +11,15 @@ namespace SnippingTool;
 public partial class PinnedScreenshotWindow : Window
 {
     // ── WM_NCHITTEST constants ─────────────────────────────────────────────
-    private const int WmNchittest    = 0x0084;
-    private const int HtLeft        = 10;
-    private const int HtRight       = 11;
+    private const int WmNchittest = 0x0084;
+    private const int HtLeft = 10;
+    private const int HtRight = 11;
     // HtTop (12) intentionally skipped: the drag strip covers the top edge,
     // so top-edge resize is replaced by DragMove() on the strip.
-    private const int HtTopLeft     = 13;
-    private const int HtTopRight    = 14;
-    private const int HtBottom      = 15;
-    private const int HtBottomLeft  = 16;
+    private const int HtTopLeft = 13;
+    private const int HtTopRight = 14;
+    private const int HtBottom = 15;
+    private const int HtBottomLeft = 16;
     private const int HtBottomRight = 17;
 
     /// <summary>Width in physical pixels of each resize hit zone.</summary>
@@ -33,17 +33,17 @@ public partial class PinnedScreenshotWindow : Window
         ScreenshotImage.Source = bitmap;
 
         // Size window to the bitmap's pixel dimensions, capped at 80 % of screen.
-        double maxW = SystemParameters.PrimaryScreenWidth  * 0.8;
-        double maxH = SystemParameters.PrimaryScreenHeight * 0.8;
-        double scale = Math.Min(1.0, Math.Min(maxW / bitmap.PixelWidth,
+        var maxW = SystemParameters.PrimaryScreenWidth * 0.8;
+        var maxH = SystemParameters.PrimaryScreenHeight * 0.8;
+        var scale = Math.Min(1.0, Math.Min(maxW / bitmap.PixelWidth,
                                               maxH / bitmap.PixelHeight));
 
-        Width  = bitmap.PixelWidth  * scale + 2;   // +2 for 1 px border each side
+        Width = bitmap.PixelWidth * scale + 2;   // +2 for 1 px border each side
         Height = bitmap.PixelHeight * scale + 8 + 2; // +8 drag strip, +2 border
 
         // Centre on the primary screen.
-        Left = (SystemParameters.PrimaryScreenWidth  - Width)  / 2;
-        Top  = (SystemParameters.PrimaryScreenHeight - Height) / 2;
+        Left = (SystemParameters.PrimaryScreenWidth - Width) / 2;
+        Top = (SystemParameters.PrimaryScreenHeight - Height) / 2;
     }
 
     // ── Win32 resize hit-testing ──────────────────────────────────────────
@@ -65,7 +65,9 @@ public partial class PinnedScreenshotWindow : Window
                            ref bool handled)
     {
         if (msg != WmNchittest)
+        {
             return IntPtr.Zero;
+        }
 
         // lParam contains cursor screen coordinates packed as signed 16-bit ints.
         int screenX = (short)(lParam.ToInt64() & 0xFFFF);
@@ -73,26 +75,59 @@ public partial class PinnedScreenshotWindow : Window
 
         // Use Win32 GetWindowRect for physical-pixel accuracy (DPI-safe).
         GetWindowRect(hwnd, out RECT rc);
-        int w    = rc.Right  - rc.Left;
-        int h    = rc.Bottom - rc.Top;
-        int relX = screenX   - rc.Left;
-        int relY = screenY   - rc.Top;
+        var w = rc.Right - rc.Left;
+        var h = rc.Bottom - rc.Top;
+        var relX = screenX - rc.Left;
+        var relY = screenY - rc.Top;
 
-        bool onLeft   = relX < HitZone;
-        bool onRight  = relX >= w - HitZone;
-        bool onTop    = relY < HitZone;
-        bool onBottom = relY >= h - HitZone;
+        var onLeft = relX < HitZone;
+        var onRight = relX >= w - HitZone;
+        var onTop = relY < HitZone;
+        var onBottom = relY >= h - HitZone;
 
         // Evaluate corners first (highest priority).
-        if (onTop    && onLeft)  { handled = true; return new IntPtr(HtTopLeft);     }
-        if (onTop    && onRight) { handled = true; return new IntPtr(HtTopRight);    }
-        if (onBottom && onLeft)  { handled = true; return new IntPtr(HtBottomLeft);  }
-        if (onBottom && onRight) { handled = true; return new IntPtr(HtBottomRight); }
+        if (onTop && onLeft)
+        {
+            handled = true;
+            return new IntPtr(HtTopLeft);
+        }
+
+        if (onTop && onRight)
+        {
+            handled = true;
+            return new IntPtr(HtTopRight);
+        }
+
+        if (onBottom && onLeft)
+        {
+            handled = true;
+            return new IntPtr(HtBottomLeft);
+        }
+
+        if (onBottom && onRight)
+        {
+            handled = true;
+            return new IntPtr(HtBottomRight);
+        }
 
         // Then individual edges.
-        if (onLeft)   { handled = true; return new IntPtr(HtLeft);   }
-        if (onRight)  { handled = true; return new IntPtr(HtRight);  }
-        if (onBottom) { handled = true; return new IntPtr(HtBottom); }
+        if (onLeft)
+        {
+            handled = true;
+            return new IntPtr(HtLeft);
+        }
+
+        if (onRight)
+        {
+            handled = true;
+            return new IntPtr(HtRight);
+        }
+
+        if (onBottom)
+        {
+            handled = true;
+            return new IntPtr(HtBottom);
+        }
 
         // Top edge is NOT returned as HtTop — the drag strip covers that area and
         // MouseLeftButtonDown on the client area handles DragMove() instead.
@@ -106,7 +141,9 @@ public partial class PinnedScreenshotWindow : Window
     {
         // Let the close button handle its own click; drag everything else.
         if (e.OriginalSource is not System.Windows.Controls.Button)
+        {
             DragMove();
+        }
     }
 
     // ── Keyboard ─────────────────────────────────────────────────────────
@@ -114,7 +151,9 @@ public partial class PinnedScreenshotWindow : Window
     private void Window_KeyDown(object sender, KeyEventArgs e)
     {
         if (e.Key == Key.Escape)
+        {
             Close();
+        }
     }
 
     // ── Close button visibility on hover ─────────────────────────────────

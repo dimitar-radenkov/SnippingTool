@@ -67,9 +67,9 @@ public partial class OverlayWindow : Window
                 .OfType<TextBlock>()
                 .Count(tb => tb.Tag is "number"));
         };
-        _vm.CopyRequested  += DoCopy;
+        _vm.CopyRequested += DoCopy;
         _vm.CloseRequested += Close;
-        _vm.PinRequested   += DoPin;
+        _vm.PinRequested += DoPin;
 
         Root.MouseLeftButtonDown += Root_MouseDown;
         Root.MouseMove += Root_MouseMove;
