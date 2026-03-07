@@ -2,7 +2,6 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
-using System.Windows.Media.Effects;
 using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using Microsoft.Extensions.Logging;
@@ -18,6 +17,8 @@ namespace SnippingTool.Services;
 
 internal sealed class AnnotationCanvasRenderer
 {
+    private const int PixelateBlockSize = 10;
+
     private readonly Canvas _canvas;
     private readonly AnnotationViewModel _vm;
     private readonly Action<UIElement> _onAdd;
@@ -214,14 +215,22 @@ internal sealed class AnnotationCanvasRenderer
 
         var cropped = new CroppedBitmap(_backgroundCapture, new Int32Rect(pixelX, pixelY, pixelW, pixelH));
         cropped.Freeze();
+
+        // Pixelate by scaling down to block resolution and back up with nearest-neighbour
+        var smallW = Math.Max(1, pixelW / PixelateBlockSize);
+        var smallH = Math.Max(1, pixelH / PixelateBlockSize);
+        var scaledDown = new TransformedBitmap(cropped,
+            new ScaleTransform((double)smallW / pixelW, (double)smallH / pixelH));
+        scaledDown.Freeze();
+
         var img = new System.Windows.Controls.Image
         {
             Width = @params.Width,
             Height = @params.Height,
-            Source = cropped,
+            Source = scaledDown,
             Stretch = Stretch.Fill,
-            Effect = new BlurEffect { Radius = 12, KernelType = KernelType.Gaussian, RenderingBias = RenderingBias.Quality }
         };
+        RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.NearestNeighbor);
         Canvas.SetLeft(img, @params.Left);
         Canvas.SetTop(img, @params.Top);
         Add(img);
