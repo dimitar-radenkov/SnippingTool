@@ -11,7 +11,7 @@ public sealed class SharpAviVideoWriter : IVideoWriter
     public SharpAviVideoWriter(int width, int height, int fps, string outputPath, int jpegQuality)
     {
         _writer = new AviWriter(outputPath) { FramesPerSecond = fps, EmitIndex1 = true };
-        var encoder = new MotionJpegVideoEncoderWpf(width, height, jpegQuality);
+        var encoder = new MJpegWpfVideoEncoder(width, height, jpegQuality);
         _stream = _writer.AddEncodingVideoStream(encoder, ownsEncoder: true, width, height);
     }
 
