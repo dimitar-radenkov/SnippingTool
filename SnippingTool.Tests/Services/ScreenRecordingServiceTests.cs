@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Logging.Abstractions;
+using Moq;
 using SnippingTool.Services;
 using Xunit;
 
@@ -7,7 +8,9 @@ namespace SnippingTool.Tests.Services;
 public sealed class ScreenRecordingServiceTests
 {
     private static ScreenRecordingService CreateSut() =>
-        new(NullLogger<ScreenRecordingService>.Instance, new FakeUserSettingsService());
+        new(NullLogger<ScreenRecordingService>.Instance,
+            new FakeUserSettingsService(),
+            new Mock<IVideoWriterFactory>().Object);
 
     [Fact]
     public void IsRecording_IsFalse_BeforeStart()
