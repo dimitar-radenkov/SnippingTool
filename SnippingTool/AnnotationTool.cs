@@ -1,3 +1,3 @@
 namespace SnippingTool;
 
-public enum AnnotationTool { Arrow, Rectangle, Text, Highlight, Pen, Line, Circle, Number }
+public enum AnnotationTool { Arrow, Rectangle, Text, Highlight, Pen, Line, Circle, Number, Blur }

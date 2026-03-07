@@ -2,6 +2,7 @@ using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
+using System.Windows.Media.Imaging;
 using System.Windows.Shapes;
 using Microsoft.Extensions.Logging;
 using SnippingTool.Models;
@@ -16,6 +17,8 @@ namespace SnippingTool.Services;
 
 internal sealed class AnnotationCanvasRenderer
 {
+    private const int PixelateBlockSize = 10;
+
     private readonly Canvas _canvas;
     private readonly AnnotationViewModel _vm;
     private readonly Action<UIElement> _onAdd;
@@ -27,6 +30,18 @@ internal sealed class AnnotationCanvasRenderer
     private System.Windows.Shapes.Rectangle? _currentRect;
     private Ellipse? _currentEllipse;
     private Polyline? _currentPen;
+    private System.Windows.Shapes.Rectangle? _blurDraft;
+
+    private BitmapSource? _backgroundCapture;
+    private double _dpiX = 1.0;
+    private double _dpiY = 1.0;
+
+    public void SetBackground(BitmapSource background, double dpiX, double dpiY)
+    {
+        _backgroundCapture = background;
+        _dpiX = dpiX;
+        _dpiY = dpiY;
+    }
 
     public AnnotationCanvasRenderer(
         Canvas canvas,
@@ -84,6 +99,18 @@ internal sealed class AnnotationCanvasRenderer
                 Canvas.SetTop(_currentEllipse, p.Y);
                 Add(_currentEllipse);
                 break;
+            case AnnotationTool.Blur:
+                _blurDraft = new System.Windows.Shapes.Rectangle
+                {
+                    Fill = new SolidColorBrush(Color.FromArgb(80, 120, 120, 120)),
+                    Stroke = Brushes.White,
+                    StrokeDashArray = new DoubleCollection { 4, 2 },
+                    StrokeThickness = 1
+                };
+                Canvas.SetLeft(_blurDraft, p.X);
+                Canvas.SetTop(_blurDraft, p.Y);
+                Add(_blurDraft);
+                break;
         }
     }
 
@@ -126,19 +153,87 @@ internal sealed class AnnotationCanvasRenderer
             case PenShapeParameters when _currentPen != null:
                 _currentPen.Points.Add(p);
                 break;
+            case BlurShapeParameters blur when _blurDraft != null:
+                Canvas.SetLeft(_blurDraft, blur.Left);
+                Canvas.SetTop(_blurDraft, blur.Top);
+                _blurDraft.Width = blur.Width;
+                _blurDraft.Height = blur.Height;
+                break;
         }
     }
 
     public void CommitShape(Point p)
     {
         _logger.LogDebug("Shape committed: {Tool}", _vm.SelectedTool);
-        UpdateShape(p);
+
+        if (_vm.SelectedTool == AnnotationTool.Blur)
+        {
+            CommitBlur();
+        }
+        else
+        {
+            UpdateShape(p);
+        }
+
         _arrowShaft = null;
         _arrowHead = null;
         _currentLine = null;
         _currentRect = null;
         _currentEllipse = null;
         _currentPen = null;
+        _blurDraft = null;
+    }
+
+    private void CommitBlur()
+    {
+        var @params = _vm.TryGetShapeParameters() as BlurShapeParameters;
+        if (_blurDraft != null)
+        {
+            _canvas.Children.Remove(_blurDraft);
+        }
+
+        if (@params == null || _backgroundCapture == null)
+        {
+            return;
+        }
+
+        var pixelX = (int)(@params.Left * _dpiX);
+        var pixelY = (int)(@params.Top * _dpiY);
+        var pixelW = Math.Max(1, (int)(@params.Width * _dpiX));
+        var pixelH = Math.Max(1, (int)(@params.Height * _dpiY));
+
+        // Clamp to bitmap bounds
+        pixelX = Math.Max(0, Math.Min(pixelX, _backgroundCapture.PixelWidth - 1));
+        pixelY = Math.Max(0, Math.Min(pixelY, _backgroundCapture.PixelHeight - 1));
+        pixelW = Math.Min(pixelW, _backgroundCapture.PixelWidth - pixelX);
+        pixelH = Math.Min(pixelH, _backgroundCapture.PixelHeight - pixelY);
+
+        if (pixelW <= 0 || pixelH <= 0)
+        {
+            return;
+        }
+
+        var cropped = new CroppedBitmap(_backgroundCapture, new Int32Rect(pixelX, pixelY, pixelW, pixelH));
+        cropped.Freeze();
+
+        // Pixelate by scaling down to block resolution and back up with nearest-neighbour
+        var smallW = Math.Max(1, pixelW / PixelateBlockSize);
+        var smallH = Math.Max(1, pixelH / PixelateBlockSize);
+        var scaledDown = new TransformedBitmap(cropped,
+            new ScaleTransform((double)smallW / pixelW, (double)smallH / pixelH));
+        scaledDown.Freeze();
+
+        var img = new System.Windows.Controls.Image
+        {
+            Width = @params.Width,
+            Height = @params.Height,
+            Source = scaledDown,
+            Stretch = Stretch.Fill,
+        };
+        RenderOptions.SetBitmapScalingMode(img, BitmapScalingMode.NearestNeighbor);
+        Canvas.SetLeft(img, @params.Left);
+        Canvas.SetTop(img, @params.Top);
+        Add(img);
     }
 
     public void PlaceNumberLabel(Point p)

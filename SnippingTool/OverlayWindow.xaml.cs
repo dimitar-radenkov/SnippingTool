@@ -179,6 +179,18 @@ public partial class OverlayWindow : Window
         Cursor = Cursors.Arrow;
         SizeLabelBorder.Visibility = Visibility.Collapsed;
         DimFull.Visibility = Visibility.Collapsed;
+
+        // Capture clean background pixels for the pixelate tool
+        var screenX = (int)((Left + sel.X) * _vm.DpiX);
+        var screenY = (int)((Top + sel.Y) * _vm.DpiY);
+        var screenW = Math.Max(1, (int)(sel.Width * _vm.DpiX));
+        var screenH = Math.Max(1, (int)(sel.Height * _vm.DpiY));
+        Visibility = Visibility.Hidden;
+        System.Threading.Thread.Sleep(60);
+        var backgroundCapture = _screenCapture.Capture(screenX, screenY, screenW, screenH);
+        Visibility = Visibility.Visible;
+        _renderer.SetBackground(backgroundCapture, _vm.DpiX, _vm.DpiY);
+
         LayoutDimStrips(sel);
 
         AnnotationCanvas.Width = sel.Width;

@@ -156,6 +156,8 @@ public partial class AnnotationViewModel : ObservableObject
                 Color: color,
                 Thickness: thick),
 
+            AnnotationTool.Blur => BuildBlurParams(DragStart, DragCurrent),
+
             _ => null
         };
     }
@@ -170,6 +172,12 @@ public partial class AnnotationViewModel : ObservableObject
     {
         var (left, top, width, height) = _geometry.CalculateEllipse(start, end);
         return new EllipseShapeParameters(left, top, width, height, color, thick);
+    }
+
+    private BlurShapeParameters BuildBlurParams(Point start, Point end)
+    {
+        var (left, top, width, height) = _geometry.CalculateRect(start, end);
+        return new BlurShapeParameters(left, top, width, height);
     }
 
     private readonly List<List<object>> _undoStack = [];

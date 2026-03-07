@@ -166,6 +166,12 @@
           <TextBlock Text="①" FontSize="15"/>
         </RadioButton>
 
+        <RadioButton Style="{StaticResource ToolBtn}"
+                     GroupName="AnnotTool"
+                     Tag="Blur" Click="Tool_Click" ToolTip="Blur / Pixelate">
+          <TextBlock Text="▒" FontSize="16"/>
+        </RadioButton>
+
         <!-- Divider -->
         <Rectangle Height="1" Fill="#D0D0D0" Margin="4,5"/>
 

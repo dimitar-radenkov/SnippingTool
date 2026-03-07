@@ -39,3 +39,9 @@ public sealed record PenShapeParameters(
     Point StartPoint,
     Color Color,
     double Thickness) : ShapeParameters;
+
+public sealed record BlurShapeParameters(
+    double Left,
+    double Top,
+    double Width,
+    double Height) : ShapeParameters;
