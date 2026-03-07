@@ -26,7 +26,6 @@ public partial class OverlayWindow : Window
     private AnnotationCanvasRenderer _renderer = null!;
     private RecordingBorderWindow? _recordingBorder;
     private RecordingHudWindow? _recordingHud;
-    private BitmapSource? _backgroundCapture;
 
     public OverlayWindow(
         OverlayViewModel vm,
@@ -188,9 +187,9 @@ public partial class OverlayWindow : Window
         var screenH = Math.Max(1, (int)(sel.Height * _vm.DpiY));
         Visibility = Visibility.Hidden;
         System.Threading.Thread.Sleep(60);
-        _backgroundCapture = _screenCapture.Capture(screenX, screenY, screenW, screenH);
+        var backgroundCapture = _screenCapture.Capture(screenX, screenY, screenW, screenH);
         Visibility = Visibility.Visible;
-        _renderer.SetBackground(_backgroundCapture, _vm.DpiX, _vm.DpiY);
+        _renderer.SetBackground(backgroundCapture, _vm.DpiX, _vm.DpiY);
 
         LayoutDimStrips(sel);
 
