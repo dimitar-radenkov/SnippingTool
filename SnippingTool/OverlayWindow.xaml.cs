@@ -26,6 +26,7 @@ public partial class OverlayWindow : Window
     private AnnotationCanvasRenderer _renderer = null!;
     private RecordingBorderWindow? _recordingBorder;
     private RecordingHudWindow? _recordingHud;
+    private BitmapSource? _backgroundCapture;
 
     public OverlayWindow(
         OverlayViewModel vm,
@@ -179,6 +180,18 @@ public partial class OverlayWindow : Window
         Cursor = Cursors.Arrow;
         SizeLabelBorder.Visibility = Visibility.Collapsed;
         DimFull.Visibility = Visibility.Collapsed;
+
+        // Capture clean background pixels for the blur/pixelate tool
+        var screenX = (int)((Left + sel.X) * _vm.DpiX);
+        var screenY = (int)((Top + sel.Y) * _vm.DpiY);
+        var screenW = Math.Max(1, (int)(sel.Width * _vm.DpiX));
+        var screenH = Math.Max(1, (int)(sel.Height * _vm.DpiY));
+        Visibility = Visibility.Hidden;
+        System.Threading.Thread.Sleep(60);
+        _backgroundCapture = _screenCapture.Capture(screenX, screenY, screenW, screenH);
+        Visibility = Visibility.Visible;
+        _renderer.SetBackground(_backgroundCapture, _vm.DpiX, _vm.DpiY);
+
         LayoutDimStrips(sel);
 
         AnnotationCanvas.Width = sel.Width;
