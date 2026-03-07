@@ -180,7 +180,7 @@ public partial class OverlayWindow : Window
         SizeLabelBorder.Visibility = Visibility.Collapsed;
         DimFull.Visibility = Visibility.Collapsed;
 
-        // Capture clean background pixels for the blur/pixelate tool
+        // Capture clean background pixels for the pixelate tool
         var screenX = (int)((Left + sel.X) * _vm.DpiX);
         var screenY = (int)((Top + sel.Y) * _vm.DpiY);
         var screenW = Math.Max(1, (int)(sel.Width * _vm.DpiX));
