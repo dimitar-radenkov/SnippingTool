@@ -131,18 +131,23 @@ public sealed class OverlayViewModelTests
     }
 
     [Fact]
-    public void CopyTextCommand_FiresCopyTextRequested()
+    public void CopyTextCommand_TogglesIsTextLassoActive()
     {
         // Arrange
         var vm = Vm();
-        var fired = false;
-        vm.CopyTextRequested += () => fired = true;
+        Assert.False(vm.IsTextLassoActive);
 
-        // Act
+        // Act — toggle on
         vm.CopyTextCommand.Execute(null);
 
         // Assert
-        Assert.True(fired);
+        Assert.True(vm.IsTextLassoActive);
+
+        // Act — toggle off
+        vm.CopyTextCommand.Execute(null);
+
+        // Assert
+        Assert.False(vm.IsTextLassoActive);
     }
 
     [Fact]
