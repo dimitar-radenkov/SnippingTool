@@ -102,3 +102,9 @@ To bump the version:
 - **Hardcodet.Wpf.TaskbarNotification** — system tray icon
 - **Nerdbank.GitVersioning** — automatic semantic versioning from git history
 - **xUnit** — unit tests
+
+## Support
+
+If you find this tool useful, consider buying me a beer 🍺
+
+[![PayPal](https://img.shields.io/badge/PayPal-donate-blue?logo=paypal)](https://paypal.me/DimitarRadenkov)
