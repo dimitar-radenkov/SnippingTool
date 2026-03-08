@@ -17,7 +17,7 @@ namespace SnippingTool.Services;
 
 internal sealed class AnnotationCanvasRenderer
 {
-    private const int PixelateBlockSize = 10;
+    private const int BlurRadius = 15;
 
     private readonly Canvas _canvas;
     private readonly AnnotationViewModel _vm;
@@ -216,38 +216,13 @@ internal sealed class AnnotationCanvasRenderer
         var cropped = new CroppedBitmap(_backgroundCapture, new Int32Rect(pixelX, pixelY, pixelW, pixelH));
         cropped.Freeze();
 
-        // Pixelate: render cropped region into a small bitmap, then scale back up — both steps use NearestNeighbor
-        var smallW = Math.Max(1, pixelW / PixelateBlockSize);
-        var smallH = Math.Max(1, pixelH / PixelateBlockSize);
-
-        // Scale down to block resolution
-        var downscaled = new RenderTargetBitmap(smallW, smallH, 96, 96, PixelFormats.Pbgra32);
-        var downVisual = new DrawingVisual();
-        using (var dc = downVisual.RenderOpen())
-        {
-            dc.DrawImage(cropped, new Rect(0, 0, smallW, smallH));
-        }
-        RenderOptions.SetBitmapScalingMode(downVisual, BitmapScalingMode.NearestNeighbor);
-        downscaled.Render(downVisual);
-        downscaled.Freeze();
-
-        // Scale back up to original size
-        var upscaled = new RenderTargetBitmap(pixelW, pixelH, 96, 96, PixelFormats.Pbgra32);
-        var upVisual = new DrawingVisual();
-        using (var dc = upVisual.RenderOpen())
-        {
-            dc.DrawImage(downscaled, new Rect(0, 0, pixelW, pixelH));
-        }
-        RenderOptions.SetBitmapScalingMode(upVisual, BitmapScalingMode.NearestNeighbor);
-        upscaled.Render(upVisual);
-        upscaled.Freeze();
-
         var img = new System.Windows.Controls.Image
         {
             Width = @params.Width,
             Height = @params.Height,
-            Source = upscaled,
+            Source = cropped,
             Stretch = Stretch.Fill,
+            Effect = new System.Windows.Media.Effects.BlurEffect { Radius = BlurRadius },
         };
         Canvas.SetLeft(img, @params.Left);
         Canvas.SetTop(img, @params.Top);
