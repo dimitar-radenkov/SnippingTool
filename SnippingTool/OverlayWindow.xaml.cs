@@ -208,8 +208,8 @@ public partial class OverlayWindow : Window
         TransitionToAnnotating();
     }
 
-    private const int LoupeSize   = 120;
-    private const int LoupeZoom   = 4;
+    private const int LoupeSize = 120;
+    private const int LoupeZoom = 4;
     private const int LoupeOffset = 20;
 
     private void UpdateLoupe(Point cursor)
@@ -219,15 +219,15 @@ public partial class OverlayWindow : Window
             return;
         }
 
-        int srcSize = LoupeSize / LoupeZoom;
-        int px = (int)(cursor.X * _vm.DpiX) - srcSize / 2;
-        int py = (int)(cursor.Y * _vm.DpiY) - srcSize / 2;
-        int snapW = _screenSnapshot.PixelWidth;
-        int snapH = _screenSnapshot.PixelHeight;
+        var srcSize = LoupeSize / LoupeZoom;
+        var px = (int)(cursor.X * _vm.DpiX) - srcSize / 2;
+        var py = (int)(cursor.Y * _vm.DpiY) - srcSize / 2;
+        var snapW = _screenSnapshot.PixelWidth;
+        var snapH = _screenSnapshot.PixelHeight;
         px = Math.Clamp(px, 0, Math.Max(0, snapW - srcSize));
         py = Math.Clamp(py, 0, Math.Max(0, snapH - srcSize));
-        int actualW = Math.Min(srcSize, snapW - px);
-        int actualH = Math.Min(srcSize, snapH - py);
+        var actualW = Math.Min(srcSize, snapW - px);
+        var actualH = Math.Min(srcSize, snapH - py);
 
         if (actualW <= 0 || actualH <= 0)
         {
@@ -238,10 +238,16 @@ public partial class OverlayWindow : Window
         LoupeImage.Source = new CroppedBitmap(_screenSnapshot, new Int32Rect(px, py, actualW, actualH));
         LoupeBorder.Visibility = Visibility.Visible;
 
-        double lx = cursor.X + LoupeOffset;
-        double ly = cursor.Y + LoupeOffset;
-        if (lx + LoupeSize > Width)  { lx = cursor.X - LoupeSize - LoupeOffset; }
-        if (ly + LoupeSize > Height) { ly = cursor.Y - LoupeSize - LoupeOffset; }
+        var lx = cursor.X + LoupeOffset;
+        var ly = cursor.Y + LoupeOffset;
+        if (lx + LoupeSize > Width)
+        {
+            lx = cursor.X - LoupeSize - LoupeOffset;
+        }
+        if (ly + LoupeSize > Height)
+        {
+            ly = cursor.Y - LoupeSize - LoupeOffset;
+        }
 
         Canvas.SetLeft(LoupeBorder, lx);
         Canvas.SetTop(LoupeBorder, ly);
