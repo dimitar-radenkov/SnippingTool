@@ -1,8 +1,10 @@
 # SnippingTool
 
 [![CI](https://github.com/dimitar-radenkov/SnippingTool/actions/workflows/ci.yml/badge.svg)](https://github.com/dimitar-radenkov/SnippingTool/actions/workflows/ci.yml)
+[![Downloads](https://img.shields.io/github/downloads/dimitar-radenkov/SnippingTool/total?label=downloads&color=blue)](https://github.com/dimitar-radenkov/SnippingTool/releases)
+[![Latest release](https://img.shields.io/github/v/release/dimitar-radenkov/SnippingTool)](https://github.com/dimitar-radenkov/SnippingTool/releases/latest)
 
-A lightweight Windows screen-capture and annotation tool built with WPF on .NET 10.
+The open-source Windows snipping tool with OCR, screen recording, and annotation — no subscription, no telemetry.
 
 ## Features
 
