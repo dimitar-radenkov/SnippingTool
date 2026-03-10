@@ -77,6 +77,9 @@
   <!-- Root canvas — near-transparent so WPF hit-tests it (fully transparent = no hit-test) -->
   <Canvas x:Name="Root" Background="#01000000">
 
+    <!-- Frozen screen snapshot — painted first so the live desktop is never visible -->
+    <Image x:Name="ScreenSnapshot" Stretch="Fill"/>
+
     <!-- ── Phase 1: single full-screen dim ── -->
     <Rectangle x:Name="DimFull" Fill="#80000000"/>
 
