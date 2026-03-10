@@ -112,6 +112,8 @@ public partial class OverlayWindow : Window
 
         DimFull.Width = Width;
         DimFull.Height = Height;
+        ScreenSnapshot.Width = Width;
+        ScreenSnapshot.Height = Height;
 
         var src = PresentationSource.FromVisual(this);
         if (src?.CompositionTarget != null)
@@ -125,6 +127,7 @@ public partial class OverlayWindow : Window
         _screenSnapshot = _screenCapture.Capture(
             (int)(Left * _vm.DpiX), (int)(Top * _vm.DpiY),
             (int)(Width * _vm.DpiX), (int)(Height * _vm.DpiY));
+        ScreenSnapshot.Source = _screenSnapshot;
         Visibility = Visibility.Visible;
     }
 
