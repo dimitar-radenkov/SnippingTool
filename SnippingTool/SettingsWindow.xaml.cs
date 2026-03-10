@@ -72,7 +72,11 @@ public partial class SettingsWindow : Window
             return;
         }
 
-        if (key is Key.Enter or Key.Tab)
+        if (key is Key.Enter or Key.Tab
+                or Key.LeftShift or Key.RightShift
+                or Key.LeftCtrl or Key.RightCtrl
+                or Key.LeftAlt or Key.RightAlt
+                or Key.LWin or Key.RWin)
         {
             return;
         }
