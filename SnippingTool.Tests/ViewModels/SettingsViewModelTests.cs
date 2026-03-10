@@ -126,6 +126,56 @@ public sealed class SettingsViewModelTests
         Assert.Equal(2, RecordingFormatValues.All.Length);
     }
 
+    [Fact]
+    public void UserSettings_Default_RegionCaptureHotkey_IsPrintScreen()
+    {
+        // Arrange
+        var settings = new UserSettings();
+
+        // Assert
+        Assert.Equal(0x2Cu, settings.RegionCaptureHotkey);
+    }
+
+    [Fact]
+    public void LoadsFromSettings_RegionCaptureHotkey()
+    {
+        // Arrange
+        var vm = CreateVm(new UserSettings { RegionCaptureHotkey = 0x41 }); // 'A'
+
+        // Assert
+        Assert.Equal(0x41u, vm.RegionCaptureHotkey);
+    }
+
+    [Fact]
+    public void Save_PersistsRegionCaptureHotkey()
+    {
+        // Arrange
+        var fake = new ConfigurableFakeSettingsService(new UserSettings());
+        var vm = new SettingsViewModel(fake);
+        vm.RegionCaptureHotkey = 0x42u; // 'B'
+
+        // Act
+        vm.SaveCommand.Execute(null);
+
+        // Assert
+        Assert.Equal(0x42u, fake.Saved?.RegionCaptureHotkey);
+    }
+
+    [Fact]
+    public void RegionCaptureHotkey_PropertyChanged_Fired()
+    {
+        // Arrange
+        var vm = CreateVm();
+        var raised = new List<string?>();
+        vm.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
+
+        // Act
+        vm.RegionCaptureHotkey = 0x43u; // 'C'
+
+        // Assert
+        Assert.Contains(nameof(vm.RegionCaptureHotkey), raised);
+    }
+
     private sealed class ConfigurableFakeSettingsService(UserSettings settings) : IUserSettingsService
     {
         public UserSettings Current { get; } = settings;
