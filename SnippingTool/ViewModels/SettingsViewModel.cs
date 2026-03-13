@@ -134,6 +134,8 @@ public partial class SettingsViewModel : ObservableObject
             AutoSaveScreenshots = AutoSaveScreenshots,
             RecordingOutputPath = RecordingOutputPath,
             RecordingFormat = RecordingFormat,
+            RecordingFps = _settingsService.Current.RecordingFps,
+            RecordingJpegQuality = _settingsService.Current.RecordingJpegQuality,
             HudCloseDelaySeconds = HudCloseDelaySeconds,
             CaptureDelaySeconds = CaptureDelaySeconds,
             HudGapPixels = _settingsService.Current.HudGapPixels,

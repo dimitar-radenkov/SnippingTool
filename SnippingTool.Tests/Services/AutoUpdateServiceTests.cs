@@ -95,8 +95,9 @@ public sealed class AutoUpdateServiceTests
         await Task.Delay(50);
         await sut.StopAsync(CancellationToken.None);
 
-        settingsMock.Verify(s => s.Save(It.IsAny<UserSettings>()), Times.AtLeastOnce);
-        Assert.NotNull(settingsMock.Object.Current.LastAutoUpdateCheckUtc);
+        settingsMock.Verify(
+            s => s.Save(It.Is<UserSettings>(u => u.LastAutoUpdateCheckUtc != null)),
+            Times.AtLeastOnce);
     }
 
     [Fact]

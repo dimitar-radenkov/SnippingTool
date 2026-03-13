@@ -99,10 +99,7 @@ public partial class App : Application
         TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
 
         _trayIcon = (TaskbarIcon)FindResource(TrayIconResourceKey);
-        if (_trayIcon is not null)
-        {
-            _trayIcon.TrayBalloonTipClicked += OnUpdateBalloonClicked;
-        }
+        _trayIcon.TrayBalloonTipClicked += OnUpdateBalloonClicked;
 
         RegisterGlobalHotkey();
         _logger.LogInformation("Global hotkey (Print Screen) registered");
