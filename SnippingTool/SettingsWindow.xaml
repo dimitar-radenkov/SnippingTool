@@ -219,6 +219,25 @@
                 </StackPanel>
             </Border>
 
+            <!-- Updates section -->
+            <TextBlock Text="Updates" Style="{StaticResource SectionHeader}" Margin="0,14,0,6"/>
+            <Border Background="#F8F8F8" BorderBrush="#E0E0E0" BorderThickness="1"
+                    CornerRadius="4" Padding="12,10" Margin="0,0,0,14">
+                <StackPanel>
+                    <StackPanel Orientation="Horizontal">
+                        <TextBlock Text="Auto-check interval" Style="{StaticResource RowLabel}"/>
+                        <ComboBox x:Name="UpdateIntervalComboBox" Width="170"
+                                  SelectedValue="{Binding AutoUpdateCheckInterval}"
+                                  SelectedValuePath="Tag">
+                            <ComboBoxItem Content="Never" Tag="{x:Static models:UpdateCheckInterval.Never}"/>
+                            <ComboBoxItem Content="Every day" Tag="{x:Static models:UpdateCheckInterval.EveryDay}"/>
+                            <ComboBoxItem Content="Every 2 days" Tag="{x:Static models:UpdateCheckInterval.EveryTwoDays}"/>
+                            <ComboBoxItem Content="Every 3 days" Tag="{x:Static models:UpdateCheckInterval.EveryThreeDays}"/>
+                        </ComboBox>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
+
             </StackPanel>
         </ScrollViewer>
 

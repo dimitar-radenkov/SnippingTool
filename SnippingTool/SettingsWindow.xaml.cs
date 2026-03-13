@@ -1,6 +1,7 @@
 using System.Globalization;
 using System.Windows;
 using System.Windows.Input;
+using SnippingTool.Models;
 using SnippingTool.ViewModels;
 using DataFormats = System.Windows.DataFormats;
 using TextBox = System.Windows.Controls.TextBox;
@@ -17,6 +18,13 @@ public partial class SettingsWindow : Window
         _vm = vm;
         DataContext = vm;
         vm.RequestClose += Close;
+#if DEBUG
+        UpdateIntervalComboBox.Items.Add(new System.Windows.Controls.ComboBoxItem
+        {
+            Content = "Every 30 seconds (Debug)",
+            Tag = UpdateCheckInterval.EveryThirtySeconds,
+        });
+#endif
     }
 
     private void IntInput_PreviewTextInput(object sender, TextCompositionEventArgs e) =>

@@ -27,6 +27,7 @@ public partial class SettingsViewModel : ObservableObject
         _captureDelaySeconds = s.CaptureDelaySeconds;
         _defaultStrokeThickness = s.DefaultStrokeThickness;
         _regionCaptureHotkey = s.RegionCaptureHotkey;
+        _autoUpdateCheckInterval = s.AutoUpdateCheckInterval;
 
         try
         {
@@ -74,6 +75,9 @@ public partial class SettingsViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _isRecordingHotkey;
+
+    [ObservableProperty]
+    private UpdateCheckInterval _autoUpdateCheckInterval;
 
     public string RegionCaptureHotkeyDisplayName => VkToDisplayName(RegionCaptureHotkey);
 
@@ -146,6 +150,8 @@ public partial class SettingsViewModel : ObservableObject
             DefaultAnnotationColor = $"#{c.A:X2}{c.R:X2}{c.G:X2}{c.B:X2}",
             DefaultStrokeThickness = DefaultStrokeThickness,
             RegionCaptureHotkey = RegionCaptureHotkey,
+            AutoUpdateCheckInterval = AutoUpdateCheckInterval,
+            LastAutoUpdateCheckUtc = _settingsService.Current.LastAutoUpdateCheckUtc,
         });
         RequestClose?.Invoke();
     }
