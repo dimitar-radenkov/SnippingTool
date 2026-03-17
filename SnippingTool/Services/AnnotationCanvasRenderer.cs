@@ -270,17 +270,27 @@ internal sealed class AnnotationCanvasRenderer
     {
         var n = _vm.IncrementNumberCounter();
         _logger.LogDebug("Number label ({N}) placed at ({X:F1},{Y:F1})", n, p.X, p.Y);
-        var tb = new TextBlock
+        const double Size = 28;
+        var fill = ActiveBrush();
+        var badge = new Grid
         {
-            Text = $"({n})",
-            FontSize = 18,
-            FontWeight = FontWeights.Bold,
-            Foreground = ActiveBrush(),
+            Width = Size,
+            Height = Size,
             Tag = "number"
         };
-        Canvas.SetLeft(tb, p.X);
-        Canvas.SetTop(tb, p.Y);
-        Add(tb);
+        badge.Children.Add(new Ellipse { Fill = fill });
+        badge.Children.Add(new TextBlock
+        {
+            Text = n.ToString(),
+            FontSize = 13,
+            FontWeight = FontWeights.Bold,
+            Foreground = Brushes.White,
+            HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
+            VerticalAlignment = VerticalAlignment.Center
+        });
+        Canvas.SetLeft(badge, p.X - size / 2);
+        Canvas.SetTop(badge, p.Y - size / 2);
+        Add(badge);
     }
 
     public void PlaceTextBox(Point p)
