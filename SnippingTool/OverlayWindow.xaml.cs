@@ -65,8 +65,8 @@ public partial class OverlayWindow : Window
             }
 
             _vm.ResetNumberCounter(AnnotationCanvas.Children
-                .OfType<TextBlock>()
-                .Count(tb => tb.Tag is "number"));
+                .OfType<FrameworkElement>()
+                .Count(fe => fe.Tag is "number"));
         };
         _vm.RedoApplied += group =>
         {
@@ -76,8 +76,8 @@ public partial class OverlayWindow : Window
             }
 
             _vm.ResetNumberCounter(AnnotationCanvas.Children
-                .OfType<TextBlock>()
-                .Count(tb => tb.Tag is "number"));
+                .OfType<FrameworkElement>()
+                .Count(fe => fe.Tag is "number"));
         };
         _vm.CopyRequested += DoCopy;
         _vm.CloseRequested += Close;
