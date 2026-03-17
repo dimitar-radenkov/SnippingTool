@@ -117,7 +117,7 @@ public partial class OverlayWindow : Window
         ScreenSnapshot.Height = Height;
 
         var src = PresentationSource.FromVisual(this);
-        if (src?.CompositionTarget != null)
+        if (src?.CompositionTarget is not null)
         {
             _vm.DpiX = src.CompositionTarget.TransformToDevice.M11;
             _vm.DpiY = src.CompositionTarget.TransformToDevice.M22;
@@ -218,7 +218,7 @@ public partial class OverlayWindow : Window
 
     private void UpdateLoupe(Point cursor)
     {
-        if (_screenSnapshot == null)
+        if (_screenSnapshot is null)
         {
             return;
         }
@@ -583,7 +583,7 @@ public partial class OverlayWindow : Window
     private async Task DoLassoOcrAsync(Rect lassoRect)
     {
         var background = _renderer.BackgroundCapture;
-        if (background == null)
+        if (background is null)
         {
             return;
         }
@@ -679,6 +679,7 @@ public partial class OverlayWindow : Window
                 {
                     Close();
                 }
+
                 break;
             case Key.C when e.KeyboardDevice.Modifiers == ModifierKeys.Control
                          && _vm.CurrentPhase == OverlayViewModel.Phase.Annotating:

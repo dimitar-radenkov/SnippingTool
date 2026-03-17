@@ -142,14 +142,14 @@ internal sealed class AnnotationCanvasRenderer
     public void UpdateShape(Point p)
     {
         var @params = _vm.TryGetShapeParameters();
-        if (@params == null)
+        if (@params is null)
         {
             return;
         }
 
         switch (@params)
         {
-            case ArrowShapeParameters arr when _arrowShaft != null && _arrowHead != null:
+            case ArrowShapeParameters arr when _arrowShaft is not null && _arrowHead is not null:
                 _arrowShaft.X2 = arr.P2.X;
                 _arrowShaft.Y2 = arr.P2.Y;
                 _arrowHead.Points.Clear();
@@ -159,32 +159,32 @@ internal sealed class AnnotationCanvasRenderer
                 }
 
                 break;
-            case LineShapeParameters line when _currentLine != null:
+            case LineShapeParameters line when _currentLine is not null:
                 _currentLine.X2 = line.P2.X;
                 _currentLine.Y2 = line.P2.Y;
                 break;
-            case RectShapeParameters rect when _currentRect != null:
+            case RectShapeParameters rect when _currentRect is not null:
                 Canvas.SetLeft(_currentRect, rect.Left);
                 Canvas.SetTop(_currentRect, rect.Top);
                 _currentRect.Width = rect.Width;
                 _currentRect.Height = rect.Height;
                 break;
-            case EllipseShapeParameters ellipse when _currentEllipse != null:
+            case EllipseShapeParameters ellipse when _currentEllipse is not null:
                 Canvas.SetLeft(_currentEllipse, ellipse.Left);
                 Canvas.SetTop(_currentEllipse, ellipse.Top);
                 _currentEllipse.Width = ellipse.Width;
                 _currentEllipse.Height = ellipse.Height;
                 break;
-            case PenShapeParameters when _currentPen != null:
+            case PenShapeParameters when _currentPen is not null:
                 _currentPen.Points.Add(p);
                 break;
-            case BlurShapeParameters blur when _blurDraft != null:
+            case BlurShapeParameters blur when _blurDraft is not null:
                 Canvas.SetLeft(_blurDraft, blur.Left);
                 Canvas.SetTop(_blurDraft, blur.Top);
                 _blurDraft.Width = blur.Width;
                 _blurDraft.Height = blur.Height;
                 break;
-            case CalloutShapeParameters c when _calloutBubble != null && _calloutTail != null:
+            case CalloutShapeParameters c when _calloutBubble is not null && _calloutTail is not null:
                 Canvas.SetLeft(_calloutBubble, c.Left);
                 Canvas.SetTop(_calloutBubble, c.Top);
                 _calloutBubble.Width = c.Width;
@@ -224,12 +224,12 @@ internal sealed class AnnotationCanvasRenderer
     private void CommitBlur()
     {
         var @params = _vm.TryGetShapeParameters() as BlurShapeParameters;
-        if (_blurDraft != null)
+        if (_blurDraft is not null)
         {
             _canvas.Children.Remove(_blurDraft);
         }
 
-        if (@params == null || _backgroundCapture == null)
+        if (@params is null || _backgroundCapture is null)
         {
             return;
         }
