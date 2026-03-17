@@ -15,8 +15,9 @@ https://github.com/user-attachments/assets/d4e0c937-a845-4266-9454-2b816934f949
 
 - **Region capture** — Press the configured hotkey (default: `Print Screen`) to draw a selection on screen
 - **Frozen screen snapshot** — The screen is captured instantly when the hotkey is pressed, freezing menus, tooltips, and popups exactly as they appear
+- **Selection magnifier** — A zoomed loupe follows your cursor while drawing the capture region for pixel-accurate selection
 - **Configurable capture hotkey** — Change the capture hotkey to any key you prefer from Settings
-- **Annotation tools** — Arrow, line, rectangle, ellipse, pen, highlighter, text, numbered steps, blur
+- **Annotation tools** — Arrow, line, rectangle, circle, pen, highlighter, text, numbered steps, blur
 - **Blur tool** — Drag over sensitive content (faces, emails, passwords) to apply a Gaussian blur before sharing
 - **OCR — Copy Text** — Draw a lasso around text in the screenshot to extract it via OCR and copy to clipboard (uses Windows.Media.Ocr, no external dependencies)
 - **Pin screenshot** — Pin the captured screenshot as a floating, always-on-top, resizable window for quick reference while you work
@@ -26,6 +27,7 @@ https://github.com/user-attachments/assets/d4e0c937-a845-4266-9454-2b816934f949
 - **Capture delay** — Configurable countdown (0 / 3 / 5 / 10 s) before the selection overlay appears, useful for capturing menus and hover states
 - **Auto-updates** — A background service checks GitHub Releases on every launch and on a configurable schedule (every day / 2 days / 3 days). When a new version is found a tray balloon appears; click it to confirm, watch the progress bar, and the installer runs automatically — no browser, no manual downloads
 - **System tray** — Runs silently in the background; all actions accessible from the tray icon
+- **Theme support** — Choose Light, Dark, or follow the system theme from Settings
 
 ## How does it compare?
 
@@ -87,6 +89,16 @@ Open **Settings** from the tray icon to configure:
 | Default annotation colour | Pre-selected colour when the overlay opens |
 | Stroke thickness | Default pen/shape width |
 | Auto-update check interval | How often to check for new releases: Every day / Every 2 days / Every 3 days / Never |
+| Theme | App appearance: Light, Dark, or System (follows Windows) |
+
+## Keyboard shortcuts
+
+| Shortcut | Action |
+|---|---|
+| `Ctrl+Z` | Undo last annotation |
+| `Ctrl+Y` | Redo annotation |
+| `Ctrl+C` | Copy screenshot to clipboard |
+| `Escape` | Close the overlay / cancel current action |
 
 ## Project structure
 
