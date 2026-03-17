@@ -288,8 +288,8 @@ internal sealed class AnnotationCanvasRenderer
             HorizontalAlignment = System.Windows.HorizontalAlignment.Center,
             VerticalAlignment = VerticalAlignment.Center
         });
-        Canvas.SetLeft(badge, p.X - size / 2);
-        Canvas.SetTop(badge, p.Y - size / 2);
+        Canvas.SetLeft(badge, p.X - Size / 2);
+        Canvas.SetTop(badge, p.Y - Size / 2);
         Add(badge);
     }
 
