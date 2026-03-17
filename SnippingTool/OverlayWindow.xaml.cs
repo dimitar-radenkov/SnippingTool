@@ -4,6 +4,7 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Microsoft.Extensions.Logging;
+using SnippingTool.Models;
 using SnippingTool.Services;
 using SnippingTool.ViewModels;
 using Color = System.Windows.Media.Color;
@@ -454,6 +455,15 @@ public partial class OverlayWindow : Window
         _vm.UpdateDrawing(p);
         AnnotationCanvas.ReleaseMouseCapture();
         _renderer.CommitShape(p);
+
+        if (_vm.SelectedTool == AnnotationTool.Callout)
+        {
+            if (_vm.TryGetShapeParameters() is CalloutShapeParameters cp)
+            {
+                _renderer.PlaceCalloutTextBox(cp.Left, cp.Top, cp.Width, cp.Height);
+            }
+        }
+
         _vm.CommitDrawing();
         _vm.CommitGroup();
     }
