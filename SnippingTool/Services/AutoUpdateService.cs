@@ -48,8 +48,7 @@ public sealed class AutoUpdateService : BackgroundService, IAutoUpdateService
             _logger.LogError(ex, "Auto-update: startup check failed");
         }
 
-        _userSettings.Current.LastAutoUpdateCheckUtc = DateTime.UtcNow;
-        _userSettings.Save(_userSettings.Current);
+        UpdateLastCheckedUtc();
 
         var interval = _userSettings.Current.AutoUpdateCheckInterval;
         if (interval == UpdateCheckInterval.Never)
@@ -85,8 +84,7 @@ public sealed class AutoUpdateService : BackgroundService, IAutoUpdateService
                     _logger.LogError(ex, "Auto-update: periodic check failed");
                 }
 
-                _userSettings.Current.LastAutoUpdateCheckUtc = DateTime.UtcNow;
-                _userSettings.Save(_userSettings.Current);
+                UpdateLastCheckedUtc();
             }
         }
         catch (OperationCanceledException)
@@ -134,6 +132,14 @@ public sealed class AutoUpdateService : BackgroundService, IAutoUpdateService
         {
             _logger.LogDebug("Auto-update: already up to date");
         }
+    }
+
+    private void UpdateLastCheckedUtc()
+    {
+        _userSettings.Update(settings =>
+        {
+            settings.LastAutoUpdateCheckUtc = DateTime.UtcNow;
+        });
     }
 
     private static TimeSpan GetTimerInterval(UpdateCheckInterval interval) =>

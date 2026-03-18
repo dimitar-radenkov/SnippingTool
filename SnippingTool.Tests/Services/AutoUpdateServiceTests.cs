@@ -33,8 +33,10 @@ public sealed class AutoUpdateServiceTests
     {
         var settings = new UserSettings { AutoUpdateCheckInterval = interval };
         var mock = new Mock<IUserSettingsService>();
-        mock.SetupGet(s => s.Current).Returns(settings);
+        mock.SetupGet(s => s.Current).Returns(() => settings);
         mock.Setup(s => s.Save(It.IsAny<UserSettings>()));
+        mock.Setup(s => s.Update(It.IsAny<Action<UserSettings>>()))
+            .Callback<Action<UserSettings>>(mutate => mutate(settings));
         return mock;
     }
 
@@ -80,7 +82,7 @@ public sealed class AutoUpdateServiceTests
     }
 
     [Fact]
-    public async Task ExecuteAsync_SavesLastCheckTimestamp()
+    public async Task ExecuteAsync_UpdatesLastCheckTimestamp()
     {
         var updateService = new Mock<IUpdateService>();
         updateService
@@ -90,8 +92,12 @@ public sealed class AutoUpdateServiceTests
         var settingsMock = SettingsMock();
         var saveCalled = new TaskCompletionSource();
         settingsMock
-            .Setup(s => s.Save(It.IsAny<UserSettings>()))
-            .Callback(() => saveCalled.TrySetResult());
+            .Setup(s => s.Update(It.IsAny<Action<UserSettings>>()))
+            .Callback<Action<UserSettings>>(mutate =>
+            {
+                mutate(settingsMock.Object.Current);
+                saveCalled.TrySetResult();
+            });
 
         var sut = CreateService(updateService, settingsMock, new Mock<IUpdateDownloadService>(), new Mock<IMessageBoxService>());
 
@@ -100,8 +106,10 @@ public sealed class AutoUpdateServiceTests
         await sut.StopAsync(CancellationToken.None);
 
         settingsMock.Verify(
-            s => s.Save(It.Is<UserSettings>(u => u.LastAutoUpdateCheckUtc != null)),
+            s => s.Update(It.IsAny<Action<UserSettings>>()),
             Times.AtLeastOnce);
+        Assert.NotNull(settingsMock.Object.Current.LastAutoUpdateCheckUtc);
+        settingsMock.Verify(s => s.Save(It.IsAny<UserSettings>()), Times.Never);
     }
 
     [Fact]
