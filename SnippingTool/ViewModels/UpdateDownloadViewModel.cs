@@ -48,8 +48,6 @@ public partial class UpdateDownloadViewModel : ObservableObject
         string destPath,
         CancellationToken cancellationToken = default)
     {
-        // Capture the UI SynchronizationContext so we can dispatch window-close back to the UI thread.
-        var uiContext = SynchronizationContext.Current;
         try
         {
             using var response = await _http.GetAsync(downloadUrl, HttpCompletionOption.ResponseHeadersRead, cancellationToken).ConfigureAwait(false);
@@ -87,15 +85,7 @@ public partial class UpdateDownloadViewModel : ObservableObject
             _logger?.LogInformation("Update downloaded to {Path}", destPath);
 
             _process.Start(new ProcessStartInfo(destPath) { UseShellExecute = true });
-
-            if (uiContext is not null)
-            {
-                uiContext.Post(_ => RequestClose?.Invoke(), null);
-            }
-            else
-            {
-                RequestClose?.Invoke();
-            }
+            RequestClose?.Invoke();
         }
         catch (OperationCanceledException)
         {

@@ -113,6 +113,8 @@ public partial class App : Application
     {
         services.AddSingleton<IThemeService, ThemeService>();
         services.AddSingleton<IAppVersionService, AppVersionService>();
+        services.AddSingleton<IClipboardService, ClipboardService>();
+        services.AddSingleton<IDialogService, DialogService>();
         services.AddSingleton<IProcessService, ProcessService>();
         services.AddSingleton<IMessageBoxService, MessageBoxService>();
         services.AddSingleton<IFileSystemService, FileSystemService>();
@@ -126,6 +128,13 @@ public partial class App : Application
         services.AddTransient<OverlayWindow>();
         services.AddTransient<SettingsViewModel>();
         services.AddTransient<SettingsWindow>();
+        services.AddTransient<Func<IScreenRecordingService, string, RecordingHudViewModel>>(sp =>
+            (screenRecordingService, outputPath) => new RecordingHudViewModel(
+                screenRecordingService,
+                outputPath,
+                sp.GetRequiredService<IUserSettingsService>(),
+                sp.GetRequiredService<IProcessService>(),
+                sp.GetRequiredService<ILogger<RecordingHudViewModel>>()));
         services.AddTransient<AboutViewModel>();
         services.AddTransient<AboutWindow>();
         services.AddTransient<UpdateDownloadViewModel>(sp =>

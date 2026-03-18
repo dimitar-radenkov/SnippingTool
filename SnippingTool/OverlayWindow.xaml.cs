@@ -1,12 +1,10 @@
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using Microsoft.Extensions.Logging;
 using SnippingTool.Services;
 using SnippingTool.ViewModels;
-using Color = System.Windows.Media.Color;
 using Cursors = System.Windows.Input.Cursors;
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;
@@ -20,9 +18,9 @@ public partial class OverlayWindow : Window
     private readonly OverlayViewModel _vm;
     private readonly IScreenCaptureService _screenCapture;
     private readonly IScreenRecordingService _recorder;
+    private readonly Func<IScreenRecordingService, string, RecordingHudViewModel> _recordingHudViewModelFactory;
     private readonly ILoggerFactory _loggerFactory;
     private readonly IUserSettingsService _userSettings;
-    private readonly IProcessService _processService;
     private readonly IMessageBoxService _messageBox;
     private readonly IFileSystemService _fileSystem;
     private readonly IOcrService _ocrService;
@@ -36,9 +34,9 @@ public partial class OverlayWindow : Window
         OverlayViewModel vm,
         IScreenCaptureService screenCapture,
         IScreenRecordingService recorder,
+        Func<IScreenRecordingService, string, RecordingHudViewModel> recordingHudViewModelFactory,
         ILoggerFactory loggerFactory,
         IUserSettingsService userSettings,
-        IProcessService processService,
         IMessageBoxService messageBox,
         IFileSystemService fileSystem,
         IOcrService ocrService)
@@ -46,14 +44,21 @@ public partial class OverlayWindow : Window
         _vm = vm;
         _screenCapture = screenCapture;
         _recorder = recorder;
+        _recordingHudViewModelFactory = recordingHudViewModelFactory;
         _loggerFactory = loggerFactory;
         _userSettings = userSettings;
-        _processService = processService;
         _messageBox = messageBox;
         _fileSystem = fileSystem;
         _ocrService = ocrService;
         InitializeComponent();
         DataContext = _vm;
+        _vm.SetBitmapCapture(new OverlayBitmapCapture(
+            this,
+            AnnotationCanvas,
+            _screenCapture,
+            () => _vm.SelectionRect,
+            () => _vm.DpiX,
+            () => _vm.DpiY));
         _renderer = new AnnotationCanvasRenderer(AnnotationCanvas, _vm, el => _vm.TrackElement(el), loggerFactory.CreateLogger<AnnotationCanvasRenderer>());
 
         _vm.UndoApplied += group =>
@@ -78,7 +83,6 @@ public partial class OverlayWindow : Window
                 .OfType<FrameworkElement>()
                 .Count(fe => fe.Tag is "number"));
         };
-        _vm.CopyRequested += DoCopy;
         _vm.CloseRequested += Close;
         _vm.PinRequested += DoPin;
 
@@ -463,23 +467,6 @@ public partial class OverlayWindow : Window
         }
     }
 
-    private void ColorBtn_Click(object sender, RoutedEventArgs e)
-    {
-        var cur = _vm.ActiveColor;
-        var dlg = new System.Windows.Forms.ColorDialog
-        {
-            Color = System.Drawing.Color.FromArgb(cur.A, cur.R, cur.G, cur.B),
-            FullOpen = true
-        };
-        if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK)
-        {
-            var c = dlg.Color;
-            _vm.ActiveColor = Color.FromArgb(c.A, c.R, c.G, c.B);
-            ColorDot.Fill = _vm.ActiveBrush;
-        }
-    }
-
-    private void Copy_Click(object sender, RoutedEventArgs e) => DoCopy();
     private void CloseBtn_Click(object sender, RoutedEventArgs e) => Close();
 
     private void Record_Click(object sender, RoutedEventArgs e)
@@ -511,7 +498,7 @@ public partial class OverlayWindow : Window
         _recordingBorder = new RecordingBorderWindow(regionRect.Left, regionRect.Top, regionRect.Width, regionRect.Height);
         _recordingBorder.Show();
 
-        var hudVm = new RecordingHudViewModel(_recorder, path, _userSettings, _processService, _loggerFactory.CreateLogger<RecordingHudViewModel>());
+        var hudVm = _recordingHudViewModelFactory(_recorder, path);
         hudVm.StopCompleted += () => Dispatcher.Invoke(() =>
         {
             _recordingBorder?.Close();
@@ -538,28 +525,8 @@ public partial class OverlayWindow : Window
         base.OnClosed(e);
     }
 
-    private void DoCopy()
+    private void DoPin(BitmapSource bitmap)
     {
-        var final = ComposeBitmap();
-        System.Windows.Clipboard.SetImage(final);
-
-        if (_userSettings.Current.AutoSaveScreenshots)
-        {
-            var saveDir = _userSettings.Current.ScreenshotSavePath;
-            _fileSystem.CreateDirectory(saveDir);
-            var savePath = _fileSystem.CombinePath(saveDir, $"Snip_{DateTime.Now:yyyyMMdd_HHmmss}.png");
-            using var fs = _fileSystem.OpenWrite(savePath);
-            var encoder = new PngBitmapEncoder();
-            encoder.Frames.Add(BitmapFrame.Create(final));
-            encoder.Save(fs);
-        }
-
-        Close();
-    }
-
-    private void DoPin()
-    {
-        var bitmap = ComposeBitmap();
         var pinned = new PinnedScreenshotWindow(bitmap);
         pinned.Show();
         Close();
@@ -615,40 +582,6 @@ public partial class OverlayWindow : Window
         OcrToast.Visibility = Visibility.Collapsed;
     }
 
-    /// <summary>
-    /// Captures the selected screen region, composites the annotation layer on top,
-    /// and returns the result as a <see cref="RenderTargetBitmap"/>.
-    /// Shared by <see cref="DoCopy"/> and <see cref="DoPin"/>.
-    /// </summary>
-    private RenderTargetBitmap ComposeBitmap()
-    {
-        var sel = _vm.SelectionRect;
-        var screenX = (int)((Left + sel.X) * _vm.DpiX);
-        var screenY = (int)((Top + sel.Y) * _vm.DpiY);
-        var screenW = (int)(sel.Width * _vm.DpiX);
-        var screenH = (int)(sel.Height * _vm.DpiY);
-
-        Visibility = Visibility.Hidden;
-        System.Threading.Thread.Sleep(60);
-        var screenBmp = _screenCapture.Capture(screenX, screenY, screenW, screenH);
-        Visibility = Visibility.Visible;
-
-        var annotRtb = new RenderTargetBitmap(screenW, screenH, 96 * _vm.DpiX, 96 * _vm.DpiY, PixelFormats.Pbgra32);
-        annotRtb.Render(AnnotationCanvas);
-
-        var dv = new DrawingVisual();
-        using (var dc = dv.RenderOpen())
-        {
-            var r = new Rect(0, 0, screenBmp.PixelWidth, screenBmp.PixelHeight);
-            dc.DrawImage(screenBmp, r);
-            dc.DrawImage(annotRtb, r);
-        }
-
-        var final = new RenderTargetBitmap(screenBmp.PixelWidth, screenBmp.PixelHeight, 96, 96, PixelFormats.Pbgra32);
-        final.Render(dv);
-        return final;
-    }
-
     private void Window_KeyDown(object sender, KeyEventArgs e)
     {
         switch (e.Key)
@@ -668,7 +601,7 @@ public partial class OverlayWindow : Window
                 break;
             case Key.C when e.KeyboardDevice.Modifiers == ModifierKeys.Control
                          && _vm.CurrentPhase == OverlayViewModel.Phase.Annotating:
-                DoCopy();
+                _vm.CopyCommand.Execute(null);
                 break;
             case Key.Z when e.KeyboardDevice.Modifiers == ModifierKeys.Control
                          && _vm.CurrentPhase == OverlayViewModel.Phase.Annotating:
