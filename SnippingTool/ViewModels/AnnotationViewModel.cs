@@ -257,6 +257,12 @@ public partial class AnnotationViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanUndo))]
     private void Undo()
     {
+        if (_undoStack.Count == 0)
+        {
+            _logger.LogDebug("Undo requested with empty stack");
+            return;
+        }
+
         var group = _undoStack[^1];
         PublishSync(new UndoGroupMessage(group));
         _undoStack.RemoveAt(_undoStack.Count - 1);
@@ -271,6 +277,12 @@ public partial class AnnotationViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanRedo))]
     private void Redo()
     {
+        if (_redoStack.Count == 0)
+        {
+            _logger.LogDebug("Redo requested with empty stack");
+            return;
+        }
+
         var group = _redoStack[^1];
         PublishSync(new RedoGroupMessage(group));
         _redoStack.RemoveAt(_redoStack.Count - 1);

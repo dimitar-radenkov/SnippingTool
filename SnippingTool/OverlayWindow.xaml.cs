@@ -618,15 +618,27 @@ public partial class OverlayWindow : Window
                 break;
             case Key.C when e.KeyboardDevice.Modifiers == ModifierKeys.Control
                          && _vm.CurrentPhase == OverlayViewModel.Phase.Annotating:
-                _vm.CopyCommand.Execute(null);
+                if (_vm.CopyCommand.CanExecute(null))
+                {
+                    _vm.CopyCommand.Execute(null);
+                }
+
                 break;
             case Key.Z when e.KeyboardDevice.Modifiers == ModifierKeys.Control
                          && _vm.CurrentPhase == OverlayViewModel.Phase.Annotating:
-                _vm.UndoCommand.Execute(null);
+                if (_vm.UndoCommand.CanExecute(null))
+                {
+                    _vm.UndoCommand.Execute(null);
+                }
+
                 break;
             case Key.Y when e.KeyboardDevice.Modifiers == ModifierKeys.Control
                          && _vm.CurrentPhase == OverlayViewModel.Phase.Annotating:
-                _vm.RedoCommand.Execute(null);
+                if (_vm.RedoCommand.CanExecute(null))
+                {
+                    _vm.RedoCommand.Execute(null);
+                }
+
                 break;
         }
     }

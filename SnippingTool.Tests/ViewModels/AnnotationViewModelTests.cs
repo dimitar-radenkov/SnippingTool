@@ -465,9 +465,33 @@ public sealed class AnnotationViewModelTests
     }
 
     [Fact]
+    public void UndoCommand_Execute_WhenStackEmpty_DoesNotThrow()
+    {
+        var vm = new TestAnnotationViewModel(Geom());
+
+        var exception = Record.Exception(() => vm.UndoCommand.Execute(null));
+
+        Assert.Null(exception);
+        Assert.False(vm.UndoCommand.CanExecute(null));
+        Assert.False(vm.RedoCommand.CanExecute(null));
+    }
+
+    [Fact]
     public void RedoCommand_CannotExecute_WhenStackEmpty()
     {
         var vm = new TestAnnotationViewModel(Geom());
+        Assert.False(vm.RedoCommand.CanExecute(null));
+    }
+
+    [Fact]
+    public void RedoCommand_Execute_WhenStackEmpty_DoesNotThrow()
+    {
+        var vm = new TestAnnotationViewModel(Geom());
+
+        var exception = Record.Exception(() => vm.RedoCommand.Execute(null));
+
+        Assert.Null(exception);
+        Assert.False(vm.UndoCommand.CanExecute(null));
         Assert.False(vm.RedoCommand.CanExecute(null));
     }
 
