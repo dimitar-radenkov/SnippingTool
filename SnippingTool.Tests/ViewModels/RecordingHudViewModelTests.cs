@@ -410,6 +410,19 @@ public sealed class RecordingHudViewModelTests
     }
 
     [Fact]
+    public void UndoAnnotationsCommand_WithoutAnnotationSession_IsNoOp()
+    {
+        // Arrange
+        var vm = CreateVm();
+
+        // Act
+        vm.UndoAnnotationsCommand.Execute(null);
+
+        // Assert
+        Assert.False(vm.CanManageAnnotations);
+    }
+
+    [Fact]
     public void ClearAnnotationsCommand_ClearsAttachedAnnotationSession()
     {
         // Arrange
@@ -428,5 +441,18 @@ public sealed class RecordingHudViewModelTests
         Assert.False(annotationViewModel.HasActiveAnnotations);
         Assert.Equal(0, annotationViewModel.UndoCount);
         Assert.Equal(0, annotationViewModel.RedoCount);
+    }
+
+    [Fact]
+    public void ClearAnnotationsCommand_WithoutAnnotationSession_IsNoOp()
+    {
+        // Arrange
+        var vm = CreateVm();
+
+        // Act
+        vm.ClearAnnotationsCommand.Execute(null);
+
+        // Assert
+        Assert.False(vm.CanManageAnnotations);
     }
 }

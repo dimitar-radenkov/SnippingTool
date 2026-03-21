@@ -54,4 +54,20 @@ public sealed class OverlayToolbarLayoutTests
         Assert.False(layout.ToolBounds.IntersectsWith(layout.ActionBounds));
         Assert.False(layout.ActionBounds.IntersectsWith(selectionRect));
     }
+
+    [Fact]
+    public void Calculate_WhenNothingFits_UsesFallbackCompactLayout()
+    {
+        var selectionRect = new Rect(16, 16, 88, 88);
+        var layout = OverlayToolbarLayoutHelper.Calculate(
+            selectionRect,
+            new Size(120, 120),
+            new Size(32, 32),
+            new Size(32, 32),
+            new Size(32, 32));
+
+        Assert.Equal(OverlayActionBarMode.Compact, layout.ActionBarMode);
+        Assert.True(layout.ToolBounds.Left >= 0);
+        Assert.True(layout.ActionBounds.Bottom <= 120);
+    }
 }
