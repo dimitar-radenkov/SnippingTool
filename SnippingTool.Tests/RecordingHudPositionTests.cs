@@ -63,4 +63,19 @@ public sealed class RecordingHudPositionTests
         // Assert
         Assert.Equal(WorkArea.Bottom - HudH, top);
     }
+
+    [Fact]
+    public void ComputePosition_UsesProvidedSecondaryMonitorWorkAreaCoordinates()
+    {
+        // Arrange
+        var secondaryWorkArea = new Rect(1920, 0, 1920, 1040);
+        var region = new Rect(2300, 200, 400, 300);
+
+        // Act
+        var (left, top) = RecordingHudWindow.ComputePosition(region, HudW, HudH, secondaryWorkArea);
+
+        // Assert
+        Assert.Equal(2430, left);
+        Assert.Equal(508, top);
+    }
 }

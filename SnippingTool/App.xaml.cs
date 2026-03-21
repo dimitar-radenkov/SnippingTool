@@ -133,10 +133,12 @@ public partial class App : Application
         services.AddTransient<OverlayViewModel>();
         services.AddTransient<RecordingAnnotationViewModel>();
         services.AddTransient<OverlayWindow>();
-        services.AddTransient<Func<Rect, RecordingAnnotationWindow>>(sp =>
-            regionRect => new RecordingAnnotationWindow(
+        services.AddTransient<Func<Rect, double, double, RecordingAnnotationWindow>>(sp =>
+            (regionRect, dpiX, dpiY) => new RecordingAnnotationWindow(
                 sp.GetRequiredService<RecordingAnnotationViewModel>(),
                 regionRect,
+                dpiX,
+                dpiY,
                 sp.GetRequiredService<IScreenCaptureService>(),
                 sp.GetRequiredService<IEventAggregator>(),
                 sp.GetRequiredService<ILoggerFactory>()));

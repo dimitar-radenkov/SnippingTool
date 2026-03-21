@@ -25,7 +25,7 @@ public partial class OverlayWindow : Window
     private readonly IMessageBoxService _messageBox;
     private readonly IFileSystemService _fileSystem;
     private readonly IOcrService _ocrService;
-    private readonly Func<Rect, RecordingAnnotationWindow> _recordingAnnotationWindowFactory;
+    private readonly Func<Rect, double, double, RecordingAnnotationWindow> _recordingAnnotationWindowFactory;
     private readonly IEventSubscription _redoSubscription;
     private readonly IEventSubscription _undoSubscription;
     private AnnotationCanvasRenderer _renderer = null!;
@@ -53,7 +53,7 @@ public partial class OverlayWindow : Window
         IMessageBoxService messageBox,
         IFileSystemService fileSystem,
         IOcrService ocrService,
-        Func<Rect, RecordingAnnotationWindow> recordingAnnotationWindowFactory)
+        Func<Rect, double, double, RecordingAnnotationWindow> recordingAnnotationWindowFactory)
     {
         _vm = vm;
         _screenCapture = screenCapture;
@@ -574,7 +574,7 @@ public partial class OverlayWindow : Window
         _recordingBorder = new RecordingBorderWindow(regionRect.Left, regionRect.Top, regionRect.Width, regionRect.Height);
         _recordingBorder.Show();
 
-        _recordingAnnotation = _recordingAnnotationWindowFactory(regionRect);
+        _recordingAnnotation = _recordingAnnotationWindowFactory(regionRect, _vm.DpiX, _vm.DpiY);
         _recordingAnnotation.Show();
 
         var hudVm = _recordingHudViewModelFactory(_recorder, outputPath);

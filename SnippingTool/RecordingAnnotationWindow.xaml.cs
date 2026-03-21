@@ -26,6 +26,8 @@ public partial class RecordingAnnotationWindow : Window
 
     private readonly RecordingAnnotationViewModel _vm;
     private readonly ILogger<RecordingAnnotationWindow> _logger;
+    private readonly double _dpiX;
+    private readonly double _dpiY;
     private readonly IScreenCaptureService _screenCapture;
     private readonly AnnotationCanvasRenderer _renderer;
     private readonly AnnotationCanvasInteractionController _interactionController;
@@ -39,12 +41,16 @@ public partial class RecordingAnnotationWindow : Window
     public RecordingAnnotationWindow(
         RecordingAnnotationViewModel vm,
         Rect regionRect,
+        double dpiX,
+        double dpiY,
         IScreenCaptureService screenCapture,
         IEventAggregator eventAggregator,
         ILoggerFactory loggerFactory)
     {
         _vm = vm;
         _logger = loggerFactory.CreateLogger<RecordingAnnotationWindow>();
+        _dpiX = dpiX;
+        _dpiY = dpiY;
         _screenCapture = screenCapture;
 
         InitializeComponent();
@@ -252,12 +258,18 @@ public partial class RecordingAnnotationWindow : Window
 
     private bool HasActiveEditor() => AnnotationCanvas.Children.OfType<TextBox>().Any();
 
+    internal static Int32Rect CalculateCaptureBounds(Rect windowBounds, BlurShapeParameters parameters, double dpiX, double dpiY)
+    {
+        return new Int32Rect(
+            (int)Math.Round((windowBounds.Left + parameters.Left) * dpiX),
+            (int)Math.Round((windowBounds.Top + parameters.Top) * dpiY),
+            Math.Max(1, (int)Math.Round(parameters.Width * dpiX)),
+            Math.Max(1, (int)Math.Round(parameters.Height * dpiY)));
+    }
+
     private BitmapSource? CaptureLiveBlurSource(BlurShapeParameters parameters)
     {
-        var screenX = (int)Math.Round(Left + parameters.Left);
-        var screenY = (int)Math.Round(Top + parameters.Top);
-        var screenWidth = Math.Max(1, (int)Math.Round(parameters.Width));
-        var screenHeight = Math.Max(1, (int)Math.Round(parameters.Height));
+        var captureBounds = CalculateCaptureBounds(new Rect(Left, Top, Width, Height), parameters, _dpiX, _dpiY);
 
         var previousVisibility = Visibility;
         try
@@ -265,7 +277,7 @@ public partial class RecordingAnnotationWindow : Window
             Visibility = Visibility.Hidden;
             Dispatcher.Invoke(() => { }, DispatcherPriority.Render);
 
-            var bitmap = _screenCapture.Capture(screenX, screenY, screenWidth, screenHeight);
+            var bitmap = _screenCapture.Capture(captureBounds.X, captureBounds.Y, captureBounds.Width, captureBounds.Height);
             if (bitmap.CanFreeze)
             {
                 bitmap.Freeze();

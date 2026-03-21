@@ -1,6 +1,7 @@
 using System.Windows;
 using SnippingTool.Services;
 using SnippingTool.ViewModels;
+using Forms = System.Windows.Forms;
 
 namespace SnippingTool;
 
@@ -81,8 +82,19 @@ public partial class RecordingHudWindow : Window
 
     private void RepositionHud()
     {
-        var (left, top) = ComputePosition(_regionRect, ActualWidth, ActualHeight, SystemParameters.WorkArea, _settings.Current.HudGapPixels);
+        var (left, top) = ComputePosition(_regionRect, ActualWidth, ActualHeight, GetWorkAreaForRegion(_regionRect), _settings.Current.HudGapPixels);
         Left = left;
         Top = top;
+    }
+
+    internal static Rect GetWorkAreaForRegion(Rect region)
+    {
+        var bounds = new System.Drawing.Rectangle(
+            (int)Math.Floor(region.Left),
+            (int)Math.Floor(region.Top),
+            Math.Max(1, (int)Math.Ceiling(region.Width)),
+            Math.Max(1, (int)Math.Ceiling(region.Height)));
+        var workingArea = Forms.Screen.FromRectangle(bounds).WorkingArea;
+        return new Rect(workingArea.Left, workingArea.Top, workingArea.Width, workingArea.Height);
     }
 }
