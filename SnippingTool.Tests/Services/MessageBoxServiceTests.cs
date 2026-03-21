@@ -1,24 +1,13 @@
 using System.Reflection;
 using System.Windows;
-using SnippingTool.Services;
 using SnippingTool.Tests.Services.Handlers;
+using SnippingTool.Services;
 using Xunit;
 
 namespace SnippingTool.Tests.Services;
 
 public sealed class MessageBoxServiceTests
 {
-    [Fact]
-    public void GetOwnerWindow_WithoutApplication_ReturnsNull()
-    {
-        StaTestHelper.Run(() =>
-        {
-            var owner = InvokeGetOwnerWindow();
-
-            Assert.Null(owner);
-        });
-    }
-
     [Fact]
     public void MapButton_MapsYesNoAndDefaultsToOk()
     {

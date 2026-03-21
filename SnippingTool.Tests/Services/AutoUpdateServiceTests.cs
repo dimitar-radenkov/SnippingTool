@@ -170,6 +170,37 @@ public sealed class AutoUpdateServiceTests
     }
 
     [Fact]
+    public async Task ConfirmAndInstall_DownloadSucceeds_DoesNotThrow()
+    {
+        var updateService = new Mock<IUpdateService>();
+        var downloadService = new Mock<IUpdateDownloadService>();
+        downloadService.Setup(d => d.ShowAsync(It.IsAny<string>(), It.IsAny<string>())).ReturnsAsync(true);
+        var messageBox = new Mock<IMessageBoxService>();
+        messageBox.Setup(m => m.Confirm(It.IsAny<string>(), It.IsAny<string>())).Returns(true);
+
+        var sut = CreateService(new DefaultEventAggregator(NullLogger<DefaultEventAggregator>.Instance), updateService, SettingsMock(), downloadService, messageBox);
+
+        var ex = await Record.ExceptionAsync(() => sut.ConfirmAndInstallAsync(UpdateAvailable));
+
+        Assert.Null(ex);
+        downloadService.Verify(d => d.ShowAsync(UpdateAvailable.DownloadUrl, It.IsAny<string>()), Times.Once);
+    }
+
+    [Theory]
+    [InlineData(UpdateCheckInterval.EveryDay, 1)]
+    [InlineData(UpdateCheckInterval.EveryTwoDays, 2)]
+    [InlineData(UpdateCheckInterval.EveryThreeDays, 3)]
+    public void GetTimerInterval_MapsIntervalsToExpectedDays(UpdateCheckInterval interval, int expectedDays)
+    {
+        var method = typeof(AutoUpdateService).GetMethod("GetTimerInterval", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Static);
+        Assert.NotNull(method);
+
+        var result = (TimeSpan)method.Invoke(null, [interval])!;
+
+        Assert.Equal(TimeSpan.FromDays(expectedDays), result);
+    }
+
+    [Fact]
     public async Task ConfirmAndInstall_ShowsCorrectVersionInPrompt()
     {
         var updateService = new Mock<IUpdateService>();

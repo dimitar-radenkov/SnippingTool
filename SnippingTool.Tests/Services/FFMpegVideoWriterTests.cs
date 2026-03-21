@@ -1,7 +1,7 @@
+using System.IO;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.Serialization;
-using System.IO;
 using Microsoft.Extensions.Logging.Abstractions;
 using SnippingTool.Services;
 using Xunit;
@@ -10,12 +10,28 @@ namespace SnippingTool.Tests.Services;
 
 public sealed class FFMpegVideoWriterTests
 {
+    private static readonly object FfmpegPathLock = new();
+
+    private static IDisposable UseFfmpegPathOverride(string? path)
+    {
+        Monitor.Enter(FfmpegPathLock);
+        var previous = AppContext.GetData("SnippingTool.FfmpegPath");
+        AppContext.SetData("SnippingTool.FfmpegPath", path);
+        return new ActionDisposable(() =>
+        {
+            AppContext.SetData("SnippingTool.FfmpegPath", previous);
+            Monitor.Exit(FfmpegPathLock);
+        });
+    }
+
     [Fact]
     public void ResolveFfmpegPath_PrefersAppDirectoryFile()
     {
+        using var overrideScope = UseFfmpegPathOverride(null);
+
         var appFfmpeg = Path.Combine(AppContext.BaseDirectory, "ffmpeg.exe");
         var assetsFfmpeg = Path.Combine(AppContext.BaseDirectory, "Assets", "ffmpeg", "ffmpeg.exe");
-        using var _ = new FfmpegFileScope(appFfmpeg, assetsFfmpeg);
+        using var fileScope = new FfmpegFileScope(appFfmpeg, assetsFfmpeg);
 
         File.Copy(Path.Combine(Environment.SystemDirectory, "cmd.exe"), appFfmpeg, overwrite: true);
 
@@ -27,9 +43,11 @@ public sealed class FFMpegVideoWriterTests
     [Fact]
     public void ResolveFfmpegPath_PrefersAssetsFolderWhenAppFileMissing()
     {
+        using var overrideScope = UseFfmpegPathOverride(null);
+
         var appFfmpeg = Path.Combine(AppContext.BaseDirectory, "ffmpeg.exe");
         var assetsFfmpeg = Path.Combine(AppContext.BaseDirectory, "Assets", "ffmpeg", "ffmpeg.exe");
-        using var _ = new FfmpegFileScope(appFfmpeg, assetsFfmpeg);
+        using var fileScope = new FfmpegFileScope(appFfmpeg, assetsFfmpeg);
 
         Directory.CreateDirectory(Path.GetDirectoryName(assetsFfmpeg)!);
         File.Copy(Path.Combine(Environment.SystemDirectory, "cmd.exe"), assetsFfmpeg, overwrite: true);
@@ -42,7 +60,9 @@ public sealed class FFMpegVideoWriterTests
     [Fact]
     public void ResolveFfmpegPath_FallsBackToExecutableName()
     {
-        using var _ = new FfmpegFileScope(
+        using var overrideScope = UseFfmpegPathOverride(null);
+
+        using var fileScope = new FfmpegFileScope(
             Path.Combine(AppContext.BaseDirectory, "ffmpeg.exe"),
             Path.Combine(AppContext.BaseDirectory, "Assets", "ffmpeg", "ffmpeg.exe"));
 
@@ -76,28 +96,31 @@ public sealed class FFMpegVideoWriterTests
     [Fact]
     public void Constructor_ThrowsWhenFfmpegExeIsMissing()
     {
-        using var _ = new FfmpegFileScope(
-            Path.Combine(AppContext.BaseDirectory, "ffmpeg.exe"),
-            Path.Combine(AppContext.BaseDirectory, "Assets", "ffmpeg", "ffmpeg.exe"));
+        var missingPath = Path.Combine(Path.GetTempPath(), $"missing-{Guid.NewGuid()}.exe");
+        using var overrideScope = UseFfmpegPathOverride(missingPath);
 
         var exception = Assert.Throws<FileNotFoundException>(() => new FFMpegVideoWriter(1, 1, 30, Path.GetTempFileName(), NullLogger.Instance));
 
-        Assert.Contains("ffmpeg.exe", exception.FileName, StringComparison.OrdinalIgnoreCase);
+        Assert.Equal(missingPath, exception.FileName);
     }
 
     [Fact]
     public void Constructor_WithFakeFfmpegExe_StartsAndDisposes()
     {
-        var appFfmpeg = Path.Combine(AppContext.BaseDirectory, "ffmpeg.exe");
-        var assetsFfmpeg = Path.Combine(AppContext.BaseDirectory, "Assets", "ffmpeg", "ffmpeg.exe");
-        using var _ = new FfmpegFileScope(appFfmpeg, assetsFfmpeg);
+        var fakeFfmpeg = Path.Combine(Path.GetTempPath(), $"ffmpeg-{Guid.NewGuid()}.exe");
+        File.Copy(Path.Combine(Environment.SystemDirectory, "cmd.exe"), fakeFfmpeg, overwrite: true);
 
-        Directory.CreateDirectory(Path.GetDirectoryName(appFfmpeg)!);
-        File.Copy(Path.Combine(Environment.SystemDirectory, "cmd.exe"), appFfmpeg, overwrite: true);
+        using var overrideScope = UseFfmpegPathOverride(fakeFfmpeg);
 
-        using var writer = new FFMpegVideoWriter(2, 2, 30, Path.GetTempFileName(), NullLogger.Instance);
-
-        writer.Dispose();
+        try
+        {
+            using var writer = new FFMpegVideoWriter(2, 2, 30, Path.GetTempFileName(), NullLogger.Instance);
+            writer.Dispose();
+        }
+        finally
+        {
+            File.Delete(fakeFfmpeg);
+        }
     }
 
     private static string InvokeResolveFfmpegPath()
@@ -218,5 +241,17 @@ public sealed class FFMpegVideoWriterTests
                 }
             }
         }
+    }
+
+    private sealed class ActionDisposable : IDisposable
+    {
+        private readonly Action _dispose;
+
+        public ActionDisposable(Action dispose)
+        {
+            _dispose = dispose;
+        }
+
+        public void Dispose() => _dispose();
     }
 }

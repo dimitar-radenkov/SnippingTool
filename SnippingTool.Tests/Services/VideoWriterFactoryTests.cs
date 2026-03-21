@@ -1,3 +1,4 @@
+using System.IO;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using SnippingTool.Models;
@@ -10,6 +11,18 @@ public sealed class VideoWriterFactoryTests
 {
     private static VideoWriterFactory CreateSut() =>
         new(Mock.Of<IUserSettingsService>(s => s.Current == new UserSettings()), NullLogger<FFMpegVideoWriter>.Instance);
+
+    private static IDisposable UseFfmpegPathOverride(string? path)
+    {
+        Monitor.Enter(typeof(VideoWriterFactoryTests));
+        var previous = AppContext.GetData("SnippingTool.FfmpegPath");
+        AppContext.SetData("SnippingTool.FfmpegPath", path);
+        return new ActionDisposable(() =>
+        {
+            AppContext.SetData("SnippingTool.FfmpegPath", previous);
+            Monitor.Exit(typeof(VideoWriterFactoryTests));
+        });
+    }
 
     [Fact]
     public void Create_Avi_ReturnsSharpAviVideoWriter()
@@ -31,6 +44,8 @@ public sealed class VideoWriterFactoryTests
     [Fact]
     public void Create_Mp4_ThrowsFileNotFoundWhenFfmpegMissing()
     {
+        using var _ = UseFfmpegPathOverride(Path.Combine(Path.GetTempPath(), $"missing-{Guid.NewGuid()}.exe"));
+
         var factory = CreateSut();
 
         Assert.Throws<System.IO.FileNotFoundException>(() =>
@@ -44,5 +59,17 @@ public sealed class VideoWriterFactoryTests
 
         Assert.Throws<ArgumentOutOfRangeException>(() =>
             factory.Create((RecordingFormat)999, 100, 100, 10, "test.bin"));
+    }
+
+    private sealed class ActionDisposable : IDisposable
+    {
+        private readonly Action _dispose;
+
+        public ActionDisposable(Action dispose)
+        {
+            _dispose = dispose;
+        }
+
+        public void Dispose() => _dispose();
     }
 }
