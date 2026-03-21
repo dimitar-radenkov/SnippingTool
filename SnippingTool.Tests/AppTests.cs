@@ -1,6 +1,7 @@
 using System.Windows.Threading;
 using System.Runtime.Serialization;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using System.Windows;
@@ -91,9 +92,106 @@ public sealed class AppTests
         });
     }
 
+    [Fact]
+    public void CheckForUpdates_Click_WhenAlreadyUpToDate_ShowsInformation()
+    {
+        StaTestHelper.RunAsync(async () =>
+        {
+            var app = CreateAppWithoutRunning();
+            var updateService = new Mock<IUpdateService>();
+            updateService
+                .Setup(service => service.CheckForUpdatesAsync())
+                .ReturnsAsync(new UpdateCheckResult(false, new Version(1, 2, 3), string.Empty));
+
+            var messageBox = new Mock<IMessageBoxService>();
+            var shown = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            messageBox
+                .Setup(service => service.ShowInformation(It.IsAny<string>(), "Check for Updates"))
+                .Callback(() => shown.TrySetResult());
+
+            SetField(app, "_host", CreateHost(updateService.Object, messageBox.Object));
+            SetField(app, "_messageBox", messageBox.Object);
+            SetField(app, "_autoUpdate", Mock.Of<IAutoUpdateService>());
+
+            var menuItem = new System.Windows.Controls.MenuItem();
+            InvokePrivateHandler(app, "CheckForUpdates_Click", menuItem, new RoutedEventArgs());
+
+            await shown.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.True(menuItem.IsEnabled);
+
+            messageBox.Verify(service => service.ShowInformation(
+                It.Is<string>(message => message.Contains("1.2.3", StringComparison.Ordinal)),
+                "Check for Updates"), Times.Once);
+        });
+    }
+
+    [Fact]
+    public void CheckForUpdates_Click_WhenUpdateCheckFails_ShowsWarning()
+    {
+        StaTestHelper.RunAsync(async () =>
+        {
+            var app = CreateAppWithoutRunning();
+            var updateService = new Mock<IUpdateService>();
+            updateService
+                .Setup(service => service.CheckForUpdatesAsync())
+                .ThrowsAsync(new InvalidOperationException("boom"));
+
+            var messageBox = new Mock<IMessageBoxService>();
+            var shown = new TaskCompletionSource(TaskCreationOptions.RunContinuationsAsynchronously);
+            messageBox
+                .Setup(service => service.ShowWarning(It.IsAny<string>(), "Check for Updates"))
+                .Callback(() => shown.TrySetResult());
+
+            SetField(app, "_host", CreateHost(updateService.Object, messageBox.Object));
+            SetField(app, "_messageBox", messageBox.Object);
+            SetField(app, "_autoUpdate", Mock.Of<IAutoUpdateService>());
+
+            var menuItem = new System.Windows.Controls.MenuItem();
+            InvokePrivateHandler(app, "CheckForUpdates_Click", menuItem, new RoutedEventArgs());
+
+            await shown.Task.WaitAsync(TimeSpan.FromSeconds(5));
+            Assert.True(menuItem.IsEnabled);
+
+            messageBox.Verify(service => service.ShowWarning(
+                It.Is<string>(message => message.Contains("Could not check for updates", StringComparison.Ordinal)),
+                "Check for Updates"), Times.Once);
+        });
+    }
+
+    [Fact]
+    public void OnUpdateBalloonClicked_WithoutPendingUpdate_DoesNothing()
+    {
+        StaTestHelper.Run(() =>
+        {
+            var app = CreateAppWithoutRunning();
+            var autoUpdateMock = new Mock<IAutoUpdateService>();
+            SetField(app, "_autoUpdate", autoUpdateMock.Object);
+
+            InvokePrivateHandler(app, "OnUpdateBalloonClicked", app, new RoutedEventArgs());
+
+            autoUpdateMock.Verify(service => service.ConfirmAndInstallAsync(It.IsAny<UpdateCheckResult>()), Times.Never);
+        });
+    }
+
+    [Fact]
+    public void OnUnobservedTaskException_MarksObserved()
+    {
+        StaTestHelper.Run(() =>
+        {
+            var app = CreateAppWithoutRunning();
+            var args = new UnobservedTaskExceptionEventArgs(new AggregateException(new InvalidOperationException("boom")));
+
+            InvokePrivateHandler(app, "OnUnobservedTaskException", app, args);
+
+            Assert.True(args.Observed);
+        });
+    }
+
     private static App CreateAppWithoutRunning()
     {
+#pragma warning disable SYSLIB0050
         return (App)FormatterServices.GetUninitializedObject(typeof(App));
+#pragma warning restore SYSLIB0050
     }
 
     private static void InvokePrivateHandler(object target, string methodName, params object[] args)
@@ -122,6 +220,19 @@ public sealed class AppTests
         var field = target.GetType().GetField(fieldName, System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
         Assert.NotNull(field);
         field.SetValue(target, value);
+    }
+
+    private static IHost CreateHost(IUpdateService updateService, IMessageBoxService messageBox)
+    {
+        var services = new ServiceCollection();
+        services.AddSingleton(updateService);
+        services.AddSingleton(Mock.Of<IAppVersionService>(version => version.Current == new Version(1, 2, 3)));
+        services.AddSingleton(messageBox);
+
+        var provider = services.BuildServiceProvider();
+        var host = new Mock<IHost>();
+        host.SetupGet(current => current.Services).Returns(provider);
+        return host.Object;
     }
 
     private static DispatcherUnhandledExceptionEventArgs CreateDispatcherUnhandledExceptionArgs(Exception exception)

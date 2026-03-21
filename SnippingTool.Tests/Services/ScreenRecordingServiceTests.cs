@@ -216,4 +216,55 @@ public sealed class ScreenRecordingServiceTests
         // Assert — dimensions truncated to 100×150
         mockFactory.Verify(f => f.Create(It.IsAny<RecordingFormat>(), 100, 150, It.IsAny<int>(), It.IsAny<string>()), Times.Once);
     }
+
+    [Fact]
+    public void Pause_WhenNotRecording_DoesNothing()
+    {
+        using var svc = CreateSut();
+
+        svc.Pause();
+
+        Assert.False(svc.IsPaused);
+    }
+
+    [Fact]
+    public void Resume_WhenNotRecording_DoesNothing()
+    {
+        using var svc = CreateSut();
+
+        svc.Resume();
+
+        Assert.False(svc.IsPaused);
+    }
+
+    [Fact]
+    public void Pause_WhenRecording_SetsIsPausedTrue()
+    {
+        var mockFactory = new Mock<IVideoWriterFactory>();
+        mockFactory
+            .Setup(f => f.Create(It.IsAny<RecordingFormat>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>()))
+            .Returns(new Mock<IVideoWriter>().Object);
+        using var svc = CreateSut(mockFactory.Object);
+
+        svc.Start(0, 0, 100, 100, "test.avi");
+        svc.Pause();
+
+        Assert.True(svc.IsPaused);
+    }
+
+    [Fact]
+    public void Resume_WhenPaused_ClearsIsPaused()
+    {
+        var mockFactory = new Mock<IVideoWriterFactory>();
+        mockFactory
+            .Setup(f => f.Create(It.IsAny<RecordingFormat>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>()))
+            .Returns(new Mock<IVideoWriter>().Object);
+        using var svc = CreateSut(mockFactory.Object);
+
+        svc.Start(0, 0, 100, 100, "test.avi");
+        svc.Pause();
+        svc.Resume();
+
+        Assert.False(svc.IsPaused);
+    }
 }

@@ -56,6 +56,52 @@ public sealed class UserSettingsServiceTests : IDisposable
         Assert.False(File.Exists(settingsPath));
     }
 
+    [Fact]
+    public void Load_WhenFileMissing_UsesDefaultSettings()
+    {
+        var settingsPath = Path.Combine(_tempDirectory, "missing.json");
+
+        var sut = new UserSettingsService(NullLogger<UserSettingsService>.Instance, settingsPath);
+
+        Assert.NotNull(sut.Current);
+        Assert.False(File.Exists(settingsPath));
+    }
+
+    [Fact]
+    public void Load_WhenJsonIsInvalid_UsesDefaultSettings()
+    {
+        var settingsPath = Path.Combine(_tempDirectory, "settings.json");
+        Directory.CreateDirectory(_tempDirectory);
+        File.WriteAllText(settingsPath, "not-json");
+
+        var sut = new UserSettingsService(NullLogger<UserSettingsService>.Instance, settingsPath);
+
+        Assert.NotNull(sut.Current);
+    }
+
+    [Fact]
+    public void Save_PersistsProvidedSettingsAndUpdatesCurrent()
+    {
+        var settingsPath = Path.Combine(_tempDirectory, "nested", "settings.json");
+        var sut = new UserSettingsService(NullLogger<UserSettingsService>.Instance, settingsPath);
+        var settings = new UserSettings
+        {
+            AutoSaveScreenshots = true,
+            CaptureDelaySeconds = 3,
+            RecordingFps = 60,
+        };
+
+        sut.Save(settings);
+
+        Assert.Same(settings, sut.Current);
+        Assert.True(File.Exists(settingsPath));
+        var persisted = JsonSerializer.Deserialize<UserSettings>(File.ReadAllText(settingsPath));
+        Assert.NotNull(persisted);
+        Assert.True(persisted!.AutoSaveScreenshots);
+        Assert.Equal(3, persisted.CaptureDelaySeconds);
+        Assert.Equal(60, persisted.RecordingFps);
+    }
+
     public void Dispose()
     {
         if (Directory.Exists(_tempDirectory))
