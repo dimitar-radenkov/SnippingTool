@@ -12,6 +12,18 @@ The open-source Windows snipping tool with OCR, screen recording, and annotation
 
 https://github.com/user-attachments/assets/d4e0c937-a845-4266-9454-2b816934f949
 
+## Latest features
+
+- **In-recording annotations** — Draw on the captured region while recording, then toggle between interactive and drawing modes from the recording HUD
+- **Recording HUD controls** — Use the floating HUD to pause, resume, stop, switch tools, clear annotations, and open the output folder
+- **Live blur capture** — Blur annotations now capture from the live recording region so sensitive content can be redacted during recording
+
+## Quick start
+
+1. Install SnippingTool with `winget install DimitarRadenkov.SnippingTool` or download the latest installer from Releases.
+2. Press `Print Screen` to open the capture overlay and select the region you want.
+3. Annotate, copy, save, pin, or record the region from the overlay and recording HUD.
+
 ## Features
 
 - **Region capture** — Press the configured hotkey (default: `Print Screen`) to draw a selection on screen
@@ -26,10 +38,19 @@ https://github.com/user-attachments/assets/d4e0c937-a845-4266-9454-2b816934f949
 - **Undo / redo** — Full undo/redo stack during annotation
 - **Copy & auto-save** — Copy to clipboard; optional auto-save to a configurable folder
 - **Screen recording** — Record a selected region to MP4 (H.264 via FFmpeg) or AVI (MJPEG via SharpAvi)
+- **Recording-time annotations** — Add shapes and text directly on top of a recording while it is in progress
 - **Capture delay** — Configurable countdown (0 / 3 / 5 / 10 s) before the selection overlay appears, useful for capturing menus and hover states
 - **Auto-updates** — A background service checks GitHub Releases on every launch and on a configurable schedule (every day / 2 days / 3 days). When a new version is found a tray balloon appears; click it to confirm, watch the progress bar, and the installer runs automatically — no browser, no manual downloads
 - **System tray** — Runs silently in the background; all actions accessible from the tray icon
 - **Theme support** — Choose Light, Dark, or follow the system theme from Settings
+
+## Use cases
+
+- **Bug reports** — Capture a precise region, annotate it, and copy or save the result for issue tracking and support requests
+- **Documentation** — Create quick step-by-step screenshots with arrows, numbered steps, and text callouts for guides and tutorials
+- **Live workflow capture** — Record a selected region while drawing annotations on top of the recording as you work
+- **Sensitive content redaction** — Blur passwords, emails, and other private details before sharing screenshots or recordings
+- **Text extraction** — Select text in a screenshot with OCR and copy it directly to the clipboard
 
 ## How does it compare?
 
@@ -45,6 +66,9 @@ https://github.com/user-attachments/assets/d4e0c937-a845-4266-9454-2b816934f949
 | Pin screenshot as floating window | ✅ | ❌ | ❌ | ❌ |
 | Undo / redo during annotation | ✅ | ❌ | ❌ | ❌ |
 | Screen recording (MP4) | ✅ | ✅ | ❌ | ✅ |
+| Recording-time annotations | ✅ | ❌ | ❌ | ❌ |
+| Recording HUD controls (pause / resume / stop / tools) | ✅ | ❌ | ❌ | ❌ |
+| Live blur capture during recording | ✅ | ❌ | ❌ | ❌ |
 | Capture delay / countdown | ✅ | ✅ | ✅ | ✅ |
 | Auto-save to folder | ✅ | ✅ | ✅ | ✅ |
 | Auto-updates (background, in-app install) | ✅ | ✅ | ❌ | ❌ |
@@ -66,6 +90,13 @@ winget install DimitarRadenkov.SnippingTool
 **Manual installer**
 
 Download the latest `SnippingTool-Setup-*.exe` from the [Releases](https://github.com/dimitar-radenkov/SnippingTool/releases) page and run it.
+
+## Troubleshooting
+
+- **MP4 recording does not start** — MP4 output needs `ffmpeg.exe`. Put it next to the app, or choose AVI in Settings.
+- **OCR is unavailable** — OCR uses Windows.Media.Ocr and requires a supported Windows build.
+- **Hotkey seems ignored** — Make sure another app is not already using the same key and try changing the capture hotkey in Settings.
+- **App is running but not visible** — SnippingTool lives in the system tray after launch.
 
 ## Building from source
 
@@ -156,6 +187,12 @@ To bump the version:
 - **Hardcodet.Wpf.TaskbarNotification** — system tray icon
 - **Nerdbank.GitVersioning** — automatic semantic versioning from git history
 - **xUnit** — unit tests
+
+## Privacy
+
+- SnippingTool is local-first and does not use telemetry.
+- Screenshots, recordings, and OCR processing stay on your machine.
+- Update checks only contact GitHub Releases to look for newer versions.
 
 ## Support
 
