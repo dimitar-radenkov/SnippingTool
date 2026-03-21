@@ -1,6 +1,7 @@
 using System.Windows;
 using SnippingTool.Services;
 using SnippingTool.ViewModels;
+using Forms = System.Windows.Forms;
 
 namespace SnippingTool;
 
@@ -38,9 +39,7 @@ public partial class RecordingHudWindow : Window
     protected override void OnContentRendered(EventArgs e)
     {
         base.OnContentRendered(e);
-        var (left, top) = ComputePosition(_regionRect, ActualWidth, ActualHeight, SystemParameters.WorkArea, _settings.Current.HudGapPixels);
-        Left = left;
-        Top = top;
+        RepositionHud();
     }
 
     // Extracted for unit testability.
@@ -58,8 +57,44 @@ public partial class RecordingHudWindow : Window
         base.OnClosed(e);
     }
 
+    protected override void OnRenderSizeChanged(SizeChangedInfo sizeInfo)
+    {
+        base.OnRenderSizeChanged(sizeInfo);
+        if (IsLoaded)
+        {
+            RepositionHud();
+        }
+    }
+
     private void SavedText_Click(object sender, System.Windows.Input.MouseButtonEventArgs e)
     {
         _vm.OpenOutputFolderCommand.Execute(null);
+    }
+
+    private void ToolButton_Checked(object sender, RoutedEventArgs e)
+    {
+        if (sender is System.Windows.Controls.RadioButton { Tag: string tag }
+            && _vm.SelectToolCommand.CanExecute(tag))
+        {
+            _vm.SelectToolCommand.Execute(tag);
+        }
+    }
+
+    private void RepositionHud()
+    {
+        var (left, top) = ComputePosition(_regionRect, ActualWidth, ActualHeight, GetWorkAreaForRegion(_regionRect), _settings.Current.HudGapPixels);
+        Left = left;
+        Top = top;
+    }
+
+    internal static Rect GetWorkAreaForRegion(Rect region)
+    {
+        var bounds = new System.Drawing.Rectangle(
+            (int)Math.Floor(region.Left),
+            (int)Math.Floor(region.Top),
+            Math.Max(1, (int)Math.Ceiling(region.Width)),
+            Math.Max(1, (int)Math.Ceiling(region.Height)));
+        var workingArea = Forms.Screen.FromRectangle(bounds).WorkingArea;
+        return new Rect(workingArea.Left, workingArea.Top, workingArea.Width, workingArea.Height);
     }
 }

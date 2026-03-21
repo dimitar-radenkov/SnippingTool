@@ -131,7 +131,17 @@ public partial class App : Application
         services.AddSingleton<IAnnotationGeometryService, AnnotationGeometryService>();
         services.AddSingleton<IOcrService, WindowsOcrService>();
         services.AddTransient<OverlayViewModel>();
+        services.AddTransient<RecordingAnnotationViewModel>();
         services.AddTransient<OverlayWindow>();
+        services.AddTransient<Func<Rect, double, double, RecordingAnnotationWindow>>(sp =>
+            (regionRect, dpiX, dpiY) => new RecordingAnnotationWindow(
+                sp.GetRequiredService<RecordingAnnotationViewModel>(),
+                regionRect,
+                dpiX,
+                dpiY,
+                sp.GetRequiredService<IScreenCaptureService>(),
+                sp.GetRequiredService<IEventAggregator>(),
+                sp.GetRequiredService<ILoggerFactory>()));
         services.AddTransient<SettingsViewModel>();
         services.AddTransient<SettingsWindow>();
         services.AddTransient<Func<IScreenRecordingService, string, RecordingHudViewModel>>(sp =>
@@ -421,6 +431,7 @@ public partial class App : Application
 
         return visibleWindows.FirstOrDefault(window => window.IsActive)
             ?? visibleWindows.FirstOrDefault(window => window is OverlayWindow
+                or RecordingAnnotationWindow
                 or RecordingHudWindow
                 or RecordingBorderWindow
                 or CountdownWindow
