@@ -485,7 +485,7 @@ public sealed class RecordingHudViewModelTests
         await vm.ExportToGifCommand.ExecuteAsync(null);
 
         // Assert
-        Assert.Contains("rec.gif", vm.GifExportStatus);
+        Assert.Contains("rec.gif", vm.GifExportStatusText);
         Assert.True(vm.IsGifExportStatusVisible);
         Assert.False(vm.IsGifExportStatusError);
     }
@@ -548,8 +548,27 @@ public sealed class RecordingHudViewModelTests
         // Act
         await vm.ExportToGifCommand.ExecuteAsync(null);
 
-        // Assert — GifExportStatus is now set, so CanExportGif should be false
+        // Assert — succeeded outcome disables re-export
         Assert.False(vm.CanExportGif);
+    }
+
+    [Fact]
+    public async Task ExportToGifCommand_OnFailure_CanExportGif_RemainsTrue()
+    {
+        // Arrange
+        var gifSvc = new Mock<IGifExportService>();
+        gifSvc.Setup(s => s.ExportAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+              .ThrowsAsync(new InvalidOperationException("ffmpeg failed"));
+
+        var vm = CreateVm(gifExportService: gifSvc.Object);
+
+        await vm.StopCommand.ExecuteAsync(null);
+
+        // Act
+        await vm.ExportToGifCommand.ExecuteAsync(null);
+
+        // Assert — failure leaves the button enabled so the user can retry
+        Assert.True(vm.CanExportGif);
     }
 
     [Fact]
@@ -569,7 +588,8 @@ public sealed class RecordingHudViewModelTests
         await vm.ExportToGifCommand.ExecuteAsync(null);
 
         // Assert
-        Assert.Equal("GIF export failed", vm.GifExportStatus);
+        Assert.Equal("GIF export failed", vm.GifExportStatusText);
+        Assert.Equal(GifExportOutcome.Failed, vm.GifExportOutcome);
         Assert.True(vm.IsGifExportStatusError);
     }
 
@@ -619,6 +639,3 @@ public sealed class RecordingHudViewModelTests
         Assert.Equal(15, capturedFps);
     }
 }
-
-
-
