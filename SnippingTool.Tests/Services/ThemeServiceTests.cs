@@ -1,4 +1,3 @@
-using System.Windows;
 using SnippingTool.Models;
 using SnippingTool.Services;
 using Xunit;

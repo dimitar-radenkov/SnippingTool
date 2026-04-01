@@ -1,5 +1,4 @@
 using System.Runtime.ExceptionServices;
-using System.Threading;
 using System.Windows.Threading;
 
 namespace SnippingTool.Tests.Services.Handlers;

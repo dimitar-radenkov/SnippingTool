@@ -2,7 +2,6 @@ using System.Windows.Threading;
 using System.Runtime.Serialization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using System.Windows;
 using SnippingTool.Services;
@@ -11,7 +10,6 @@ using SnippingTool.Models;
 using SnippingTool.ViewModels;
 using SnippingTool.Tests.Services.Handlers;
 using Xunit;
-using System.Runtime.Intrinsics.X86;
 
 namespace SnippingTool.Tests;
 
