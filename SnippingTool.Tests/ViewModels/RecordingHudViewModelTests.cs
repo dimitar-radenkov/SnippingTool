@@ -17,7 +17,8 @@ public sealed class RecordingHudViewModelTests
         Mock<IScreenRecordingService>? svcMock = null,
         string outputPath = @"C:\Videos\rec.mp4",
         UserSettings? settings = null,
-        IProcessService? processService = null)
+        IProcessService? processService = null,
+        IGifExportService? gifExportService = null)
     {
         var svc = (svcMock ?? DefaultSvcMock()).Object;
         var settingsMock = new Mock<IUserSettingsService>();
@@ -27,6 +28,7 @@ public sealed class RecordingHudViewModelTests
             outputPath,
             settingsMock.Object,
             processService ?? Mock.Of<IProcessService>(),
+            gifExportService ?? Mock.Of<IGifExportService>(),
             NullLogger<RecordingHudViewModel>.Instance);
     }
 
@@ -97,7 +99,7 @@ public sealed class RecordingHudViewModelTests
     public async Task StopCommand_SetsStopped()
     {
         // Arrange
-        var vm = CreateVm(settings: new UserSettings { HudCloseDelaySeconds = 0 });
+        var vm = CreateVm();
 
         // Act
         await vm.StopCommand.ExecuteAsync(null);
@@ -110,7 +112,7 @@ public sealed class RecordingHudViewModelTests
     public async Task StopCommand_SetsSavedFileName_ContainsBaseName()
     {
         // Arrange
-        var vm = CreateVm(outputPath: @"C:\Videos\rec.mp4", settings: new UserSettings { HudCloseDelaySeconds = 0 });
+        var vm = CreateVm(outputPath: @"C:\Videos\rec.mp4");
 
         // Act
         await vm.StopCommand.ExecuteAsync(null);
@@ -123,7 +125,7 @@ public sealed class RecordingHudViewModelTests
     public async Task StopCommand_DisablesPauseResume()
     {
         // Arrange
-        var vm = CreateVm(settings: new UserSettings { HudCloseDelaySeconds = 0 });
+        var vm = CreateVm();
 
         // Act
         await vm.StopCommand.ExecuteAsync(null);
@@ -137,28 +139,13 @@ public sealed class RecordingHudViewModelTests
     {
         // Arrange
         var svcMock = new Mock<IScreenRecordingService>();
-        var vm = CreateVm(svcMock: svcMock, settings: new UserSettings { HudCloseDelaySeconds = 0 });
+        var vm = CreateVm(svcMock: svcMock);
 
         // Act
         await vm.StopCommand.ExecuteAsync(null);
 
         // Assert
         svcMock.Verify(service => service.Stop(), Times.Once);
-    }
-
-    [Fact]
-    public async Task StopCommand_FiresStopCompleted()
-    {
-        // Arrange
-        var vm = CreateVm(settings: new UserSettings { HudCloseDelaySeconds = 0 });
-        var fired = false;
-        vm.StopCompleted += () => fired = true;
-
-        // Act
-        await vm.StopCommand.ExecuteAsync(null);
-
-        // Assert
-        Assert.True(fired);
     }
 
     [Fact]
@@ -237,7 +224,7 @@ public sealed class RecordingHudViewModelTests
     public async Task StopCommand_FiresPropertyChangedForIsStopped()
     {
         // Arrange
-        var vm = CreateVm(settings: new UserSettings { HudCloseDelaySeconds = 0 });
+        var vm = CreateVm();
         var changed = new List<string?>();
         vm.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
 
@@ -455,4 +442,183 @@ public sealed class RecordingHudViewModelTests
         // Assert
         Assert.False(vm.CanManageAnnotations);
     }
+
+    [Fact]
+    public void InitialState_CanExportGif_IsFalse()
+    {
+        // Arrange
+        var vm = CreateVm();
+
+        // Assert
+        Assert.False(vm.CanExportGif);
+    }
+
+    [Fact]
+    public async Task AfterStop_CanExportGif_IsTrue()
+    {
+        // Arrange
+        var vm = CreateVm();
+
+        // Act
+        await vm.StopCommand.ExecuteAsync(null);
+
+        // Assert
+        Assert.True(vm.CanExportGif);
+    }
+
+    [Fact]
+    public async Task ExportToGifCommand_OnSuccess_SetsGifExportStatus()
+    {
+        // Arrange
+        var gifSvc = new Mock<IGifExportService>();
+        gifSvc.Setup(s => s.ExportAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+              .Returns(Task.CompletedTask);
+
+        var vm = CreateVm(
+            settings: new UserSettings { GifFps = 10 },
+            outputPath: @"C:\Videos\rec.mp4",
+            gifExportService: gifSvc.Object);
+
+        await vm.StopCommand.ExecuteAsync(null);
+
+        // Act
+        await vm.ExportToGifCommand.ExecuteAsync(null);
+
+        // Assert
+        Assert.Contains("rec.gif", vm.GifExportStatus);
+        Assert.True(vm.IsGifExportStatusVisible);
+        Assert.False(vm.IsGifExportStatusError);
+    }
+
+    [Fact]
+    public async Task ExportToGifCommand_OnSuccess_FiresCloseRequested()
+    {
+        // Arrange
+        var gifSvc = new Mock<IGifExportService>();
+        gifSvc.Setup(s => s.ExportAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+              .Returns(Task.CompletedTask);
+
+        var vm = CreateVm(settings: new UserSettings { HudCloseDelaySeconds = 0 }, gifExportService: gifSvc.Object);
+        var fired = false;
+        vm.CloseRequested += () => fired = true;
+
+        await vm.StopCommand.ExecuteAsync(null);
+
+        // Act
+        await vm.ExportToGifCommand.ExecuteAsync(null);
+
+        // Assert
+        Assert.True(fired);
+    }
+
+    [Fact]
+    public async Task ExportToGifCommand_OnFailure_DoesNotFireCloseRequested()
+    {
+        // Arrange
+        var gifSvc = new Mock<IGifExportService>();
+        gifSvc.Setup(s => s.ExportAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+              .ThrowsAsync(new InvalidOperationException("ffmpeg failed"));
+
+        var vm = CreateVm(gifExportService: gifSvc.Object);
+        var fired = false;
+        vm.CloseRequested += () => fired = true;
+
+        await vm.StopCommand.ExecuteAsync(null);
+
+        // Act
+        await vm.ExportToGifCommand.ExecuteAsync(null);
+
+        // Assert
+        Assert.False(fired);
+    }
+
+    [Fact]
+    public async Task ExportToGifCommand_OnSuccess_CanExportGif_IsFalseAfterwards()
+    {
+        // Arrange
+        var gifSvc = new Mock<IGifExportService>();
+        gifSvc.Setup(s => s.ExportAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+              .Returns(Task.CompletedTask);
+
+        var vm = CreateVm(
+                        gifExportService: gifSvc.Object);
+
+        await vm.StopCommand.ExecuteAsync(null);
+
+        // Act
+        await vm.ExportToGifCommand.ExecuteAsync(null);
+
+        // Assert — GifExportStatus is now set, so CanExportGif should be false
+        Assert.False(vm.CanExportGif);
+    }
+
+    [Fact]
+    public async Task ExportToGifCommand_OnFailure_SetsErrorStatus()
+    {
+        // Arrange
+        var gifSvc = new Mock<IGifExportService>();
+        gifSvc.Setup(s => s.ExportAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+              .ThrowsAsync(new InvalidOperationException("ffmpeg failed"));
+
+        var vm = CreateVm(
+                        gifExportService: gifSvc.Object);
+
+        await vm.StopCommand.ExecuteAsync(null);
+
+        // Act
+        await vm.ExportToGifCommand.ExecuteAsync(null);
+
+        // Assert
+        Assert.Equal("GIF export failed", vm.GifExportStatus);
+        Assert.True(vm.IsGifExportStatusError);
+    }
+
+    [Fact]
+    public async Task ExportToGifCommand_PassesCorrectGifPath()
+    {
+        // Arrange
+        string? capturedOutput = null;
+        var gifSvc = new Mock<IGifExportService>();
+        gifSvc.Setup(s => s.ExportAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+              .Callback<string, string, int, CancellationToken>((_, output, _, _) => capturedOutput = output)
+              .Returns(Task.CompletedTask);
+
+        var vm = CreateVm(
+                        outputPath: @"C:\Videos\rec.mp4",
+            gifExportService: gifSvc.Object);
+
+        await vm.StopCommand.ExecuteAsync(null);
+
+        // Act
+        await vm.ExportToGifCommand.ExecuteAsync(null);
+
+        // Assert
+        Assert.Equal(@"C:\Videos\rec.gif", capturedOutput);
+    }
+
+    [Fact]
+    public async Task ExportToGifCommand_PassesGifFpsFromSettings()
+    {
+        // Arrange
+        int? capturedFps = null;
+        var gifSvc = new Mock<IGifExportService>();
+        gifSvc.Setup(s => s.ExportAsync(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<CancellationToken>()))
+              .Callback<string, string, int, CancellationToken>((_, _, fps, _) => capturedFps = fps)
+              .Returns(Task.CompletedTask);
+
+        var vm = CreateVm(
+            settings: new UserSettings { GifFps = 15 },
+            gifExportService: gifSvc.Object);
+
+        await vm.StopCommand.ExecuteAsync(null);
+
+        // Act
+        await vm.ExportToGifCommand.ExecuteAsync(null);
+
+        // Assert
+        Assert.Equal(15, capturedFps);
+    }
 }
+
+
+

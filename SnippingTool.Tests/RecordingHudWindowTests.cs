@@ -87,6 +87,7 @@ public sealed class RecordingHudWindowTests
             @"C:\Videos\rec.mp4",
             settingsMock.Object,
             processMock.Object,
+            Mock.Of<IGifExportService>(),
             NullLogger<RecordingHudViewModel>.Instance);
 
         var annotationSettings = new Mock<IUserSettingsService>();

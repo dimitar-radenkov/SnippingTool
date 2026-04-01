@@ -7,6 +7,7 @@ using Xunit;
 
 namespace SnippingTool.Tests.Services;
 
+[Collection("FfmpegPathOverride")]
 public sealed class VideoWriterFactoryTests
 {
     private static VideoWriterFactory CreateSut() =>

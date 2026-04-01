@@ -6,7 +6,6 @@ namespace SnippingTool.Services;
 
 public sealed class FFMpegVideoWriter : IVideoWriter
 {
-    private const string FfmpegPathOverrideKey = "SnippingTool.FfmpegPath";
     private readonly Process _ffmpeg;
     private readonly Stream _stdin;
     private readonly ILogger _logger;
@@ -21,7 +20,7 @@ public sealed class FFMpegVideoWriter : IVideoWriter
     {
         _logger = logger;
 
-        var ffmpegPath = ResolveFfmpegPath();
+        var ffmpegPath = FfmpegResolver.Resolve();
         if (!File.Exists(ffmpegPath))
         {
             throw new FileNotFoundException(
@@ -108,29 +107,4 @@ public sealed class FFMpegVideoWriter : IVideoWriter
         }
     }
 
-    private static string ResolveFfmpegPath()
-    {
-        if (AppContext.GetData(FfmpegPathOverrideKey) is string overridePath && !string.IsNullOrWhiteSpace(overridePath))
-        {
-            return overridePath;
-        }
-
-        // 1. Look next to the application binary
-        var appDir = AppContext.BaseDirectory;
-        var candidate = Path.Combine(appDir, "ffmpeg.exe");
-        if (File.Exists(candidate))
-        {
-            return candidate;
-        }
-
-        // 2. Look in Assets/ffmpeg subfolder
-        candidate = Path.Combine(appDir, "Assets", "ffmpeg", "ffmpeg.exe");
-        if (File.Exists(candidate))
-        {
-            return candidate;
-        }
-
-        // 3. Fall back to PATH-resolved ffmpeg
-        return "ffmpeg.exe";
-    }
 }

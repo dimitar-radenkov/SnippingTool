@@ -8,6 +8,7 @@ using Xunit;
 
 namespace SnippingTool.Tests.Services;
 
+[Collection("FfmpegPathOverride")]
 public sealed class FFMpegVideoWriterTests
 {
     private static readonly object FfmpegPathLock = new();
@@ -125,9 +126,7 @@ public sealed class FFMpegVideoWriterTests
 
     private static string InvokeResolveFfmpegPath()
     {
-        var method = typeof(FFMpegVideoWriter).GetMethod("ResolveFfmpegPath", BindingFlags.NonPublic | BindingFlags.Static);
-        Assert.NotNull(method);
-        return (string)method.Invoke(null, null)!;
+        return FfmpegResolver.Resolve();
     }
 
     private static FFMpegVideoWriter CreateDetachedWriter(int exitCode, out MemoryStream memoryStream)

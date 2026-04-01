@@ -11,6 +11,7 @@ using SnippingTool.Models;
 using SnippingTool.ViewModels;
 using SnippingTool.Tests.Services.Handlers;
 using Xunit;
+using System.Runtime.Intrinsics.X86;
 
 namespace SnippingTool.Tests;
 
@@ -84,7 +85,7 @@ public sealed class AppTests
             root.Show();
             var child = new Window { Title = "Child", Width = 100, Height = 100, Owner = root };
             child.Show();
-
+  
             InvokePrivateStatic("CloseWindowTree", root);
 
             Assert.False(root.IsVisible);
