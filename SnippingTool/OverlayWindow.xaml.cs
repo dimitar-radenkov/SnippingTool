@@ -588,15 +588,17 @@ public partial class OverlayWindow : Window
 
         var hudVm = _recordingHudViewModelFactory(_recorder, outputPath);
         hudVm.AttachAnnotationSession(_recordingAnnotation.ViewModel, () => _recordingAnnotation?.ToggleInputMode() ?? false);
-        hudVm.StopCompleted += HandleRecordingStopCompleted;
         _recordingHud = new RecordingHudWindow(hudVm, regionRect, _userSettings);
+        _recordingHud.Closed += OnRecordingHudClosed;
         _recordingHud.Show();
     }
 
-    private void HandleRecordingStopCompleted()
+    private void OnRecordingHudClosed(object? sender, EventArgs e)
     {
         Dispatcher.Invoke(() =>
         {
+            _recordingHud?.Closed -= OnRecordingHudClosed;
+            _recordingHud = null;
             CloseRecordingSessionWindows();
             Close();
         });

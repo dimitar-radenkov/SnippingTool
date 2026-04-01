@@ -21,13 +21,7 @@ public partial class RecordingHudWindow : Window
         _settings = settings;
         DataContext = vm;
         InitializeComponent();
-        _vm.StopCompleted += () => Dispatcher.Invoke(() =>
-        {
-            if (IsLoaded)
-            {
-                Close();
-            }
-        });
+        _vm.CloseRequested += () => Dispatcher.Invoke(Close);
     }
 
     protected override void OnSourceInitialized(EventArgs e)

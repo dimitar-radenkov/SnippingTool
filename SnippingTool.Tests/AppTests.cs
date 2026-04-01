@@ -2,7 +2,6 @@ using System.Windows.Threading;
 using System.Runtime.Serialization;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using System.Windows;
 using SnippingTool.Services;
@@ -84,7 +83,7 @@ public sealed class AppTests
             root.Show();
             var child = new Window { Title = "Child", Width = 100, Height = 100, Owner = root };
             child.Show();
-
+  
             InvokePrivateStatic("CloseWindowTree", root);
 
             Assert.False(root.IsVisible);

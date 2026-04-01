@@ -1,5 +1,4 @@
 using System.Reflection;
-using System.Windows;
 using Forms = System.Windows.Forms;
 using SnippingTool.Services;
 using SnippingTool.Tests.Services.Handlers;

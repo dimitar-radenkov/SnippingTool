@@ -1,4 +1,3 @@
-using System.Windows.Media;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using SnippingTool.Models;

@@ -128,6 +128,7 @@ public partial class App : Application
         services.AddTransient<IScreenCaptureService, ScreenCaptureService>();
         services.AddTransient<IVideoWriterFactory, VideoWriterFactory>();
         services.AddTransient<IScreenRecordingService, ScreenRecordingService>();
+        services.AddSingleton<IGifExportService, GifExportService>();
         services.AddSingleton<IAnnotationGeometryService, AnnotationGeometryService>();
         services.AddSingleton<IOcrService, WindowsOcrService>();
         services.AddTransient<OverlayViewModel>();
@@ -150,6 +151,7 @@ public partial class App : Application
                 outputPath,
                 sp.GetRequiredService<IUserSettingsService>(),
                 sp.GetRequiredService<IProcessService>(),
+                sp.GetRequiredService<IGifExportService>(),
                 sp.GetRequiredService<ILogger<RecordingHudViewModel>>()));
         services.AddTransient<AboutViewModel>();
         services.AddTransient<AboutWindow>();

@@ -1,7 +1,6 @@
 using System.Reflection;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Input;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using SnippingTool.Models;
@@ -87,6 +86,7 @@ public sealed class RecordingHudWindowTests
             @"C:\Videos\rec.mp4",
             settingsMock.Object,
             processMock.Object,
+            Mock.Of<IGifExportService>(),
             NullLogger<RecordingHudViewModel>.Instance);
 
         var annotationSettings = new Mock<IUserSettingsService>();

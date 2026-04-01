@@ -1,6 +1,5 @@
 using System.Reflection;
 using System.Windows;
-using SnippingTool.Tests.Services.Handlers;
 using SnippingTool.Services;
 using Xunit;
 

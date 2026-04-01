@@ -6,11 +6,19 @@ using SnippingTool.Services;
 
 namespace SnippingTool.ViewModels;
 
+public enum GifExportOutcome
+{
+    None,
+    Succeeded,
+    Failed,
+}
+
 public partial class RecordingHudViewModel : ObservableObject
 {
     private readonly IScreenRecordingService _svc;
     private readonly IUserSettingsService _settings;
     private readonly IProcessService _process;
+    private readonly IGifExportService _gifExport;
     private readonly ILogger<RecordingHudViewModel> _logger;
     private RecordingAnnotationViewModel? _annotationViewModel;
     private Func<bool>? _toggleAnnotationInput;
@@ -26,7 +34,21 @@ public partial class RecordingHudViewModel : ObservableObject
     private string _savedFileName = string.Empty;
 
     [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ExportToGifCommand))]
     private bool _isStopped;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ExportToGifCommand))]
+    private bool _isExportingGif;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(ExportToGifCommand))]
+    [NotifyPropertyChangedFor(nameof(IsGifExportStatusVisible))]
+    [NotifyPropertyChangedFor(nameof(IsGifExportStatusError))]
+    private GifExportOutcome _gifExportOutcome;
+
+    [ObservableProperty]
+    private string _gifExportStatusText = string.Empty;
 
     [ObservableProperty]
     private string _pauseResumeLabel = "⏸ Pause";
@@ -52,22 +74,28 @@ public partial class RecordingHudViewModel : ObservableObject
 
     public string OutputPath { get; }
 
+    public bool CanExportGif => IsStopped && !IsExportingGif && GifExportOutcome != GifExportOutcome.Succeeded;
+    public bool IsGifExportStatusVisible => GifExportOutcome != GifExportOutcome.None;
+    public bool IsGifExportStatusError => GifExportOutcome == GifExportOutcome.Failed;
+
     public bool IsAnnotationPanelVisible => CanManageAnnotations && IsAnnotationInputArmed;
     public string CurrentModeLabel => IsAnnotationInputArmed ? "Drawing" : "Interactive";
 
-    public event Action? StopCompleted;
+    public event Action? CloseRequested;
 
     public RecordingHudViewModel(
         IScreenRecordingService svc,
         string outputPath,
         IUserSettingsService settings,
         IProcessService process,
+        IGifExportService gifExport,
         ILogger<RecordingHudViewModel> logger)
     {
         _svc = svc;
         OutputPath = outputPath;
         _settings = settings;
         _process = process;
+        _gifExport = gifExport;
         _logger = logger;
     }
 
@@ -117,12 +145,10 @@ public partial class RecordingHudViewModel : ObservableObject
         _logger.LogInformation("Stop command executed");
         CanPauseResume = false;
         CancelElapsedTimer();
-        _svc.Stop();
+        await Task.Run(() => _svc.Stop()).ConfigureAwait(true);
         SavedFileName = $"Saved \u2192 {Path.GetFileName(OutputPath)}";
         IsStopped = true;
         _logger.LogInformation("Recording saved to {Path}", OutputPath);
-        await Task.Delay(TimeSpan.FromSeconds(_settings.Current.HudCloseDelaySeconds));
-        StopCompleted?.Invoke();
     }
 
     [RelayCommand]
@@ -151,6 +177,36 @@ public partial class RecordingHudViewModel : ObservableObject
         if (dir is not null)
         {
             _process.Start(new System.Diagnostics.ProcessStartInfo("explorer.exe", dir));
+        }
+    }
+
+    [RelayCommand(CanExecute = nameof(CanExportGif))]
+    private async Task ExportToGif(CancellationToken ct)
+    {
+        IsExportingGif = true;
+        var gifPath = Path.ChangeExtension(OutputPath, ".gif");
+        try
+        {
+            await _gifExport.ExportAsync(OutputPath, gifPath, _settings.Current.GifFps, ct).ConfigureAwait(true);
+            GifExportStatusText = $"GIF saved \u2192 {Path.GetFileName(gifPath)}";
+            GifExportOutcome = GifExportOutcome.Succeeded;
+            _logger.LogInformation("GIF export succeeded: {Path}", gifPath);
+            await Task.Delay(TimeSpan.FromSeconds(_settings.Current.HudCloseDelaySeconds), ct).ConfigureAwait(true);
+            CloseRequested?.Invoke();
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("GIF export cancelled");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "GIF export failed");
+            GifExportStatusText = "GIF export failed";
+            GifExportOutcome = GifExportOutcome.Failed;
+        }
+        finally
+        {
+            IsExportingGif = false;
         }
     }
 
