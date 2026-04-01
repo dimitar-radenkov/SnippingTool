@@ -20,7 +20,7 @@ public sealed class GifExportService : IGifExportService
         {
             throw new FileNotFoundException(
                 "ffmpeg.exe not found. GIF export requires ffmpeg. " +
-                "Please place ffmpeg.exe in the application directory or select AVI format in Settings.",
+                "Please place ffmpeg.exe in the application directory or configure its path in Settings.",
                 ffmpegPath);
         }
 

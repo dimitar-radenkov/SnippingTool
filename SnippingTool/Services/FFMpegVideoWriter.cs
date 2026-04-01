@@ -25,7 +25,7 @@ public sealed class FFMpegVideoWriter : IVideoWriter
         {
             throw new FileNotFoundException(
                 "ffmpeg.exe not found. MP4 recording requires ffmpeg. " +
-                "Please place ffmpeg.exe in the application directory or select AVI format in Settings.",
+                "Please place ffmpeg.exe in the application directory or configure its path in Settings.",
                 ffmpegPath);
         }
 

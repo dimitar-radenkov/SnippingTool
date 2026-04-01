@@ -597,6 +597,7 @@ public partial class OverlayWindow : Window
     {
         Dispatcher.Invoke(() =>
         {
+            _recordingHud?.Closed -= OnRecordingHudClosed;
             _recordingHud = null;
             CloseRecordingSessionWindows();
             Close();
