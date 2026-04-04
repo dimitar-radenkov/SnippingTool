@@ -514,16 +514,17 @@ public sealed class RecordingHudViewModelTests
               .Returns(Task.CompletedTask);
 
         var vm = CreateVm(settings: new UserSettings { HudCloseDelaySeconds = 0 }, gifExportService: gifSvc.Object);
-        var fired = false;
-        vm.CloseRequested += () => fired = true;
+        var closeCount = 0;
+        vm.CloseRequested += () => closeCount++;
 
         await vm.StopCommand.ExecuteAsync(null);
+        var preExportCount = closeCount;
 
         // Act
         await vm.ExportToGifCommand.ExecuteAsync(null);
 
         // Assert
-        Assert.True(fired);
+        Assert.Equal(preExportCount + 1, closeCount);
     }
 
     [Fact]
@@ -539,12 +540,13 @@ public sealed class RecordingHudViewModelTests
         vm.CloseRequested += () => closeCount++;
 
         await vm.StopCommand.ExecuteAsync(null);
+        var preExportCount = closeCount;
 
         // Act
         await vm.ExportToGifCommand.ExecuteAsync(null);
 
         // Assert
-        Assert.Equal(1, closeCount);
+        Assert.Equal(preExportCount, closeCount);
     }
 
     [Fact]
