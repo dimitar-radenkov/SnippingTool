@@ -22,7 +22,7 @@ public sealed class RecordingHudViewModelTests
     {
         var svc = (svcMock ?? DefaultSvcMock()).Object;
         var settingsMock = new Mock<IUserSettingsService>();
-        settingsMock.Setup(service => service.Current).Returns(settings ?? new UserSettings());
+        settingsMock.Setup(service => service.Current).Returns(settings ?? new UserSettings { HudCloseDelaySeconds = 0 });
         return new RecordingHudViewModel(
             svc,
             outputPath,
@@ -233,6 +233,21 @@ public sealed class RecordingHudViewModelTests
 
         // Assert
         Assert.Contains(nameof(vm.IsStopped), changed);
+    }
+
+    [Fact]
+    public async Task StopCommand_FiresCloseRequested()
+    {
+        // Arrange
+        var vm = CreateVm();
+        var fired = false;
+        vm.CloseRequested += () => fired = true;
+
+        // Act
+        await vm.StopCommand.ExecuteAsync(null);
+
+        // Assert
+        Assert.True(fired);
     }
 
     [Fact]
@@ -520,8 +535,8 @@ public sealed class RecordingHudViewModelTests
               .ThrowsAsync(new InvalidOperationException("ffmpeg failed"));
 
         var vm = CreateVm(gifExportService: gifSvc.Object);
-        var fired = false;
-        vm.CloseRequested += () => fired = true;
+        var closeCount = 0;
+        vm.CloseRequested += () => closeCount++;
 
         await vm.StopCommand.ExecuteAsync(null);
 
@@ -529,7 +544,7 @@ public sealed class RecordingHudViewModelTests
         await vm.ExportToGifCommand.ExecuteAsync(null);
 
         // Assert
-        Assert.False(fired);
+        Assert.Equal(1, closeCount);
     }
 
     [Fact]

@@ -149,6 +149,8 @@ public partial class RecordingHudViewModel : ObservableObject
         SavedFileName = $"Saved \u2192 {Path.GetFileName(OutputPath)}";
         IsStopped = true;
         _logger.LogInformation("Recording saved to {Path}", OutputPath);
+        await Task.Delay(TimeSpan.FromSeconds(_settings.Current.HudCloseDelaySeconds)).ConfigureAwait(true);
+        CloseRequested?.Invoke();
     }
 
     [RelayCommand]
