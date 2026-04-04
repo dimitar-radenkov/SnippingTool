@@ -19,6 +19,8 @@ internal sealed class AnnotationCanvasRenderer
 
     private IAnnotationShapeHandler? _activeHandler;
 
+    private readonly Dictionary<Color, SolidColorBrush> _brushCache = [];
+
     private BitmapSource? _backgroundCapture;
     private double _dpiX = 1.0;
     private double _dpiY = 1.0;
@@ -60,7 +62,18 @@ internal sealed class AnnotationCanvasRenderer
         };
     }
 
-    private SolidColorBrush ActiveBrush() => new(_vm.ActiveColor);
+    private SolidColorBrush ActiveBrush()
+    {
+        var color = _vm.ActiveColor;
+        if (!_brushCache.TryGetValue(color, out var brush))
+        {
+            brush = new SolidColorBrush(color);
+            brush.Freeze();
+            _brushCache[color] = brush;
+        }
+
+        return brush;
+    }
     private ShapeParameters? GetShapeParameters() => _vm.TryGetShapeParameters();
 
     public void BeginShape(Point p)
