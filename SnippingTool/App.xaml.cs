@@ -435,7 +435,6 @@ public partial class App : Application
             ?? visibleWindows.FirstOrDefault(window => window is OverlayWindow
                 or RecordingAnnotationWindow
                 or RecordingHudWindow
-                or RecordingBorderWindow
                 or CountdownWindow
                 or UpdateDownloadWindow
                 or SettingsWindow
