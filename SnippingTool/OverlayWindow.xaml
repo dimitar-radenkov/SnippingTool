@@ -96,6 +96,29 @@
                Fill="Transparent"
                Visibility="Hidden"/>
 
+    <Rectangle x:Name="RecordingBorderWhite"
+               Fill="Transparent"
+               Stroke="White"
+               StrokeThickness="2"
+               Visibility="Collapsed"
+               IsHitTestVisible="False">
+      <Rectangle.StrokeDashArray>
+        <DoubleCollection>6 6</DoubleCollection>
+      </Rectangle.StrokeDashArray>
+    </Rectangle>
+
+    <Rectangle x:Name="RecordingBorderBlack"
+               Fill="Transparent"
+               Stroke="Black"
+               StrokeThickness="2"
+               StrokeDashOffset="6"
+               Visibility="Collapsed"
+               IsHitTestVisible="False">
+      <Rectangle.StrokeDashArray>
+        <DoubleCollection>6 6</DoubleCollection>
+      </Rectangle.StrokeDashArray>
+    </Rectangle>
+
     <!-- OCR text lasso rectangle (visible during text lasso drag) -->
     <Rectangle x:Name="OcrLassoRect"
                Stroke="#0078D4" StrokeThickness="1.5"
@@ -368,4 +391,23 @@
     </Border>
 
   </Canvas>
+
+  <Window.Triggers>
+    <EventTrigger RoutedEvent="Loaded">
+      <BeginStoryboard>
+        <Storyboard RepeatBehavior="Forever">
+          <DoubleAnimation Storyboard.TargetName="RecordingBorderWhite"
+                           Storyboard.TargetProperty="StrokeDashOffset"
+                           From="0"
+                           To="-12"
+                           Duration="0:0:0.5"/>
+          <DoubleAnimation Storyboard.TargetName="RecordingBorderBlack"
+                           Storyboard.TargetProperty="StrokeDashOffset"
+                           From="6"
+                           To="-6"
+                           Duration="0:0:0.5"/>
+        </Storyboard>
+      </BeginStoryboard>
+    </EventTrigger>
+  </Window.Triggers>
 </Window>

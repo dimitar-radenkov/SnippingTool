@@ -1,6 +1,8 @@
+using System.Runtime.InteropServices;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using System.Windows.Interop;
 using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Microsoft.Extensions.Logging;
@@ -14,6 +16,15 @@ namespace SnippingTool;
 
 public partial class OverlayWindow : Window
 {
+    [DllImport("user32.dll")]
+    private static extern int GetWindowLong(IntPtr hwnd, int nIndex);
+
+    [DllImport("user32.dll")]
+    private static extern int SetWindowLong(IntPtr hwnd, int nIndex, int dwNewLong);
+
+    private const int GWL_EXSTYLE = -20;
+    private const int WS_EX_TRANSPARENT = 0x00000020;
+    private const int WS_EX_LAYERED = 0x00080000;
     private const int ImageViewportMargin = 140;
     private const double RecordingBorderStrokeThickness = 2d;
     private const double RecordingBorderClearance = 6d;
@@ -23,7 +34,7 @@ public partial class OverlayWindow : Window
     private readonly IScreenRecordingService _recorder;
     private readonly Func<IScreenRecordingService, string, RecordingHudViewModel> _recordingHudViewModelFactory;
     private readonly IEventAggregator _eventAggregator;
-    private readonly ILoggerFactory _loggerFactory;
+    private readonly ILogger<OverlayWindow> _logger;
     private readonly IUserSettingsService _userSettings;
     private readonly IMessageBoxService _messageBox;
     private readonly IFileSystemService _fileSystem;
@@ -31,9 +42,9 @@ public partial class OverlayWindow : Window
     private readonly Func<Rect, double, double, RecordingAnnotationWindow> _recordingAnnotationWindowFactory;
     private readonly IEventSubscription _redoSubscription;
     private readonly IEventSubscription _undoSubscription;
+    private readonly System.Windows.Media.Brush _interactiveRootBackground;
     private AnnotationCanvasRenderer _renderer = null!;
     private AnnotationCanvasInteractionController _annotationInteractionController = null!;
-    private RecordingBorderWindow? _recordingBorder;
     private RecordingHudWindow? _recordingHud;
     private RecordingAnnotationWindow? _recordingAnnotation;
     private Point? _lassoStart;
@@ -44,6 +55,7 @@ public partial class OverlayWindow : Window
     private double _openedImageScaleY = 1.0;
     private BitmapSource? _screenSnapshot;
     private BitmapSource? _pendingPinnedBitmap;
+    private IntPtr _overlayHwnd;
 
     public OverlayWindow(
         OverlayViewModel vm,
@@ -63,13 +75,14 @@ public partial class OverlayWindow : Window
         _recorder = recorder;
         _recordingHudViewModelFactory = recordingHudViewModelFactory;
         _eventAggregator = eventAggregator;
-        _loggerFactory = loggerFactory;
+        _logger = loggerFactory.CreateLogger<OverlayWindow>();
         _userSettings = userSettings;
         _messageBox = messageBox;
         _fileSystem = fileSystem;
         _ocrService = ocrService;
         _recordingAnnotationWindowFactory = recordingAnnotationWindowFactory;
         InitializeComponent();
+        _interactiveRootBackground = Root.Background;
         DataContext = _vm;
         _vm.SetBitmapCapture(new OverlayBitmapCapture(
             this,
@@ -116,6 +129,7 @@ public partial class OverlayWindow : Window
     protected override void OnSourceInitialized(EventArgs e)
     {
         base.OnSourceInitialized(e);
+        _overlayHwnd = new WindowInteropHelper(this).Handle;
 
         Left = SystemParameters.VirtualScreenLeft;
         Top = SystemParameters.VirtualScreenTop;
@@ -551,6 +565,16 @@ public partial class OverlayWindow : Window
         var screenW = (int)(sel.Width * _vm.DpiX);
         var screenH = (int)(sel.Height * _vm.DpiY);
 
+        _logger.LogDebug(
+            "StartRecordingSession: overlay DIP Left={OverlayLeft} Top={OverlayTop} DpiX={DpiX} DpiY={DpiY}",
+            Left, Top, _vm.DpiX, _vm.DpiY);
+        _logger.LogDebug(
+            "StartRecordingSession: selection DIP X={SelX} Y={SelY} W={SelW} H={SelH}",
+            sel.X, sel.Y, sel.Width, sel.Height);
+        _logger.LogDebug(
+            "StartRecordingSession: capture physical px X={ScreenX} Y={ScreenY} W={ScreenW} H={ScreenH}",
+            screenX, screenY, screenW, screenH);
+
         var videosDir = _userSettings.Current.RecordingOutputPath;
         _fileSystem.CreateDirectory(videosDir);
         var ext = _userSettings.Current.RecordingFormat == Models.RecordingFormat.Mp4 ? ".mp4" : ".avi";
@@ -558,21 +582,22 @@ public partial class OverlayWindow : Window
 
         try
         {
+            EnterRecordingOverlayMode(sel);
             _recorder.Start(screenX, screenY, screenW, screenH, path);
         }
         catch (System.IO.FileNotFoundException ex)
         {
+            ExitRecordingOverlayMode(sel);
             _messageBox.ShowWarning(ex.Message, "ffmpeg not found");
             return;
         }
 
-        Visibility = Visibility.Hidden;
-
         var regionRect = new Rect(Left + sel.X, Top + sel.Y, sel.Width, sel.Height);
-        ShowRecordingSessionWindows(regionRect, path);
+
+        ShowRecordingSessionWindows(sel, regionRect, path);
     }
 
-    private void ShowRecordingSessionWindows(Rect regionRect, string outputPath)
+    private void ShowRecordingSessionWindows(Rect selectionRect, Rect regionRect, string outputPath)
     {
         var borderRect = new Rect(
             regionRect.Left - RecordingBorderOffset,
@@ -580,8 +605,18 @@ public partial class OverlayWindow : Window
             regionRect.Width + (RecordingBorderOffset * 2d),
             regionRect.Height + (RecordingBorderOffset * 2d));
 
-        _recordingBorder = new RecordingBorderWindow(borderRect.Left, borderRect.Top, borderRect.Width, borderRect.Height);
-        _recordingBorder.Show();
+        _logger.LogDebug(
+            "ShowRecordingSessionWindows: regionRect DIP L={L} T={T} W={W} H={H}",
+            regionRect.Left, regionRect.Top, regionRect.Width, regionRect.Height);
+        _logger.LogDebug(
+            "ShowRecordingSessionWindows: borderRect DIP L={L} T={T} W={W} H={H}",
+            borderRect.Left, borderRect.Top, borderRect.Width, borderRect.Height);
+        _logger.LogDebug(
+            "ShowRecordingSessionWindows: border local DIP L={L} T={T} W={W} H={H}",
+            selectionRect.Left - RecordingBorderOffset,
+            selectionRect.Top - RecordingBorderOffset,
+            selectionRect.Width + (RecordingBorderOffset * 2d),
+            selectionRect.Height + (RecordingBorderOffset * 2d));
 
         _recordingAnnotation = _recordingAnnotationWindowFactory(regionRect, _vm.DpiX, _vm.DpiY);
         _recordingAnnotation.Show();
@@ -611,9 +646,6 @@ public partial class OverlayWindow : Window
 
         _recordingAnnotation?.Close();
         _recordingAnnotation = null;
-
-        _recordingBorder?.Close();
-        _recordingBorder = null;
     }
 
     protected override void OnClosed(EventArgs e)
@@ -672,6 +704,104 @@ public partial class OverlayWindow : Window
         _vm.ResetNumberCounter(AnnotationCanvas.Children
             .OfType<FrameworkElement>()
             .Count(fe => fe.Tag is "number"));
+    }
+
+    private void EnterRecordingOverlayMode(Rect selectionRect)
+    {
+        _logger.LogDebug(
+            "EnterRecordingOverlayMode: border local DIP L={L} T={T} W={W} H={H}",
+            selectionRect.Left - RecordingBorderOffset,
+            selectionRect.Top - RecordingBorderOffset,
+            selectionRect.Width + (RecordingBorderOffset * 2d),
+            selectionRect.Height + (RecordingBorderOffset * 2d));
+
+        Root.Background = Brushes.Transparent;
+        ScreenSnapshot.Visibility = Visibility.Collapsed;
+        DimFull.Visibility = Visibility.Collapsed;
+        DimTop.Visibility = Visibility.Collapsed;
+        DimBottom.Visibility = Visibility.Collapsed;
+        DimLeft.Visibility = Visibility.Collapsed;
+        DimRight.Visibility = Visibility.Collapsed;
+        SelectionBorder.Visibility = Visibility.Collapsed;
+        OcrLassoRect.Visibility = Visibility.Collapsed;
+        SizeLabelBorder.Visibility = Visibility.Collapsed;
+        LoupeBorder.Visibility = Visibility.Collapsed;
+        AnnotationCanvas.Visibility = Visibility.Collapsed;
+        AnnotToolbar.Visibility = Visibility.Collapsed;
+        ActionBar.Visibility = Visibility.Collapsed;
+        CompactActionBar.Visibility = Visibility.Collapsed;
+
+        PositionRecordingBorder(selectionRect);
+        SetOverlayClickThrough(true);
+        Dispatcher.Invoke(() => { }, DispatcherPriority.Render);
+    }
+
+    private void ExitRecordingOverlayMode(Rect selectionRect)
+    {
+        Root.Background = _interactiveRootBackground;
+        SetOverlayClickThrough(false);
+        HideRecordingBorder();
+
+        ScreenSnapshot.Visibility = Visibility.Visible;
+        DimFull.Visibility = Visibility.Collapsed;
+        LayoutDimStrips(selectionRect);
+
+        Canvas.SetLeft(SelectionBorder, selectionRect.X);
+        Canvas.SetTop(SelectionBorder, selectionRect.Y);
+        SelectionBorder.Width = selectionRect.Width;
+        SelectionBorder.Height = selectionRect.Height;
+        SelectionBorder.Visibility = Visibility.Visible;
+
+        AnnotationCanvas.Visibility = Visibility.Visible;
+        PositionToolbars(selectionRect);
+    }
+
+    private void PositionRecordingBorder(Rect selectionRect)
+    {
+        var borderLeft = selectionRect.Left - RecordingBorderOffset;
+        var borderTop = selectionRect.Top - RecordingBorderOffset;
+        var borderWidth = selectionRect.Width + (RecordingBorderOffset * 2d);
+        var borderHeight = selectionRect.Height + (RecordingBorderOffset * 2d);
+
+        Canvas.SetLeft(RecordingBorderWhite, borderLeft);
+        Canvas.SetTop(RecordingBorderWhite, borderTop);
+        RecordingBorderWhite.Width = borderWidth;
+        RecordingBorderWhite.Height = borderHeight;
+        RecordingBorderWhite.Visibility = Visibility.Visible;
+
+        Canvas.SetLeft(RecordingBorderBlack, borderLeft);
+        Canvas.SetTop(RecordingBorderBlack, borderTop);
+        RecordingBorderBlack.Width = borderWidth;
+        RecordingBorderBlack.Height = borderHeight;
+        RecordingBorderBlack.Visibility = Visibility.Visible;
+    }
+
+    private void HideRecordingBorder()
+    {
+        RecordingBorderWhite.Visibility = Visibility.Collapsed;
+        RecordingBorderBlack.Visibility = Visibility.Collapsed;
+    }
+
+    private void SetOverlayClickThrough(bool isClickThrough)
+    {
+        if (_overlayHwnd == IntPtr.Zero)
+        {
+            return;
+        }
+
+        var style = GetWindowLong(_overlayHwnd, GWL_EXSTYLE);
+        style |= WS_EX_LAYERED;
+
+        if (isClickThrough)
+        {
+            style |= WS_EX_TRANSPARENT;
+        }
+        else
+        {
+            style &= ~WS_EX_TRANSPARENT;
+        }
+
+        SetWindowLong(_overlayHwnd, GWL_EXSTYLE, style);
     }
 
     private void DoPin(BitmapSource bitmap)
