@@ -22,7 +22,7 @@ public sealed class RecordingHudViewModelTests
     {
         var svc = (svcMock ?? DefaultSvcMock()).Object;
         var settingsMock = new Mock<IUserSettingsService>();
-        settingsMock.Setup(service => service.Current).Returns(settings ?? new UserSettings());
+        settingsMock.Setup(service => service.Current).Returns(settings ?? new UserSettings { HudCloseDelaySeconds = 0 });
         return new RecordingHudViewModel(
             svc,
             outputPath,
@@ -233,6 +233,21 @@ public sealed class RecordingHudViewModelTests
 
         // Assert
         Assert.Contains(nameof(vm.IsStopped), changed);
+    }
+
+    [Fact]
+    public async Task StopCommand_FiresCloseRequested()
+    {
+        // Arrange
+        var vm = CreateVm();
+        var fired = false;
+        vm.CloseRequested += () => fired = true;
+
+        // Act
+        await vm.StopCommand.ExecuteAsync(null);
+
+        // Assert
+        Assert.True(fired);
     }
 
     [Fact]
@@ -499,16 +514,17 @@ public sealed class RecordingHudViewModelTests
               .Returns(Task.CompletedTask);
 
         var vm = CreateVm(settings: new UserSettings { HudCloseDelaySeconds = 0 }, gifExportService: gifSvc.Object);
-        var fired = false;
-        vm.CloseRequested += () => fired = true;
+        var closeCount = 0;
+        vm.CloseRequested += () => closeCount++;
 
         await vm.StopCommand.ExecuteAsync(null);
+        var preExportCount = closeCount;
 
         // Act
         await vm.ExportToGifCommand.ExecuteAsync(null);
 
         // Assert
-        Assert.True(fired);
+        Assert.Equal(preExportCount + 1, closeCount);
     }
 
     [Fact]
@@ -520,16 +536,17 @@ public sealed class RecordingHudViewModelTests
               .ThrowsAsync(new InvalidOperationException("ffmpeg failed"));
 
         var vm = CreateVm(gifExportService: gifSvc.Object);
-        var fired = false;
-        vm.CloseRequested += () => fired = true;
+        var closeCount = 0;
+        vm.CloseRequested += () => closeCount++;
 
         await vm.StopCommand.ExecuteAsync(null);
+        var preExportCount = closeCount;
 
         // Act
         await vm.ExportToGifCommand.ExecuteAsync(null);
 
         // Assert
-        Assert.False(fired);
+        Assert.Equal(preExportCount, closeCount);
     }
 
     [Fact]

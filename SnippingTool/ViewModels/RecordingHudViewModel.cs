@@ -23,6 +23,7 @@ public partial class RecordingHudViewModel : ObservableObject
     private RecordingAnnotationViewModel? _annotationViewModel;
     private Func<bool>? _toggleAnnotationInput;
     private CancellationTokenSource? _elapsedCts;
+    private CancellationTokenSource? _autoCloseCts;
     private DateTime _startTime;
     private DateTime _pausedAt;
     private TimeSpan _totalPausedDuration;
@@ -149,6 +150,18 @@ public partial class RecordingHudViewModel : ObservableObject
         SavedFileName = $"Saved \u2192 {Path.GetFileName(OutputPath)}";
         IsStopped = true;
         _logger.LogInformation("Recording saved to {Path}", OutputPath);
+
+        _autoCloseCts?.Cancel();
+        _autoCloseCts = new CancellationTokenSource();
+        try
+        {
+            await Task.Delay(TimeSpan.FromSeconds(_settings.Current.HudCloseDelaySeconds), _autoCloseCts.Token).ConfigureAwait(true);
+            CloseRequested?.Invoke();
+        }
+        catch (OperationCanceledException)
+        {
+            _logger.LogInformation("Auto-close cancelled");
+        }
     }
 
     [RelayCommand]
@@ -183,6 +196,7 @@ public partial class RecordingHudViewModel : ObservableObject
     [RelayCommand(CanExecute = nameof(CanExportGif))]
     private async Task ExportToGif(CancellationToken ct)
     {
+        _autoCloseCts?.Cancel();
         IsExportingGif = true;
         var gifPath = Path.ChangeExtension(OutputPath, ".gif");
         try

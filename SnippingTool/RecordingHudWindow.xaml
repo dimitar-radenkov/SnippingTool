@@ -51,7 +51,7 @@
 
     <Style x:Key="ActionBtn" TargetType="Button">
       <Setter Property="Width" Value="48"/>
-      <Setter Property="Height" Value="40"/>
+      <Setter Property="Height" Value="32"/>
       <Setter Property="Margin" Value="1,0"/>
       <Setter Property="Cursor" Value="Hand"/>
       <Setter Property="Template">
@@ -83,7 +83,7 @@
 
     <Style x:Key="ModeActionBtn" TargetType="Button">
       <Setter Property="Width" Value="60"/>
-      <Setter Property="Height" Value="40"/>
+      <Setter Property="Height" Value="32"/>
       <Setter Property="Margin" Value="1,0"/>
       <Setter Property="Cursor" Value="Hand"/>
       <Setter Property="Template">
@@ -134,61 +134,119 @@
           <ColumnDefinition Width="Auto"/>
         </Grid.ColumnDefinitions>
 
-        <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center" HorizontalAlignment="Left">
-          <Button x:Name="AnnotateBtn"
+        <Grid Grid.Column="0" VerticalAlignment="Center" HorizontalAlignment="Left">
+          <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="Auto"/>
+          </Grid.RowDefinitions>
+          <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/>
+            <ColumnDefinition Width="Auto"/>
+          </Grid.ColumnDefinitions>
+
+          <Button Grid.Row="0"
+                  Grid.Column="0"
+                  x:Name="AnnotateBtn"
                   Style="{StaticResource ModeActionBtn}"
                   Command="{Binding ToggleAnnotationInputCommand}"
                   ToolTip="Switch between drawing and interacting with the app"
                   Visibility="{Binding CanToggleAnnotation, Converter={StaticResource BoolToVisibility}}">
-            <StackPanel>
-              <TextBlock Text="✎"
-                         FontSize="13"
-                         Foreground="{DynamicResource PrimaryText}"
-                         HorizontalAlignment="Center"/>
-              <TextBlock Text="{Binding CurrentModeLabel}"
-                         FontSize="8"
-                         Foreground="{DynamicResource SubLabelText}"
-                         HorizontalAlignment="Center"/>
-            </StackPanel>
+            <TextBlock Text="✎"
+                       FontSize="13"
+                       Foreground="{DynamicResource PrimaryText}"
+                       HorizontalAlignment="Center"/>
           </Button>
 
-          <Rectangle Width="1" Fill="{DynamicResource DividerColor}" Margin="3,7" VerticalAlignment="Stretch"/>
+          <TextBlock Grid.Row="1"
+                     Grid.Column="0"
+                     Text="{Binding CurrentModeLabel}"
+                     FontSize="8"
+                     Foreground="{DynamicResource SubLabelText}"
+                     TextAlignment="Center"
+                     Margin="0,2,0,0"
+                     Visibility="{Binding CanToggleAnnotation, Converter={StaticResource BoolToVisibility}}"/>
 
-          <Button x:Name="PauseBtn"
+          <Rectangle Grid.Row="0"
+                     Grid.RowSpan="2"
+                     Grid.Column="1"
+                     Width="1"
+                     Fill="{DynamicResource DividerColor}"
+                     Margin="3,7"
+                     VerticalAlignment="Stretch"
+                     Visibility="{Binding CanToggleAnnotation, Converter={StaticResource BoolToVisibility}}"/>
+
+          <Button Grid.Row="0"
+                  Grid.Column="2"
+                  x:Name="PauseBtn"
                   Style="{StaticResource ActionBtn}"
                   Command="{Binding PauseResumeCommand}"
                   IsEnabled="{Binding CanPauseResume}"
                   ToolTip="Pause or resume recording">
-            <StackPanel>
-              <TextBlock Text="⏯"
-                         FontSize="13"
-                         Foreground="{DynamicResource PrimaryText}"
-                         HorizontalAlignment="Center"/>
-              <TextBlock Text="{Binding PauseResumeLabel}"
-                         FontSize="8"
-                         Foreground="{DynamicResource SubLabelText}"
-                         HorizontalAlignment="Center"/>
-            </StackPanel>
+            <TextBlock FontSize="13"
+                       Foreground="{DynamicResource PrimaryText}"
+                       HorizontalAlignment="Center">
+              <TextBlock.Style>
+                <Style TargetType="TextBlock">
+                  <Setter Property="Text" Value="⏸"/>
+                  <Style.Triggers>
+                    <DataTrigger Binding="{Binding PauseResumeLabel}" Value="▶ Resume">
+                      <Setter Property="Text" Value="▶"/>
+                    </DataTrigger>
+                  </Style.Triggers>
+                </Style>
+              </TextBlock.Style>
+            </TextBlock>
           </Button>
 
-          <Rectangle Width="1" Fill="{DynamicResource DividerColor}" Margin="3,7" VerticalAlignment="Stretch"/>
+          <TextBlock Grid.Row="1"
+                     Grid.Column="2"
+                     FontSize="8"
+                     Foreground="{DynamicResource SubLabelText}"
+                     TextAlignment="Center"
+                     Margin="0,2,0,0">
+            <TextBlock.Style>
+              <Style TargetType="TextBlock">
+                <Setter Property="Text" Value="Pause"/>
+                <Style.Triggers>
+                  <DataTrigger Binding="{Binding PauseResumeLabel}" Value="▶ Resume">
+                    <Setter Property="Text" Value="Resume"/>
+                  </DataTrigger>
+                </Style.Triggers>
+              </Style>
+            </TextBlock.Style>
+          </TextBlock>
 
-          <Button x:Name="StopBtn"
+          <Rectangle Grid.Row="0"
+                     Grid.RowSpan="2"
+                     Grid.Column="3"
+                     Width="1"
+                     Fill="{DynamicResource DividerColor}"
+                     Margin="3,7"
+                     VerticalAlignment="Stretch"/>
+
+          <Button Grid.Row="0"
+                  Grid.Column="4"
+                  x:Name="StopBtn"
                   Style="{StaticResource ActionBtn}"
                   Command="{Binding StopCommand}"
                   ToolTip="Stop recording">
-            <StackPanel>
-              <TextBlock Text="⏹"
-                         FontSize="13"
-                         Foreground="#FF4444"
-                         HorizontalAlignment="Center"/>
-              <TextBlock Text="Stop"
-                         FontSize="8"
-                         Foreground="{DynamicResource SubLabelText}"
-                         HorizontalAlignment="Center"/>
-            </StackPanel>
+            <TextBlock Text="⏹"
+                       FontSize="13"
+                       Foreground="#FF4444"
+                       HorizontalAlignment="Center"/>
           </Button>
-        </StackPanel>
+
+          <TextBlock Grid.Row="1"
+                     Grid.Column="4"
+                     Text="Stop"
+                     FontSize="8"
+                     Foreground="{DynamicResource SubLabelText}"
+                     TextAlignment="Center"
+                     Margin="0,2,0,0"/>
+        </Grid>
 
         <Border Grid.Column="1"
                 Background="{DynamicResource ActionBtnHoverBackground}"
@@ -270,10 +328,7 @@
           <Button Style="{StaticResource ActionBtn}"
                   Command="{Binding UndoAnnotationsCommand}"
                   ToolTip="Undo annotation">
-            <StackPanel>
-              <TextBlock Text="↩" FontSize="13" Foreground="{DynamicResource PrimaryText}" HorizontalAlignment="Center"/>
-              <TextBlock Text="Undo" FontSize="8" Foreground="{DynamicResource SubLabelText}" HorizontalAlignment="Center"/>
-            </StackPanel>
+            <TextBlock Text="↩" FontSize="13" Foreground="{DynamicResource PrimaryText}" HorizontalAlignment="Center"/>
           </Button>
 
           <Rectangle Width="1" Fill="{DynamicResource DividerColor}" Margin="3,7" VerticalAlignment="Stretch"/>
@@ -281,10 +336,7 @@
           <Button Style="{StaticResource ActionBtn}"
                   Command="{Binding ClearAnnotationsCommand}"
                   ToolTip="Clear annotations">
-            <StackPanel>
-              <TextBlock Text="✕" FontSize="13" Foreground="#D96464" HorizontalAlignment="Center"/>
-              <TextBlock Text="Clear" FontSize="8" Foreground="{DynamicResource SubLabelText}" HorizontalAlignment="Center"/>
-            </StackPanel>
+            <TextBlock Text="✕" FontSize="13" Foreground="#D96464" HorizontalAlignment="Center"/>
           </Button>
         </StackPanel>
       </Grid>
