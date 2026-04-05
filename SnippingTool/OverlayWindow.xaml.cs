@@ -9,6 +9,7 @@ using SnippingTool.Services;
 using SnippingTool.Services.Messaging;
 using SnippingTool.ViewModels;
 using Cursors = System.Windows.Input.Cursors;
+using Forms = System.Windows.Forms;
 
 namespace SnippingTool;
 
@@ -38,9 +39,12 @@ public partial class OverlayWindow : Window
     private Rect _openedImageDisplayRect;
     private double _openedImageScaleX = 1.0;
     private double _openedImageScaleY = 1.0;
+    private string? _annotatingMonitorName;
+    private BitmapSource? _annotatingMonitorSnapshot;
     private BitmapSource? _pendingPinnedBitmap;
     private bool _closeLeavesRecorderRunning;
     private SelectionSessionResult? _pendingSelectionSession;
+    private readonly List<SelectionBackdropWindow> _annotatingBackdropWindows = [];
 
     public OverlayWindow(
         OverlayViewModel vm,
@@ -153,6 +157,8 @@ public partial class OverlayWindow : Window
         Width = selectionSession.HostBoundsDips.Width;
         Height = selectionSession.HostBoundsDips.Height;
 
+        _annotatingMonitorName = selectionSession.MonitorName;
+        _annotatingMonitorSnapshot = selectionSession.MonitorSnapshot;
         ScreenSnapshot.Source = selectionSession.SelectionBackground;
         ScreenSnapshot.Width = selectionSession.SelectionRectDips.Width;
         ScreenSnapshot.Height = selectionSession.SelectionRectDips.Height;
@@ -267,10 +273,51 @@ public partial class OverlayWindow : Window
 
     private void CloseBtn_Click(object sender, RoutedEventArgs e) => Close();
 
+    private void ShowAnnotatingBackdropWindows()
+    {
+        CloseAnnotatingBackdropWindows();
+
+        foreach (var screen in Forms.Screen.AllScreens)
+        {
+            var snapshot = screen.DeviceName == _annotatingMonitorName && _annotatingMonitorSnapshot is not null
+                ? _annotatingMonitorSnapshot
+                : _screenCapture.Capture(screen.Bounds.X, screen.Bounds.Y, screen.Bounds.Width, screen.Bounds.Height);
+            var monitorScale = MonitorDpiHelper.GetMonitorScale(screen.Bounds.Location);
+            var bounds = MonitorDpiHelper.CalculateWindowBounds(screen.Bounds, monitorScale);
+            var backdropWindow = new SelectionBackdropWindow(snapshot, bounds);
+            _annotatingBackdropWindows.Add(backdropWindow);
+            DpiAwarenessScope.RunPerMonitorV2(() => backdropWindow.Show());
+
+            _logger.LogDebug(
+                "Annotating backdrop initialized: monitor={Monitor} left={Left} top={Top} width={Width} height={Height}",
+                screen.DeviceName,
+                bounds.Left,
+                bounds.Top,
+                bounds.Width,
+                bounds.Height);
+        }
+
+        var topmost = Topmost;
+        Topmost = false;
+        Topmost = topmost;
+        Activate();
+    }
+
+    private void CloseAnnotatingBackdropWindows()
+    {
+        foreach (var backdropWindow in _annotatingBackdropWindows)
+        {
+            backdropWindow.Close();
+        }
+
+        _annotatingBackdropWindows.Clear();
+    }
+
     protected override void OnClosed(EventArgs e)
     {
         var pendingPinnedBitmap = _pendingPinnedBitmap;
         _pendingPinnedBitmap = null;
+        CloseAnnotatingBackdropWindows();
 
         _undoSubscription.Dispose();
         _redoSubscription.Dispose();
