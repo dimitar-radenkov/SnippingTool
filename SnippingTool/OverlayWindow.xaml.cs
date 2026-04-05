@@ -153,14 +153,14 @@ public partial class OverlayWindow : Window
         Width = selectionSession.HostBoundsDips.Width;
         Height = selectionSession.HostBoundsDips.Height;
 
-        ScreenSnapshot.Width = Width;
-        ScreenSnapshot.Height = Height;
-        Canvas.SetLeft(ScreenSnapshot, 0d);
-        Canvas.SetTop(ScreenSnapshot, 0d);
+        ScreenSnapshot.Source = selectionSession.SelectionBackground;
+        ScreenSnapshot.Width = selectionSession.SelectionRectDips.Width;
+        ScreenSnapshot.Height = selectionSession.SelectionRectDips.Height;
+        Canvas.SetLeft(ScreenSnapshot, selectionSession.SelectionRectDips.X);
+        Canvas.SetTop(ScreenSnapshot, selectionSession.SelectionRectDips.Y);
 
         _vm.DpiX = selectionSession.DpiScaleX;
         _vm.DpiY = selectionSession.DpiScaleY;
-        ScreenSnapshot.Source = selectionSession.MonitorSnapshot;
 
         _logger.LogDebug(
             "Overlay annotating session initialized: monitor={Monitor} left={Left} top={Top} width={Width} height={Height} selectionPx={SelX},{SelY},{SelW},{SelH}",

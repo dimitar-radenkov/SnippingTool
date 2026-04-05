@@ -1,6 +1,8 @@
 using System.Windows;
 using System.Windows.Controls;
+using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using Microsoft.Extensions.Logging;
 using SnippingTool.Services;
 using Cursors = System.Windows.Input.Cursors;
 using Forms = System.Windows.Forms;
@@ -73,9 +75,17 @@ public partial class OverlayWindow
 
     private void EnterAnnotatingSession(Rect selectionRect, BitmapSource backgroundBitmap, double pixelScaleX, double pixelScaleY, bool allowRecording)
     {
+        RecordBtn.Visibility = allowRecording ? Visibility.Visible : Visibility.Collapsed;
+        CompactRecordBtn.Visibility = allowRecording ? Visibility.Visible : Visibility.Collapsed;
+
+        selectionRect = allowRecording
+            ? RehostAnnotatingOverlay(selectionRect)
+            : selectionRect;
+
         _vm.InitializeAnnotatingSession(selectionRect, pixelScaleX, pixelScaleY);
 
         Cursor = Cursors.Arrow;
+        ScreenSnapshot.Visibility = Visibility.Collapsed;
 
         Canvas.SetLeft(SelectionBorder, selectionRect.X);
         Canvas.SetTop(SelectionBorder, selectionRect.Y);
@@ -85,12 +95,21 @@ public partial class OverlayWindow
 
         _renderer.SetBackground(backgroundBitmap, pixelScaleX, pixelScaleY);
 
-        LayoutDimStrips(selectionRect);
+        DimTop.Visibility = Visibility.Collapsed;
+        DimBottom.Visibility = Visibility.Collapsed;
+        DimLeft.Visibility = Visibility.Collapsed;
+        DimRight.Visibility = Visibility.Collapsed;
 
         AnnotationCanvas.Width = selectionRect.Width;
         AnnotationCanvas.Height = selectionRect.Height;
         Canvas.SetLeft(AnnotationCanvas, selectionRect.X);
         Canvas.SetTop(AnnotationCanvas, selectionRect.Y);
+        AnnotationCanvas.Background = new ImageBrush(backgroundBitmap)
+        {
+            Stretch = Stretch.Fill,
+            AlignmentX = AlignmentX.Left,
+            AlignmentY = AlignmentY.Top
+        };
         AnnotationCanvas.Visibility = Visibility.Visible;
         AnnotationCanvas.Cursor = Cursors.Cross;
 
@@ -98,40 +117,65 @@ public partial class OverlayWindow
         AnnotationCanvas.MouseMove += Annot_Move;
         AnnotationCanvas.MouseLeftButtonUp += Annot_Up;
 
-        RecordBtn.Visibility = allowRecording ? Visibility.Visible : Visibility.Collapsed;
-        CompactRecordBtn.Visibility = allowRecording ? Visibility.Visible : Visibility.Collapsed;
-
         PositionToolbars(selectionRect);
     }
 
-    private void LayoutDimStrips(Rect selectionRect)
+    private Rect RehostAnnotatingOverlay(Rect selectionRect)
     {
-        var overlayWidth = Width;
-        var overlayHeight = Height;
+        var overlayBounds = new Rect(0, 0, Width, Height);
+        var toolSize = MeasureFloatingElement(AnnotToolbar);
+        var fullActionSize = MeasureFloatingElement(ActionBar);
+        var compactActionSize = MeasureFloatingElement(CompactActionBar);
+        var layout = OverlayToolbarLayoutHelper.Calculate(
+            selectionRect,
+            new Size(Width, Height),
+            toolSize,
+            fullActionSize,
+            compactActionSize);
 
-        DimTop.SetValue(Canvas.LeftProperty, 0d);
-        DimTop.SetValue(Canvas.TopProperty, 0d);
-        DimTop.Width = overlayWidth;
-        DimTop.Height = selectionRect.Top;
-        DimTop.Visibility = Visibility.Visible;
+        var hostBounds = selectionRect;
+        hostBounds.Union(layout.ToolBounds);
+        hostBounds.Union(layout.ActionBounds);
+        hostBounds.Inflate(16d, 16d);
 
-        DimBottom.SetValue(Canvas.LeftProperty, 0d);
-        DimBottom.SetValue(Canvas.TopProperty, selectionRect.Bottom);
-        DimBottom.Width = overlayWidth;
-        DimBottom.Height = overlayHeight - selectionRect.Bottom;
-        DimBottom.Visibility = Visibility.Visible;
+        hostBounds = new Rect(
+            Math.Max(overlayBounds.Left, hostBounds.Left),
+            Math.Max(overlayBounds.Top, hostBounds.Top),
+            Math.Min(overlayBounds.Right, hostBounds.Right) - Math.Max(overlayBounds.Left, hostBounds.Left),
+            Math.Min(overlayBounds.Bottom, hostBounds.Bottom) - Math.Max(overlayBounds.Top, hostBounds.Top));
 
-        DimLeft.SetValue(Canvas.LeftProperty, 0d);
-        DimLeft.SetValue(Canvas.TopProperty, selectionRect.Top);
-        DimLeft.Width = selectionRect.Left;
-        DimLeft.Height = selectionRect.Height;
-        DimLeft.Visibility = Visibility.Visible;
+        if (hostBounds.Width <= 0d || hostBounds.Height <= 0d)
+        {
+            return selectionRect;
+        }
 
-        DimRight.SetValue(Canvas.LeftProperty, selectionRect.Right);
-        DimRight.SetValue(Canvas.TopProperty, selectionRect.Top);
-        DimRight.Width = overlayWidth - selectionRect.Right;
-        DimRight.Height = selectionRect.Height;
-        DimRight.Visibility = Visibility.Visible;
+        var rebasedSelectionRect = new Rect(
+            selectionRect.Left - hostBounds.Left,
+            selectionRect.Top - hostBounds.Top,
+            selectionRect.Width,
+            selectionRect.Height);
+
+        _logger.LogDebug(
+            "Rehost annotating overlay: oldWindow={OldLeft},{OldTop},{OldWidth},{OldHeight} newWindow={NewLeft},{NewTop},{NewWidth},{NewHeight} rebasedSelection={SelLeft},{SelTop},{SelWidth},{SelHeight}",
+            Left,
+            Top,
+            Width,
+            Height,
+            Left + hostBounds.Left,
+            Top + hostBounds.Top,
+            hostBounds.Width,
+            hostBounds.Height,
+            rebasedSelectionRect.Left,
+            rebasedSelectionRect.Top,
+            rebasedSelectionRect.Width,
+            rebasedSelectionRect.Height);
+
+        Left += hostBounds.Left;
+        Top += hostBounds.Top;
+        Width = hostBounds.Width;
+        Height = hostBounds.Height;
+
+        return rebasedSelectionRect;
     }
 
     private void PositionToolbars(Rect selectionRect)
