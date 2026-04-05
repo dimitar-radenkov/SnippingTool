@@ -1,18 +1,35 @@
+using System.Collections.Concurrent;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
+using System.Threading.Channels;
 using Microsoft.Extensions.Logging;
 
 namespace SnippingTool.Services;
 
 public sealed class ScreenRecordingService : IScreenRecordingService
 {
+    [DllImport("gdi32.dll")]
+    private static extern bool BitBlt(
+        IntPtr hdcDest, int xDest, int yDest, int width, int height,
+        IntPtr hdcSrc, int xSrc, int ySrc, int rop);
+
+    private const int SrcCopy = 0x00CC0020;
+
     private readonly ILogger<ScreenRecordingService> _logger;
     private readonly IUserSettingsService _settings;
     private readonly IVideoWriterFactory _writerFactory;
+
     private IVideoWriter? _writer;
     private CancellationTokenSource? _cts;
     private Task? _captureLoop;
-    private byte[]? _buffer;
+    private Task? _encodeLoop;
+    private Channel<byte[]>? _encodeChannel;
+    private readonly ConcurrentQueue<byte[]> _bufferPool = new();
+
+    // Reused across every frame of a single recording session — allocated in Start, disposed in Stop.
+    private Bitmap? _captureBitmap;
+    private Graphics? _captureGraphics;
+
     private int _captureX;
     private int _captureY;
     private int _captureWidth;
@@ -64,14 +81,36 @@ public sealed class ScreenRecordingService : IScreenRecordingService
         _captureWidth = width;
         _captureHeight = height;
         _fps = fps;
-        _buffer = new byte[width * height * 4];
+
+        // Allocate the capture surface once per session — no per-frame allocation.
+        _captureBitmap = new Bitmap(width, height, PixelFormat.Format32bppArgb);
+        _captureGraphics = Graphics.FromImage(_captureBitmap);
+
+        // Pre-allocate a small pool of raw frame buffers so neither the capture nor the
+        // encode loop ever needs to allocate on the hot path.
+        var bufferSize = width * height * 4;
+        const int PoolSize = 4;
+        for (var i = 0; i < PoolSize; i++)
+        {
+            _bufferPool.Enqueue(new byte[bufferSize]);
+        }
 
         var format = _settings.Current.RecordingFormat;
         _writer = _writerFactory.Create(format, width, height, fps, outputPath);
 
+        // Bounded channel: if the encode loop falls behind, CaptureFrameToChannel will
+        // skip frames (TryWrite returns false) rather than stalling the capture thread.
+        _encodeChannel = Channel.CreateBounded<byte[]>(new BoundedChannelOptions(PoolSize)
+        {
+            FullMode = BoundedChannelFullMode.DropWrite,
+            SingleReader = true,
+            SingleWriter = true,
+        });
+
         _cts = new CancellationTokenSource();
         IsRecording = true;
         _captureLoop = Task.Run(() => CaptureLoopAsync(_cts.Token));
+        _encodeLoop = Task.Run(EncodeLoopAsync);
         _logger.LogInformation("Recording started: {W}x{H} @ {Fps}fps ({Format}) → {Path}", width, height, fps, format, outputPath);
     }
 
@@ -92,21 +131,36 @@ public sealed class ScreenRecordingService : IScreenRecordingService
         }
 
         _cts?.Cancel();
+
+        // Complete the channel so the encode loop drains remaining buffered frames and exits.
+        _encodeChannel?.Writer.TryComplete();
+
         try
         {
             _captureLoop?.Wait(TimeSpan.FromSeconds(3));
+            _encodeLoop?.Wait(TimeSpan.FromSeconds(10));
         }
         catch (AggregateException ae) when (ae.InnerExceptions.All(ex => ex is OperationCanceledException))
         {
         }
         finally
         {
+            _captureGraphics?.Dispose();
+            _captureGraphics = null;
+            _captureBitmap?.Dispose();
+            _captureBitmap = null;
+            while (_bufferPool.TryDequeue(out _))
+            {
+            }
+
             _writer?.Dispose();
             _writer = null;
             _logger.LogInformation("Writer closed — file finalised");
             _cts?.Dispose();
             _cts = null;
             _captureLoop = null;
+            _encodeLoop = null;
+            _encodeChannel = null;
         }
     }
 
@@ -123,7 +177,7 @@ public sealed class ScreenRecordingService : IScreenRecordingService
             {
                 await _pauseGate.WaitAsync(ct).ConfigureAwait(false);
                 _pauseGate.Release();
-                CaptureFrame();
+                CaptureFrameToChannel();
                 frameCount++;
                 if (frameCount % 100 == 0)
                 {
@@ -136,35 +190,87 @@ public sealed class ScreenRecordingService : IScreenRecordingService
             _logger.LogError(ex, "Capture loop failed after {FrameCount} frames", frameCount);
             throw;
         }
+        finally
+        {
+            // Signal the encode loop that no more frames are coming.
+            _encodeChannel?.Writer.TryComplete();
+        }
 
         _logger.LogDebug("Capture loop ended after {FrameCount} frames", frameCount);
     }
 
-    private void CaptureFrame()
+    private void CaptureFrameToChannel()
     {
-        if (_writer is null || _buffer is null)
+        if (_encodeChannel is null || _captureBitmap is null || _captureGraphics is null)
         {
             return;
         }
 
-        using var bmp = new Bitmap(_captureWidth, _captureHeight, PixelFormat.Format32bppArgb);
-        using var g = Graphics.FromImage(bmp);
-        g.CopyFromScreen(_captureX, _captureY, 0, 0, bmp.Size, CopyPixelOperation.SourceCopy);
+        // Rent a pre-allocated buffer; skip this frame if the pool is empty (encode is behind).
+        if (!_bufferPool.TryDequeue(out var buffer))
+        {
+            _logger.LogDebug("Frame skipped — buffer pool exhausted");
+            return;
+        }
 
-        var data = bmp.LockBits(
+        // BitBlt is a direct GDI call, faster than the managed Graphics.CopyFromScreen wrapper.
+        var bitmapDc = _captureGraphics.GetHdc();
+        try
+        {
+            using var screenDc = new ScreenDc();
+            BitBlt(bitmapDc, 0, 0, _captureWidth, _captureHeight,
+                screenDc.Handle, _captureX, _captureY, SrcCopy);
+        }
+        finally
+        {
+            _captureGraphics.ReleaseHdc(bitmapDc);
+        }
+
+        var bits = _captureBitmap.LockBits(
             new Rectangle(0, 0, _captureWidth, _captureHeight),
             ImageLockMode.ReadOnly,
             PixelFormat.Format32bppArgb);
         try
         {
-            Marshal.Copy(data.Scan0, _buffer, 0, _buffer.Length);
+            Marshal.Copy(bits.Scan0, buffer, 0, buffer.Length);
         }
         finally
         {
-            bmp.UnlockBits(data);
+            _captureBitmap.UnlockBits(bits);
         }
 
-        _writer.WriteFrame(_buffer);
+        // TryWrite never blocks; dropped frames are logged at debug level above.
+        if (!_encodeChannel.Writer.TryWrite(buffer))
+        {
+            _bufferPool.Enqueue(buffer);
+        }
+    }
+
+    // Runs on a dedicated background thread; WriteFrame may block on the pipe to ffmpeg
+    // without ever affecting the capture timing or the UI thread.
+    private async Task EncodeLoopAsync()
+    {
+        _logger.LogDebug("Encode loop started");
+        if (_encodeChannel is null)
+        {
+            return;
+        }
+
+        try
+        {
+            // CancellationToken.None: drain all buffered frames before exiting even after Stop().
+            await foreach (var buffer in _encodeChannel.Reader.ReadAllAsync(CancellationToken.None).ConfigureAwait(false))
+            {
+                _writer?.WriteFrame(buffer);
+                _bufferPool.Enqueue(buffer);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Encode loop failed");
+        }
+
+        _logger.LogDebug("Encode loop ended");
     }
 
     public void Pause()
@@ -192,4 +298,20 @@ public sealed class ScreenRecordingService : IScreenRecordingService
     }
 
     public void Dispose() => Stop();
+
+    // Lightweight RAII wrapper around the screen device context.
+    private sealed class ScreenDc : IDisposable
+    {
+        [DllImport("user32.dll")]
+        private static extern IntPtr GetDC(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        private static extern int ReleaseDC(IntPtr hWnd, IntPtr hDc);
+
+        public IntPtr Handle { get; }
+
+        public ScreenDc() => Handle = GetDC(IntPtr.Zero);
+
+        public void Dispose() => ReleaseDC(IntPtr.Zero, Handle);
+    }
 }
