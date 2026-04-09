@@ -27,6 +27,9 @@ public partial class SettingsViewModel : ObservableObject
         _recordingFormat = s.RecordingFormat;
         _gifFps = s.GifFps;
         _hudCloseDelaySeconds = s.HudCloseDelaySeconds;
+        _recordingCursorHighlightEnabled = s.RecordingCursorHighlightEnabled;
+        _recordingClickRippleEnabled = s.RecordingClickRippleEnabled;
+        _recordingCursorHighlightSize = s.RecordingCursorHighlightSize;
         _captureDelaySeconds = s.CaptureDelaySeconds;
         _defaultStrokeThickness = s.DefaultStrokeThickness;
         _regionCaptureHotkey = s.RegionCaptureHotkey;
@@ -61,6 +64,15 @@ public partial class SettingsViewModel : ObservableObject
 
     [ObservableProperty]
     private int _hudCloseDelaySeconds;
+
+    [ObservableProperty]
+    private bool _recordingCursorHighlightEnabled;
+
+    [ObservableProperty]
+    private bool _recordingClickRippleEnabled;
+
+    [ObservableProperty]
+    private double _recordingCursorHighlightSize;
 
     [ObservableProperty]
     private int _captureDelaySeconds;
@@ -139,6 +151,9 @@ public partial class SettingsViewModel : ObservableObject
             RecordingJpegQuality = _settingsService.Current.RecordingJpegQuality,
             GifFps = GifFps,
             HudCloseDelaySeconds = HudCloseDelaySeconds,
+            RecordingCursorHighlightEnabled = RecordingCursorHighlightEnabled,
+            RecordingClickRippleEnabled = RecordingClickRippleEnabled,
+            RecordingCursorHighlightSize = RecordingCursorHighlightSize,
             CaptureDelaySeconds = CaptureDelaySeconds,
             HudGapPixels = _settingsService.Current.HudGapPixels,
             DefaultAnnotationColor = $"#{c.A:X2}{c.R:X2}{c.G:X2}{c.B:X2}",

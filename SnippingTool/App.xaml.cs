@@ -122,6 +122,7 @@ public partial class App : Application
         services.AddSingleton<IImageFileService, ImageFileService>();
         services.AddSingleton<IEventAggregator, DefaultEventAggregator>();
         services.AddSingleton<IProcessService, ProcessService>();
+        services.AddSingleton<IMouseHookService, MouseHookService>();
         services.AddSingleton<IMessageBoxService, MessageBoxService>();
         services.AddSingleton<IFileSystemService, FileSystemService>();
         services.AddSingleton<IUserSettingsService, UserSettingsService>();
