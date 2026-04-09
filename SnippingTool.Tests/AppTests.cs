@@ -1,6 +1,6 @@
 using System.Windows.Threading;
-using System.Runtime.Serialization;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Moq;
@@ -218,9 +218,7 @@ public sealed class AppTests
 
     private static App CreateAppWithoutRunning()
     {
-#pragma warning disable SYSLIB0050
-        return (App)FormatterServices.GetUninitializedObject(typeof(App));
-#pragma warning restore SYSLIB0050
+        return (App)RuntimeHelpers.GetUninitializedObject(typeof(App));
     }
 
     private static void InvokePrivateHandler(object target, string methodName, params object[] args)
