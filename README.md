@@ -1,6 +1,5 @@
-<<<<<<< Updated upstream
 # SnippingTool
-=======
+
 <p align="center">
   <a href="https://dimitar-radenkov.github.io/SnippingTool/">
     <img src="website/app-icon.png" alt="SnippingTool icon" width="48" height="48">
@@ -8,7 +7,7 @@
 </p>
 
 <h1 align="center">SnippingTool</h1>
->>>>>>> Stashed changes
+
 
 <p align="center">
   <b>A modern, lightning-fast screen capture and recording tool for Windows, built on .NET 10.</b><br>
