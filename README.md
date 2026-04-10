@@ -31,6 +31,10 @@ winget install DimitarRadenkov.SnippingTool
 
 *Prefer a manual install? Download the latest `SnippingTool-Setup-*.exe` from the [Releases](https://github.com/dimitar-radenkov/SnippingTool/releases) page.*
 
+1. Install SnippingTool with `winget install DimitarRadenkov.SnippingTool` or download the latest installer from [Releases](https://github.com/dimitar-radenkov/SnippingTool/releases).
+2. Press `Print Screen` to open the capture overlay and select the region you want.
+3. Annotate, copy, save, pin, or record the region from the overlay and recording HUD.
+
 ## ✨ Why use this over the built-in Windows tool?
 
 - **Live Video Annotations:** Draw, highlight, and redact *while* recording. No need for post-production video editing.
@@ -50,12 +54,6 @@ winget install DimitarRadenkov.SnippingTool
 - **Make tutorials easier to follow** — Arrows, text, and numbered steps keep people focused on what matters.
 - **Hide private details before sharing** — Blur emails, passwords, tokens, and anything else you do not want on screen.
 - **Work from one place** — Capture, annotate, copy, save, pin, and record without bouncing between tools.
-
-## Quick start
-
-1. Install SnippingTool with `winget install DimitarRadenkov.SnippingTool` or download the latest installer from [Releases](https://github.com/dimitar-radenkov/SnippingTool/releases).
-2. Press `Print Screen` to open the capture overlay and select the region you want.
-3. Annotate, copy, save, pin, or record the region from the overlay and recording HUD.
 
 ## Features
 
@@ -223,7 +221,7 @@ To bump the version:
 
 ## 🤝 Contributing
 
-We welcome contributions! Whether it's reporting a bug, suggesting a feature, or submitting a pull request. 
+We welcome contributions! Whether it's reporting a bug, suggesting a feature, or submitting a pull request.
 SnippingTool is built on a very clean, modern stack (.NET 10, WPF, CommunityToolkit.Mvvm) making it a great jumping-off point for developers.
 
 1. Check out our [Developer Guide](docs/developer-guide.md) and [Architecture Knowledge Base](docs/project-knowledge-base.md).
