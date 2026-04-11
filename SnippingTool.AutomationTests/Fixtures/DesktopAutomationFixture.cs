@@ -7,6 +7,7 @@ public class DesktopAutomationFixture : IDisposable
 {
     private const string AutomationSettingsPathEnvironmentVariable = "SNIPPINGTOOL_AUTOMATION_SETTINGS_PATH";
     private const string AutomationOutputDirectoryEnvironmentVariable = "SNIPPINGTOOL_AUTOMATION_OUTPUT_DIRECTORY";
+    private const string AutomationOpenImagePathEnvironmentVariable = "SNIPPINGTOOL_AUTOMATION_OPEN_IMAGE_PATH";
     private static readonly JsonSerializerOptions SerializerOptions = new() { WriteIndented = true };
 
     private readonly string _tempDirectory = Path.Combine(
@@ -24,15 +25,22 @@ public class DesktopAutomationFixture : IDisposable
 
     public string SampleOverlayPath => Path.Combine(OutputDirectory, "automation-sample-overlay.png");
 
-    public IReadOnlyDictionary<string, string> CreateEnvironmentVariables()
+    public IReadOnlyDictionary<string, string> CreateEnvironmentVariables(bool includeOpenImageSamplePath = false)
     {
         Directory.CreateDirectory(OutputDirectory);
 
-        return new Dictionary<string, string>
+        var environmentVariables = new Dictionary<string, string>
         {
             [AutomationSettingsPathEnvironmentVariable] = SettingsPath,
             [AutomationOutputDirectoryEnvironmentVariable] = OutputDirectory,
         };
+
+        if (includeOpenImageSamplePath)
+        {
+            environmentVariables[AutomationOpenImagePathEnvironmentVariable] = SampleOverlayPath;
+        }
+
+        return environmentVariables;
     }
 
     public UserSettings ReadSettings()

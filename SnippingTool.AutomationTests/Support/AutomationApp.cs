@@ -14,6 +14,9 @@ public sealed class AutomationApp : IDisposable
     private readonly int _processId;
     private readonly UIA3Automation _automation;
 
+    [DllImport("user32.dll")]
+    private static extern IntPtr GetForegroundWindow();
+
     private AutomationApp(Application application, UIA3Automation automation, Window mainWindow)
     {
         _processId = application.ProcessId;
@@ -141,6 +144,28 @@ public sealed class AutomationApp : IDisposable
         }
 
         throw new TimeoutException("SnippingTool did not exit within the expected timeout.");
+    }
+
+    public void WaitForMainWindowToBeForeground()
+    {
+        var windowHandle = new IntPtr(MainWindow.Properties.NativeWindowHandle.ValueOrDefault);
+        if (windowHandle == IntPtr.Zero)
+        {
+            throw new InvalidOperationException("The current automation window does not expose a native window handle.");
+        }
+
+        var stopwatch = Stopwatch.StartNew();
+        while (stopwatch.Elapsed < WindowTimeout)
+        {
+            if (GetForegroundWindow() == windowHandle)
+            {
+                return;
+            }
+
+            Thread.Sleep(100);
+        }
+
+        throw new TimeoutException("SnippingTool did not become the foreground window within the expected timeout.");
     }
 
     public void Dispose()

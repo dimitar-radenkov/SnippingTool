@@ -6,24 +6,28 @@ internal sealed class AutomationLaunchOptions
     private const string OpenAboutArgument = "--automation-open-about";
     private const string OpenSampleOverlayArgument = "--automation-open-sample-overlay";
     private const string OpenSampleRecordingOverlayArgument = "--automation-open-sample-recording-overlay";
+    private const string OpenTraySampleOverlayArgument = "--automation-open-tray-sample-overlay";
 
     private AutomationLaunchOptions(
         bool openSettingsWindow,
         bool openAboutWindow,
         bool openSampleOverlayWindow,
-        bool openSampleRecordingOverlayWindow)
+        bool openSampleRecordingOverlayWindow,
+        bool openTraySampleOverlayWindow)
     {
         OpenSettingsWindow = openSettingsWindow;
         OpenAboutWindow = openAboutWindow;
         OpenSampleOverlayWindow = openSampleOverlayWindow;
         OpenSampleRecordingOverlayWindow = openSampleRecordingOverlayWindow;
+        OpenTraySampleOverlayWindow = openTraySampleOverlayWindow;
     }
 
     public bool IsAutomationMode =>
         OpenSettingsWindow
         || OpenAboutWindow
         || OpenSampleOverlayWindow
-        || OpenSampleRecordingOverlayWindow;
+        || OpenSampleRecordingOverlayWindow
+        || OpenTraySampleOverlayWindow;
 
     public bool OpenSettingsWindow { get; }
 
@@ -32,6 +36,8 @@ internal sealed class AutomationLaunchOptions
     public bool OpenSampleOverlayWindow { get; }
 
     public bool OpenSampleRecordingOverlayWindow { get; }
+
+    public bool OpenTraySampleOverlayWindow { get; }
 
     public static AutomationLaunchOptions Parse(IEnumerable<string> args)
     {
@@ -43,6 +49,7 @@ internal sealed class AutomationLaunchOptions
             parsedArguments.Contains(OpenSettingsArgument),
             parsedArguments.Contains(OpenAboutArgument),
             parsedArguments.Contains(OpenSampleOverlayArgument),
-            parsedArguments.Contains(OpenSampleRecordingOverlayArgument));
+            parsedArguments.Contains(OpenSampleRecordingOverlayArgument),
+            parsedArguments.Contains(OpenTraySampleOverlayArgument));
     }
 }

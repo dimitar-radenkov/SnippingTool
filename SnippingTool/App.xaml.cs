@@ -41,6 +41,7 @@ public partial class App : Application
     private WpfMenuItem? _recentRecordingsMenuItem;
     private readonly List<RecentRecordingItem> _recentRecordings = [];
 
+    private const string AutomationOpenImagePathEnvironmentVariable = "SNIPPINGTOOL_AUTOMATION_OPEN_IMAGE_PATH";
     private const int WH_KEYBOARD_LL = 13;
     private const int WM_KEYDOWN = 0x0100;
     private const uint VK_PRINTSCREEN = 0x2C;
@@ -265,6 +266,12 @@ public partial class App : Application
             return;
         }
 
+        if (automationLaunchOptions.OpenTraySampleOverlayWindow)
+        {
+            ShowAutomationTraySampleOverlayWindow();
+            return;
+        }
+
         Current.Shutdown();
     }
 
@@ -376,8 +383,15 @@ public partial class App : Application
 
     private void OpenImage()
     {
-        var dialogService = _host.Services.GetRequiredService<IDialogService>();
-        var selectedPath = dialogService.PickOpenImageFile();
+        var selectedPath = _isAutomationMode
+            ? Environment.GetEnvironmentVariable(AutomationOpenImagePathEnvironmentVariable)
+            : null;
+        if (string.IsNullOrWhiteSpace(selectedPath))
+        {
+            var dialogService = _host.Services.GetRequiredService<IDialogService>();
+            selectedPath = dialogService.PickOpenImageFile();
+        }
+
         if (string.IsNullOrWhiteSpace(selectedPath))
         {
             return;
@@ -508,6 +522,12 @@ public partial class App : Application
         RegisterAutomationWindow(overlay);
         overlay.InitializeFromSelectionSession(AutomationSampleFactory.CreateRecordingSelectionSample());
         DpiAwarenessScope.RunPerMonitorV2(() => overlay.Show());
+    }
+
+    private void ShowAutomationTraySampleOverlayWindow()
+    {
+        AutomationSampleFactory.CreateOpenedImageSample();
+        OpenImage_Click(this, new RoutedEventArgs());
     }
 
     private void ShowOverlayFromImage(BitmapSource bitmap, string sourcePath)
