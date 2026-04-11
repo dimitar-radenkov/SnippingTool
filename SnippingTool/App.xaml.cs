@@ -2,6 +2,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Media.Imaging;
 using System.Windows.Threading;
 using Hardcodet.Wpf.TaskbarNotification;
 using Microsoft.Extensions.Configuration;
@@ -9,12 +10,15 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Serilog;
+using SnippingTool.Automation;
 using SnippingTool.Models;
 using SnippingTool.Services;
 using SnippingTool.Services.Messaging;
 using SnippingTool.ViewModels;
 using Application = System.Windows.Application;
+using WpfContextMenu = System.Windows.Controls.ContextMenu;
 using WpfMenuItem = System.Windows.Controls.MenuItem;
+using WpfSeparator = System.Windows.Controls.Separator;
 
 namespace SnippingTool;
 
@@ -36,7 +40,6 @@ public partial class App : Application
     private WpfMenuItem? _recentRecordingsMenuItem;
     private readonly List<RecentRecordingItem> _recentRecordings = [];
 
-    private const string TrayIconResourceKey = "TrayIcon";
     private const int WH_KEYBOARD_LL = 13;
     private const int WM_KEYDOWN = 0x0100;
     private const uint VK_PRINTSCREEN = 0x2C;
@@ -57,8 +60,11 @@ public partial class App : Application
 
     protected override void OnStartup(StartupEventArgs e)
     {
+        var automationLaunchOptions = AutomationLaunchOptions.Parse(e.Args);
         base.OnStartup(e);
-        ShutdownMode = ShutdownMode.OnExplicitShutdown;
+        ShutdownMode = automationLaunchOptions.IsAutomationMode
+            ? ShutdownMode.OnLastWindowClose
+            : ShutdownMode.OnExplicitShutdown;
 
         var config = new ConfigurationBuilder()
             .SetBasePath(AppContext.BaseDirectory)
@@ -98,23 +104,32 @@ public partial class App : Application
         _userSettings = _host.Services.GetRequiredService<IUserSettingsService>();
         _themeService = _host.Services.GetRequiredService<IThemeService>();
         _themeService.Apply(_userSettings.Current.Theme);
-        var eventAggregator = _host.Services.GetRequiredService<IEventAggregator>();
-        _updateAvailableSubscription = eventAggregator.Subscribe<UpdateAvailableMessage>(HandleUpdateAvailable);
-        _recordingCompletedSubscription = eventAggregator.Subscribe<RecordingCompletedMessage>(HandleRecordingCompleted);
-        _autoUpdate = _host.Services.GetRequiredService<IAutoUpdateService>();
+        if (!automationLaunchOptions.IsAutomationMode)
+        {
+            var eventAggregator = _host.Services.GetRequiredService<IEventAggregator>();
+            _updateAvailableSubscription = eventAggregator.Subscribe<UpdateAvailableMessage>(HandleUpdateAvailable);
+            _recordingCompletedSubscription = eventAggregator.Subscribe<RecordingCompletedMessage>(HandleRecordingCompleted);
+            _autoUpdate = _host.Services.GetRequiredService<IAutoUpdateService>();
+        }
+
         _logger.LogInformation("SnippingTool starting up");
 
         Current.DispatcherUnhandledException += OnDispatcherUnhandledException;
         AppDomain.CurrentDomain.UnhandledException += OnAppDomainUnhandledException;
         TaskScheduler.UnobservedTaskException += OnUnobservedTaskException;
 
-        _trayIcon = (TaskbarIcon)FindResource(TrayIconResourceKey);
-        _trayIcon.TrayBalloonTipClicked += OnTrayBalloonClicked;
+        if (automationLaunchOptions.IsAutomationMode)
+        {
+            _logger.LogInformation("SnippingTool automation mode enabled");
+            ShowAutomationWindow(automationLaunchOptions);
+            return;
+        }
+
+        InitializeTrayIcon();
         InitializeRecentRecordingsMenu();
 #if DEBUG
         AddDebugMenuItems();
 #endif
-
         RegisterGlobalHotkey();
         _logger.LogInformation("Global hotkey (Print Screen) registered");
         _host.StartAsync().GetAwaiter().GetResult();
@@ -224,6 +239,71 @@ public partial class App : Application
         return CallNextHookEx(_keyboardHook, nCode, wParam, lParam);
     }
 
+    private void ShowAutomationWindow(AutomationLaunchOptions automationLaunchOptions)
+    {
+        if (automationLaunchOptions.OpenSettingsWindow)
+        {
+            ShowSettingsWindow();
+            return;
+        }
+
+        if (automationLaunchOptions.OpenAboutWindow)
+        {
+            ShowAboutWindow();
+            return;
+        }
+
+        if (automationLaunchOptions.OpenSampleOverlayWindow)
+        {
+            ShowAutomationSampleOverlayWindow();
+            return;
+        }
+
+        if (automationLaunchOptions.OpenSampleRecordingOverlayWindow)
+        {
+            ShowAutomationSampleRecordingOverlayWindow();
+            return;
+        }
+
+        Current.Shutdown();
+    }
+
+    private void InitializeTrayIcon()
+    {
+        _trayIcon = new TaskbarIcon
+        {
+            IconSource = new BitmapImage(new Uri("pack://application:,,,/Assets/icon.ico", UriKind.Absolute)),
+            ToolTipText = "Snipping Tool",
+            ContextMenu = CreateTrayContextMenu(),
+        };
+        _trayIcon.TrayLeftMouseUp += TrayIcon_LeftClick;
+        _trayIcon.TrayBalloonTipClicked += OnTrayBalloonClicked;
+    }
+
+    private WpfContextMenu CreateTrayContextMenu()
+    {
+        var contextMenu = new WpfContextMenu();
+        contextMenu.Items.Add(CreateTrayMenuItem("New Snip", NewSnip_Click));
+        contextMenu.Items.Add(CreateTrayMenuItem("Open image...", OpenImage_Click));
+        contextMenu.Items.Add(new WpfSeparator());
+        contextMenu.Items.Add(CreateTrayMenuItem("Settings", Settings_Click));
+        contextMenu.Items.Add(CreateTrayMenuItem("Check for Updates", CheckForUpdates_Click));
+        contextMenu.Items.Add(CreateTrayMenuItem("About", About_Click));
+        contextMenu.Items.Add(new WpfSeparator());
+        contextMenu.Items.Add(CreateTrayMenuItem("Exit", Exit_Click));
+        return contextMenu;
+    }
+
+    private static WpfMenuItem CreateTrayMenuItem(string header, RoutedEventHandler clickHandler)
+    {
+        var menuItem = new WpfMenuItem
+        {
+            Header = header,
+        };
+        menuItem.Click += clickHandler;
+        return menuItem;
+    }
+
     private void TrayIcon_LeftClick(object sender, RoutedEventArgs e) => StartSnip();
     private void NewSnip_Click(object sender, RoutedEventArgs e) => StartSnip();
 
@@ -307,9 +387,7 @@ public partial class App : Application
         {
             var imageFileService = _host.Services.GetRequiredService<IImageFileService>();
             var bitmap = imageFileService.LoadForAnnotation(selectedPath);
-            var overlay = _host.Services.GetRequiredService<OverlayWindow>();
-            overlay.InitializeFromImage(bitmap, selectedPath);
-            overlay.Show();
+            ShowOverlayFromImage(bitmap, selectedPath);
         }
         catch (Exception ex) when (ex is FileNotFoundException or InvalidDataException or NotSupportedException or IOException or UnauthorizedAccessException)
         {
@@ -386,7 +464,9 @@ public partial class App : Application
         }
     }
 
-    private void Settings_Click(object sender, RoutedEventArgs e)
+    private void Settings_Click(object sender, RoutedEventArgs e) => ShowSettingsWindow();
+
+    private void ShowSettingsWindow()
     {
         if (_settingsWindow is not null)
         {
@@ -399,7 +479,9 @@ public partial class App : Application
         _settingsWindow.Show();
     }
 
-    private void About_Click(object sender, RoutedEventArgs e)
+    private void About_Click(object sender, RoutedEventArgs e) => ShowAboutWindow();
+
+    private void ShowAboutWindow()
     {
         if (_aboutWindow is not null)
         {
@@ -410,6 +492,26 @@ public partial class App : Application
         _aboutWindow = _host.Services.GetRequiredService<AboutWindow>();
         _aboutWindow.Closed += (_, _) => _aboutWindow = null;
         _aboutWindow.Show();
+    }
+
+    private void ShowAutomationSampleOverlayWindow()
+    {
+        var (bitmap, sourcePath) = AutomationSampleFactory.CreateOpenedImageSample();
+        ShowOverlayFromImage(bitmap, sourcePath);
+    }
+
+    private void ShowAutomationSampleRecordingOverlayWindow()
+    {
+        var overlay = _host.Services.GetRequiredService<OverlayWindow>();
+        overlay.InitializeFromSelectionSession(AutomationSampleFactory.CreateRecordingSelectionSample());
+        DpiAwarenessScope.RunPerMonitorV2(() => overlay.Show());
+    }
+
+    private void ShowOverlayFromImage(BitmapSource bitmap, string sourcePath)
+    {
+        var overlay = _host.Services.GetRequiredService<OverlayWindow>();
+        overlay.InitializeFromImage(bitmap, sourcePath);
+        overlay.Show();
     }
 
     private void StartSnip()
