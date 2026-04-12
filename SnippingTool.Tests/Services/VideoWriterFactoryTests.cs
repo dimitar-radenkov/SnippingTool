@@ -1,7 +1,5 @@
 using System.IO;
 using Microsoft.Extensions.Logging.Abstractions;
-using Moq;
-using SnippingTool.Models;
 using SnippingTool.Services;
 using Xunit;
 
@@ -11,7 +9,7 @@ namespace SnippingTool.Tests.Services;
 public sealed class VideoWriterFactoryTests
 {
     private static VideoWriterFactory CreateSut() =>
-        new(Mock.Of<IUserSettingsService>(s => s.Current == new UserSettings()), NullLogger<FFMpegVideoWriter>.Instance);
+        new(NullLogger<FFMpegVideoWriter>.Instance);
 
     private static IDisposable UseFfmpegPathOverride(string? path)
     {
@@ -26,18 +24,23 @@ public sealed class VideoWriterFactoryTests
     }
 
     [Fact]
-    public void Create_Avi_ReturnsSharpAviVideoWriter()
+    public void Create_ReturnsFfmpegVideoWriter_WhenFfmpegExists()
     {
+        var fakeFfmpeg = Path.Combine(Path.GetTempPath(), $"ffmpeg-{Guid.NewGuid()}.exe");
+        File.Copy(Path.Combine(Environment.SystemDirectory, "cmd.exe"), fakeFfmpeg, overwrite: true);
+
+        using var _ = UseFfmpegPathOverride(fakeFfmpeg);
         var factory = CreateSut();
-        var tempPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"test-{Guid.NewGuid()}.avi");
+        var tempPath = System.IO.Path.Combine(System.IO.Path.GetTempPath(), $"test-{Guid.NewGuid()}.mp4");
 
         try
         {
-            using var writer = factory.Create(RecordingFormat.Avi, 100, 100, 10, tempPath);
-            Assert.IsType<SharpAviVideoWriter>(writer);
+            using var writer = factory.Create(100, 100, 10, tempPath);
+            Assert.IsType<FFMpegVideoWriter>(writer);
         }
         finally
         {
+            System.IO.File.Delete(fakeFfmpeg);
             System.IO.File.Delete(tempPath);
         }
     }
@@ -50,16 +53,7 @@ public sealed class VideoWriterFactoryTests
         var factory = CreateSut();
 
         Assert.Throws<System.IO.FileNotFoundException>(() =>
-            factory.Create(RecordingFormat.Mp4, 100, 100, 10, "test.mp4"));
-    }
-
-    [Fact]
-    public void Create_InvalidFormat_Throws()
-    {
-        var factory = CreateSut();
-
-        Assert.Throws<ArgumentOutOfRangeException>(() =>
-            factory.Create((RecordingFormat)999, 100, 100, 10, "test.bin"));
+            factory.Create(100, 100, 10, "test.mp4"));
     }
 
     private sealed class ActionDisposable : IDisposable

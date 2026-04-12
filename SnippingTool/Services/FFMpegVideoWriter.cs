@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using Microsoft.Extensions.Logging;
@@ -20,14 +21,7 @@ public sealed class FFMpegVideoWriter : IVideoWriter
     {
         _logger = logger;
 
-        var ffmpegPath = FfmpegResolver.Resolve();
-        if (!File.Exists(ffmpegPath))
-        {
-            throw new FileNotFoundException(
-                "ffmpeg.exe not found. MP4 recording requires ffmpeg. " +
-                "Please place ffmpeg.exe in the application directory or configure its path in Settings.",
-                ffmpegPath);
-        }
+        var ffmpegPath = FfmpegResolver.ResolveRequired("Screen recording");
 
         var args = string.Join(" ",
             "-y",
@@ -55,7 +49,15 @@ public sealed class FFMpegVideoWriter : IVideoWriter
             }
         };
 
-        _ffmpeg.Start();
+        try
+        {
+            _ffmpeg.Start();
+        }
+        catch (Win32Exception ex) when (string.Equals(ffmpegPath, "ffmpeg.exe", StringComparison.OrdinalIgnoreCase))
+        {
+            throw FfmpegResolver.CreateMissingException("Screen recording", ffmpegPath, ex);
+        }
+
         _stdin = _ffmpeg.StandardInput.BaseStream;
         _ = ConsumeStderr(_ffmpeg);
         _logger.LogInformation("FFMpeg process started (PID {Pid}): {Args}", _ffmpeg.Id, args);

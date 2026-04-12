@@ -69,24 +69,21 @@ public sealed class ScreenRecordingServiceTests
         Assert.False(svc.IsRecording);
     }
 
-    [Theory]
-    [InlineData(RecordingFormat.Mp4)]
-    [InlineData(RecordingFormat.Avi)]
-    public void Start_CallsFactoryWithConfiguredFormat(RecordingFormat format)
+    [Fact]
+    public void Start_CallsFactoryWithRecordingDimensionsAndOutputPath()
     {
         // Arrange
         var mockFactory = new Mock<IVideoWriterFactory>();
         mockFactory
-            .Setup(f => f.Create(It.IsAny<RecordingFormat>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>()))
+            .Setup(f => f.Create(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>()))
             .Returns(new Mock<IVideoWriter>().Object);
-        var settings = new UserSettings { RecordingFormat = format };
-        using var svc = CreateSut(mockFactory.Object, settings);
+        using var svc = CreateSut(mockFactory.Object);
 
         // Act
         svc.Start(0, 0, 100, 100, System.IO.Path.GetTempFileName());
 
         // Assert
-        mockFactory.Verify(f => f.Create(format, 100, 100, It.IsAny<int>(), It.IsAny<string>()), Times.Once);
+        mockFactory.Verify(f => f.Create(100, 100, It.IsAny<int>(), It.IsAny<string>()), Times.Once);
     }
 
     [Fact]
@@ -95,7 +92,7 @@ public sealed class ScreenRecordingServiceTests
         // Arrange
         var mockFactory = new Mock<IVideoWriterFactory>();
         mockFactory
-            .Setup(f => f.Create(It.IsAny<RecordingFormat>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>()))
+            .Setup(f => f.Create(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>()))
             .Returns(new Mock<IVideoWriter>().Object);
         var settings = new UserSettings { RecordingFps = 30 };
         using var svc = CreateSut(mockFactory.Object, settings);
@@ -104,7 +101,7 @@ public sealed class ScreenRecordingServiceTests
         svc.Start(10, 20, 200, 150, "test.mp4");
 
         // Assert
-        mockFactory.Verify(f => f.Create(It.IsAny<RecordingFormat>(), 200, 150, 30, "test.mp4"), Times.Once);
+        mockFactory.Verify(f => f.Create(200, 150, 30, "test.mp4"), Times.Once);
     }
 
     [Fact]
@@ -113,7 +110,7 @@ public sealed class ScreenRecordingServiceTests
         // Arrange
         var mockFactory = new Mock<IVideoWriterFactory>();
         mockFactory
-            .Setup(f => f.Create(It.IsAny<RecordingFormat>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>()))
+            .Setup(f => f.Create(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>()))
             .Throws(new System.IO.FileNotFoundException("ffmpeg.exe not found"));
         using var svc = CreateSut(mockFactory.Object);
 
@@ -128,7 +125,7 @@ public sealed class ScreenRecordingServiceTests
         // Arrange
         var mockFactory = new Mock<IVideoWriterFactory>();
         mockFactory
-            .Setup(f => f.Create(It.IsAny<RecordingFormat>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>()))
+            .Setup(f => f.Create(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>()))
             .Throws(new System.IO.FileNotFoundException("ffmpeg.exe not found"));
         using var svc = CreateSut(mockFactory.Object);
 
@@ -149,12 +146,12 @@ public sealed class ScreenRecordingServiceTests
         // Arrange
         var mockFactory = new Mock<IVideoWriterFactory>();
         mockFactory
-            .Setup(f => f.Create(It.IsAny<RecordingFormat>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>()))
+            .Setup(f => f.Create(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>()))
             .Returns(new Mock<IVideoWriter>().Object);
         using var svc = CreateSut(mockFactory.Object);
 
         // Act
-        svc.Start(0, 0, 100, 100, "test.avi");
+        svc.Start(0, 0, 100, 100, "test.mp4");
 
         // Assert
         Assert.True(svc.IsRecording);
@@ -167,10 +164,10 @@ public sealed class ScreenRecordingServiceTests
         var writerMock = new Mock<IVideoWriter>();
         var mockFactory = new Mock<IVideoWriterFactory>();
         mockFactory
-            .Setup(f => f.Create(It.IsAny<RecordingFormat>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>()))
+            .Setup(f => f.Create(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>()))
             .Returns(writerMock.Object);
         using var svc = CreateSut(mockFactory.Object);
-        svc.Start(0, 0, 100, 100, "test.avi");
+        svc.Start(0, 0, 100, 100, "test.mp4");
 
         // Act
         svc.Stop();
@@ -186,17 +183,17 @@ public sealed class ScreenRecordingServiceTests
         // Arrange
         var mockFactory = new Mock<IVideoWriterFactory>();
         mockFactory
-            .Setup(f => f.Create(It.IsAny<RecordingFormat>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>()))
+            .Setup(f => f.Create(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>()))
             .Returns(new Mock<IVideoWriter>().Object);
         using var svc = CreateSut(mockFactory.Object);
-        svc.Start(0, 0, 100, 100, "first.avi");
+        svc.Start(0, 0, 100, 100, "first.mp4");
 
         // Act
-        svc.Start(0, 0, 200, 200, "second.avi");
+        svc.Start(0, 0, 200, 200, "second.mp4");
 
         // Assert — factory only called once
         mockFactory.Verify(
-            f => f.Create(It.IsAny<RecordingFormat>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>()),
+            f => f.Create(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>()),
             Times.Once);
     }
 
@@ -206,15 +203,15 @@ public sealed class ScreenRecordingServiceTests
         // Arrange
         var mockFactory = new Mock<IVideoWriterFactory>();
         mockFactory
-            .Setup(f => f.Create(It.IsAny<RecordingFormat>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>()))
+            .Setup(f => f.Create(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>()))
             .Returns(new Mock<IVideoWriter>().Object);
         using var svc = CreateSut(mockFactory.Object);
 
         // Act
-        svc.Start(0, 0, 101, 151, "test.avi");
+        svc.Start(0, 0, 101, 151, "test.mp4");
 
         // Assert — dimensions truncated to 100×150
-        mockFactory.Verify(f => f.Create(It.IsAny<RecordingFormat>(), 100, 150, It.IsAny<int>(), It.IsAny<string>()), Times.Once);
+        mockFactory.Verify(f => f.Create(100, 150, It.IsAny<int>(), It.IsAny<string>()), Times.Once);
     }
 
     [Fact]
@@ -242,11 +239,11 @@ public sealed class ScreenRecordingServiceTests
     {
         var mockFactory = new Mock<IVideoWriterFactory>();
         mockFactory
-            .Setup(f => f.Create(It.IsAny<RecordingFormat>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>()))
+            .Setup(f => f.Create(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>()))
             .Returns(new Mock<IVideoWriter>().Object);
         using var svc = CreateSut(mockFactory.Object);
 
-        svc.Start(0, 0, 100, 100, "test.avi");
+        svc.Start(0, 0, 100, 100, "test.mp4");
         svc.Pause();
 
         Assert.True(svc.IsPaused);
@@ -257,11 +254,11 @@ public sealed class ScreenRecordingServiceTests
     {
         var mockFactory = new Mock<IVideoWriterFactory>();
         mockFactory
-            .Setup(f => f.Create(It.IsAny<RecordingFormat>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>()))
+            .Setup(f => f.Create(It.IsAny<int>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<string>()))
             .Returns(new Mock<IVideoWriter>().Object);
         using var svc = CreateSut(mockFactory.Object);
 
-        svc.Start(0, 0, 100, 100, "test.avi");
+        svc.Start(0, 0, 100, 100, "test.mp4");
         svc.Pause();
         svc.Resume();
 

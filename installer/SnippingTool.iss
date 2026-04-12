@@ -53,7 +53,6 @@ Name: "english"; MessagesFile: "compiler:Default.isl"
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; GroupDescription: "{cm:AdditionalIcons}"
 Name: "startupicon"; Description: "Start automatically with Windows"; GroupDescription: "Startup:"
-Name: "ffmpeg"; Description: "Download ffmpeg for MP4 recording support (~80 MB, requires internet)"; GroupDescription: "Components:"
 
 [Files]
 ; The single-file publish exe — everything is bundled inside it
@@ -87,6 +86,7 @@ Filename: "taskkill.exe"; Parameters: "/f /im {#AppExeName}"; Flags: runhidden
 [Code]
 var
   DownloadPage: TDownloadWizardPage;
+  FfmpegInfoPage: TWizardPage;
 
 function OnDownloadProgress(const Url, FileName: String; const Progress, ProgressMax: Int64): Boolean;
 begin
@@ -96,18 +96,38 @@ begin
 end;
 
 procedure InitializeWizard;
+var
+  InfoText: TNewStaticText;
 begin
   DownloadPage := CreateDownloadPage(
-    'Downloading ffmpeg',
-    'Please wait while ffmpeg is being downloaded...',
+    'Installing ffmpeg',
+    'SnippingTool requires ffmpeg for MP4 recording and GIF export. Please wait while the installer downloads it...',
     @OnDownloadProgress);
   DownloadPage.ShowBaseNameInsteadOfUrl := True;
+
+  FfmpegInfoPage := CreateCustomPage(
+    wpSelectDir,
+    'Required recording dependency',
+    'SnippingTool requires ffmpeg for MP4 recording and GIF export.');
+
+  InfoText := TNewStaticText.Create(FfmpegInfoPage.Surface);
+  InfoText.Parent := FfmpegInfoPage.Surface;
+  InfoText.Left := 0;
+  InfoText.Top := 0;
+  InfoText.Width := FfmpegInfoPage.SurfaceWidth;
+  InfoText.Height := ScaleY(120);
+  InfoText.AutoSize := False;
+  InfoText.WordWrap := True;
+  InfoText.Caption :=
+    'SnippingTool now records to MP4 only.' + #13#10#13#10 +
+    'ffmpeg is required because the app streams raw screen frames to ffmpeg for video encoding, and the same executable is also used for GIF export.' + #13#10#13#10 +
+    'The installer downloads ffmpeg automatically and places ffmpeg.exe next to the app.';
 end;
 
 function NextButtonClick(CurPageID: Integer): Boolean;
 begin
   Result := True;
-  if (CurPageID = wpReady) and IsTaskSelected('ffmpeg') then
+  if CurPageID = wpReady then
   begin
     DownloadPage.Clear;
     DownloadPage.Add('{#FFmpegZipUrl}', '{#FFmpegZipFile}', '');
@@ -116,12 +136,25 @@ begin
       try
         DownloadPage.Download;
       except
-        if not DownloadPage.AbortedByUser then
+        if DownloadPage.AbortedByUser then
           SuppressibleMsgBox(
-            'ffmpeg download failed. MP4 recording will not be available until you ' +
-            'manually place ffmpeg.exe in the application folder.' + #13#10#13#10 +
+            'Setup cannot continue because ffmpeg is required for MP4 recording and GIF export.',
+            mbError, MB_OK, IDOK)
+        else
+          SuppressibleMsgBox(
+            'ffmpeg download failed. Setup cannot continue because SnippingTool requires ffmpeg for MP4 recording and GIF export.' + #13#10#13#10 + #13#10 +
             'Error: ' + GetExceptionMessage,
             mbError, MB_OK, IDOK);
+
+        Result := False;
+      end;
+
+      if Result and not FileExists(ExpandConstant('{tmp}\{#FFmpegZipFile}')) then
+      begin
+        SuppressibleMsgBox(
+          'ffmpeg download did not produce the expected archive. Setup cannot continue.',
+          mbError, MB_OK, IDOK);
+        Result := False;
       end;
     finally
       DownloadPage.Hide;
@@ -139,8 +172,7 @@ begin
 
   if not FileExists(ZipPath) then
   begin
-    Log('ffmpeg zip not found - skipping extraction');
-    Exit;
+    RaiseException('Required ffmpeg archive was not downloaded. SnippingTool requires ffmpeg for MP4 recording and GIF export.');
   end;
 
   PsCmd :=
@@ -159,10 +191,10 @@ begin
     if (ResultCode = 0) and FileExists(DestPath) then
       Log('ffmpeg.exe extracted successfully to ' + DestPath)
     else
-      Log('ffmpeg extraction failed with code ' + IntToStr(ResultCode));
+      RaiseException('ffmpeg extraction failed with code ' + IntToStr(ResultCode) + '. SnippingTool requires ffmpeg for MP4 recording and GIF export.');
   end
   else
-    Log('Failed to launch PowerShell for ffmpeg extraction');
+    RaiseException('Failed to launch PowerShell for ffmpeg extraction. SnippingTool requires ffmpeg for MP4 recording and GIF export.');
 end;
 
 procedure CurStepChanged(CurStep: TSetupStep);

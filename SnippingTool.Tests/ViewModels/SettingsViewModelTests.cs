@@ -73,68 +73,6 @@ public sealed class SettingsViewModelTests
     }
 
     [Fact]
-    public void UserSettings_Default_RecordingFormat_IsMp4()
-    {
-        // Arrange
-        var settings = new UserSettings();
-
-        // Assert
-        Assert.Equal(RecordingFormat.Mp4, settings.RecordingFormat);
-    }
-
-    [Fact]
-    public void LoadsFromSettings_RecordingFormat()
-    {
-        // Arrange
-        var vm = CreateVm(new UserSettings { RecordingFormat = RecordingFormat.Avi });
-
-        // Assert
-        Assert.Equal(RecordingFormat.Avi, vm.RecordingFormat);
-    }
-
-    [Fact]
-    public void Save_PersistsRecordingFormat()
-    {
-        // Arrange
-        var mock = new Mock<IUserSettingsService>();
-        mock.SetupGet(s => s.Current).Returns(new UserSettings());
-        UserSettings? saved = null;
-        mock.Setup(s => s.Save(It.IsAny<UserSettings>())).Callback<UserSettings>(s => saved = s);
-        var vm = new SettingsViewModel(mock.Object, Mock.Of<IThemeService>(), Mock.Of<IDialogService>());
-        vm.RecordingFormat = RecordingFormat.Avi;
-
-        // Act
-        vm.SaveCommand.Execute(null);
-
-        // Assert
-        Assert.Equal(RecordingFormat.Avi, saved?.RecordingFormat);
-    }
-
-    [Fact]
-    public void RecordingFormat_PropertyChanged_Fired()
-    {
-        // Arrange
-        var vm = CreateVm();
-        var raised = new List<string?>();
-        vm.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
-
-        // Act
-        vm.RecordingFormat = RecordingFormat.Avi;
-
-        // Assert
-        Assert.Contains(nameof(vm.RecordingFormat), raised);
-    }
-
-    [Fact]
-    public void RecordingFormatValues_All_ContainsBothFormats()
-    {
-        // Assert
-        Assert.Contains(RecordingFormat.Mp4, RecordingFormatValues.All);
-        Assert.Contains(RecordingFormat.Avi, RecordingFormatValues.All);
-        Assert.Equal(2, RecordingFormatValues.All.Length);
-    }
-
-    [Fact]
     public void UserSettings_Default_RegionCaptureHotkey_IsPrintScreen()
     {
         // Arrange
@@ -366,7 +304,6 @@ public sealed class SettingsViewModelTests
         {
             ScreenshotSavePath = @"C:\Shots",
             RecordingOutputPath = @"C:\Videos",
-            RecordingFormat = RecordingFormat.Avi,
             GifFps = 20,
             RecordingCursorHighlightEnabled = false,
             RecordingClickRippleEnabled = false,
@@ -375,7 +312,6 @@ public sealed class SettingsViewModelTests
 
         vm.ScreenshotSavePath = @"D:\Keep";
         vm.RecordingOutputPath = @"D:\Reset";
-        vm.RecordingFormat = RecordingFormat.Avi;
         vm.GifFps = 20;
         vm.RecordingCursorHighlightEnabled = false;
         vm.RecordingClickRippleEnabled = false;
@@ -387,7 +323,6 @@ public sealed class SettingsViewModelTests
         var defaults = new UserSettings();
         Assert.Equal(@"D:\Keep", vm.ScreenshotSavePath);
         Assert.Equal(defaults.RecordingOutputPath, vm.RecordingOutputPath);
-        Assert.Equal(defaults.RecordingFormat, vm.RecordingFormat);
         Assert.Equal(defaults.GifFps, vm.GifFps);
         Assert.Equal(defaults.RecordingCursorHighlightEnabled, vm.RecordingCursorHighlightEnabled);
         Assert.Equal(defaults.RecordingClickRippleEnabled, vm.RecordingClickRippleEnabled);
@@ -400,7 +335,6 @@ public sealed class SettingsViewModelTests
         var current = new UserSettings
         {
             RecordingFps = 7,
-            RecordingJpegQuality = 11,
             HudGapPixels = 99,
             LastAutoUpdateCheckUtc = new DateTime(2025, 1, 1, 12, 0, 0, DateTimeKind.Utc),
         };
@@ -416,7 +350,6 @@ public sealed class SettingsViewModelTests
 
         Assert.NotNull(saved);
         Assert.Equal(defaults.RecordingFps, saved!.RecordingFps);
-        Assert.Equal(defaults.RecordingJpegQuality, saved.RecordingJpegQuality);
         Assert.Equal(defaults.HudGapPixels, saved.HudGapPixels);
         Assert.Equal(defaults.LastAutoUpdateCheckUtc, saved.LastAutoUpdateCheckUtc);
     }
@@ -427,7 +360,6 @@ public sealed class SettingsViewModelTests
         var current = new UserSettings
         {
             RecordingFps = 7,
-            RecordingJpegQuality = 11,
             HudGapPixels = 99,
             LastAutoUpdateCheckUtc = new DateTime(2025, 1, 1, 12, 0, 0, DateTimeKind.Utc),
         };
@@ -445,7 +377,6 @@ public sealed class SettingsViewModelTests
         Assert.NotNull(saved);
         Assert.Equal(@"D:\Screens", saved!.ScreenshotSavePath);
         Assert.Equal(defaults.RecordingFps, saved.RecordingFps);
-        Assert.Equal(defaults.RecordingJpegQuality, saved.RecordingJpegQuality);
         Assert.Equal(defaults.HudGapPixels, saved.HudGapPixels);
         Assert.Equal(defaults.LastAutoUpdateCheckUtc, saved.LastAutoUpdateCheckUtc);
     }

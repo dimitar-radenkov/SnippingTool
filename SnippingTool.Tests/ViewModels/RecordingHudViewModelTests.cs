@@ -65,9 +65,9 @@ public sealed class RecordingHudViewModelTests
     [Fact]
     public void OutputPath_ExposesConstructorValue()
     {
-        var vm = CreateVm(outputPath: @"C:\Videos\test.avi");
+        var vm = CreateVm(outputPath: @"C:\Videos\test.mp4");
 
-        Assert.Equal(@"C:\Videos\test.avi", vm.OutputPath);
+        Assert.Equal(@"C:\Videos\test.mp4", vm.OutputPath);
     }
 
     [Fact]

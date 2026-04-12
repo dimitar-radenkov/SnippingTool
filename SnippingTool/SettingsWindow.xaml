@@ -251,8 +251,6 @@
                                 </Grid.ColumnDefinitions>
                                 <Grid.RowDefinitions>
                                     <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
 
                                 <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,16,0">
@@ -427,7 +425,7 @@
 
                                 <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,16,0">
                                     <TextBlock Text="Recording output folder" Style="{StaticResource RowTitle}"/>
-                                    <TextBlock Text="The default save location for new recordings."
+                                    <TextBlock Text="The default save location for new MP4 recordings."
                                                Style="{StaticResource RowDescription}"/>
                                 </StackPanel>
                                 <Grid Grid.Row="0" Grid.Column="1">
@@ -443,24 +441,6 @@
                                             Command="{Binding BrowseRecordingPathCommand}"
                                             Margin="10,0,0,0"/>
                                 </Grid>
-
-                                <Border Grid.Row="1"
-                                        Grid.ColumnSpan="2"
-                                        Height="1"
-                                        Background="{DynamicResource DividerColor}"
-                                        Margin="0,16,0,16"/>
-
-                                <StackPanel Grid.Row="2" Grid.Column="0" Margin="0,0,16,0">
-                                    <TextBlock Text="Output format" Style="{StaticResource RowTitle}"/>
-                                    <TextBlock Text="Choose the default format used when a recording is saved."
-                                               Style="{StaticResource RowDescription}"/>
-                                </StackPanel>
-                                <ComboBox Grid.Row="2"
-                                          Grid.Column="1"
-                                          Width="160"
-                                          Style="{StaticResource CompactComboBox}"
-                                          SelectedItem="{Binding RecordingFormat}"
-                                          ItemsSource="{Binding Source={x:Static models:RecordingFormatValues.All}}"/>
                             </Grid>
                         </StackPanel>
                     </Border>
