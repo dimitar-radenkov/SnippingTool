@@ -301,8 +301,7 @@ public sealed class SettingsViewModelTests
         mock.SetupGet(s => s.Current).Returns(new UserSettings());
         UserSettings? saved = null;
         mock.Setup(s => s.Save(It.IsAny<UserSettings>())).Callback<UserSettings>(s => saved = s);
-        var vm = new SettingsViewModel(mock.Object, Mock.Of<IThemeService>(), Mock.Of<IDialogService>(), CreateMicrophoneDeviceService());
-        
+        var vm = new SettingsViewModel(mock.Object, Mock.Of<IThemeService>(), Mock.Of<IDialogService>(), CreateMicrophoneDeviceService()); 
         vm.RecordingCursorHighlightEnabled = false;
         vm.RecordingClickRippleEnabled = false;
         vm.RecordingCursorHighlightSize = 36d;
