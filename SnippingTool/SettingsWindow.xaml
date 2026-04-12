@@ -160,7 +160,7 @@
             <RowDefinition Height="Auto"/>
         </Grid.RowDefinitions>
         <Grid.ColumnDefinitions>
-            <ColumnDefinition Width="220"/>
+            <ColumnDefinition Width="250"/>
             <ColumnDefinition Width="16"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
@@ -250,6 +250,8 @@
                                     <ColumnDefinition Width="320"/>
                                 </Grid.ColumnDefinitions>
                                 <Grid.RowDefinitions>
+                                    <RowDefinition Height="Auto"/>
+                                    <RowDefinition Height="Auto"/>
                                     <RowDefinition Height="Auto"/>
                                 </Grid.RowDefinitions>
 
