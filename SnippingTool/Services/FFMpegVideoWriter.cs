@@ -57,6 +57,8 @@ public sealed class FFMpegVideoWriter : IVideoWriter
 
     internal static string BuildArguments(int width, int height, int fps, string outputPath, string? microphoneDeviceName)
     {
+        var hasMicrophone = !string.IsNullOrWhiteSpace(microphoneDeviceName);
+
         var args = new List<string>
         {
             "-y",
@@ -64,15 +66,22 @@ public sealed class FFMpegVideoWriter : IVideoWriter
             "-pix_fmt bgra",
             $"-s {width}x{height}",
             $"-r {fps}",
-            "-i pipe:0",
         };
 
-        if (!string.IsNullOrWhiteSpace(microphoneDeviceName))
+        if (hasMicrophone)
         {
+            args.Add("-use_wallclock_as_timestamps 1");
+        }
+
+        args.Add("-i pipe:0");
+
+        if (hasMicrophone)
+        {
+            var microphoneDevice = microphoneDeviceName!;
             args.Add("-thread_queue_size 512");
             args.Add("-f dshow");
             args.Add("-audio_buffer_size 50");
-            args.Add($"-i audio=\"{EscapeDirectShowDeviceName(microphoneDeviceName)}\"");
+            args.Add($"-i audio=\"{EscapeDirectShowDeviceName(microphoneDevice)}\"");
             args.Add("-map 0:v:0");
             args.Add("-map 1:a:0");
         }
@@ -82,7 +91,7 @@ public sealed class FFMpegVideoWriter : IVideoWriter
         args.Add("-crf 23");
         args.Add("-pix_fmt yuv420p");
 
-        if (!string.IsNullOrWhiteSpace(microphoneDeviceName))
+        if (hasMicrophone)
         {
             args.Add("-c:a aac");
             args.Add("-b:a 128k");

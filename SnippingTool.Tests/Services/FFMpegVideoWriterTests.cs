@@ -129,6 +129,7 @@ public sealed class FFMpegVideoWriterTests
     {
         var args = FFMpegVideoWriter.BuildArguments(128, 72, 20, "capture.mp4", null);
 
+        Assert.DoesNotContain("-use_wallclock_as_timestamps 1", args, StringComparison.Ordinal);
         Assert.DoesNotContain("-f dshow", args, StringComparison.Ordinal);
         Assert.DoesNotContain("-map 0:v:0", args, StringComparison.Ordinal);
         Assert.DoesNotContain("-map 1:a:0", args, StringComparison.Ordinal);
@@ -141,12 +142,24 @@ public sealed class FFMpegVideoWriterTests
     {
         var args = FFMpegVideoWriter.BuildArguments(128, 72, 20, "capture.mp4", "Studio Mic");
 
+        Assert.Contains("-use_wallclock_as_timestamps 1", args, StringComparison.Ordinal);
         Assert.Contains("-f dshow", args, StringComparison.Ordinal);
         Assert.Contains("-i audio=\"Studio Mic\"", args, StringComparison.Ordinal);
         Assert.Contains("-map 0:v:0", args, StringComparison.Ordinal);
         Assert.Contains("-map 1:a:0", args, StringComparison.Ordinal);
         Assert.Contains("-c:a aac", args, StringComparison.Ordinal);
         Assert.Contains("-shortest", args, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void BuildArguments_WithMicrophone_AddsWallclockTimestampOptionBeforeRawVideoInput()
+    {
+        var args = FFMpegVideoWriter.BuildArguments(128, 72, 20, "capture.mp4", "Studio Mic");
+        var wallclockOptionIndex = args.IndexOf("-use_wallclock_as_timestamps 1", StringComparison.Ordinal);
+        var rawVideoInputIndex = args.IndexOf("-i pipe:0", StringComparison.Ordinal);
+
+        Assert.True(wallclockOptionIndex >= 0);
+        Assert.True(rawVideoInputIndex > wallclockOptionIndex);
     }
 
     [Fact]

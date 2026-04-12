@@ -1,4 +1,5 @@
 using System.Collections.Concurrent;
+using System.Diagnostics;
 using System.Drawing.Imaging;
 using System.Runtime.InteropServices;
 using System.Threading.Channels;
@@ -38,6 +39,11 @@ public sealed class ScreenRecordingService : IScreenRecordingService
     private int _fps;
     private string? _activeMicrophoneDeviceName;
     private bool? _restoreMicrophoneMutedState;
+    private Stopwatch? _sessionStopwatch;
+    private int _attemptedFrameCount;
+    private int _writtenFrameCount;
+    private int _droppedFrameCount;
+    private long _firstFrameWrittenAtMilliseconds = -1;
     private readonly SemaphoreSlim _pauseGate = new SemaphoreSlim(1, 1);
 
     public bool IsRecording { get; private set; }
@@ -89,6 +95,11 @@ public sealed class ScreenRecordingService : IScreenRecordingService
         _captureWidth = width;
         _captureHeight = height;
         _fps = fps;
+        _attemptedFrameCount = 0;
+        _writtenFrameCount = 0;
+        _droppedFrameCount = 0;
+        _firstFrameWrittenAtMilliseconds = -1;
+        _sessionStopwatch = Stopwatch.StartNew();
 
         // Allocate the capture surface once per session — no per-frame allocation.
         _captureBitmap = new Bitmap(width, height, PixelFormat.Format32bppArgb);
@@ -161,6 +172,7 @@ public sealed class ScreenRecordingService : IScreenRecordingService
         }
         finally
         {
+            LogSessionSummary();
             _captureGraphics?.Dispose();
             _captureGraphics = null;
             _captureBitmap?.Dispose();
@@ -187,6 +199,7 @@ public sealed class ScreenRecordingService : IScreenRecordingService
             _captureLoop = null;
             _encodeLoop = null;
             _encodeChannel = null;
+            _sessionStopwatch = null;
         }
     }
 
@@ -232,9 +245,12 @@ public sealed class ScreenRecordingService : IScreenRecordingService
             return;
         }
 
+        Interlocked.Increment(ref _attemptedFrameCount);
+
         // Rent a pre-allocated buffer; skip this frame if the pool is empty (encode is behind).
         if (!_bufferPool.TryDequeue(out var buffer))
         {
+            Interlocked.Increment(ref _droppedFrameCount);
             _logger.LogDebug("Frame skipped — buffer pool exhausted");
             return;
         }
@@ -268,6 +284,7 @@ public sealed class ScreenRecordingService : IScreenRecordingService
         // TryWrite never blocks; dropped frames are logged at debug level above.
         if (!_encodeChannel.Writer.TryWrite(buffer))
         {
+            Interlocked.Increment(ref _droppedFrameCount);
             _bufferPool.Enqueue(buffer);
         }
     }
@@ -287,7 +304,16 @@ public sealed class ScreenRecordingService : IScreenRecordingService
             // CancellationToken.None: drain all buffered frames before exiting even after Stop().
             await foreach (var buffer in _encodeChannel.Reader.ReadAllAsync(CancellationToken.None).ConfigureAwait(false))
             {
+                var writeStartedAt = Stopwatch.GetTimestamp();
                 _writer?.WriteFrame(buffer);
+                var writeElapsed = Stopwatch.GetElapsedTime(writeStartedAt);
+                var writtenFrameCount = Interlocked.Increment(ref _writtenFrameCount);
+                LogFirstFrameWriteIfNeeded();
+                if (writeElapsed > TimeSpan.FromMilliseconds(200))
+                {
+                    _logger.LogDebug("WriteFrame blocked for {DurationMs} ms at frame {FrameCount}", writeElapsed.TotalMilliseconds, writtenFrameCount);
+                }
+
                 _bufferPool.Enqueue(buffer);
             }
         }
@@ -381,6 +407,46 @@ public sealed class ScreenRecordingService : IScreenRecordingService
     }
 
     public void Dispose() => Stop();
+
+    private void LogFirstFrameWriteIfNeeded()
+    {
+        if (_sessionStopwatch is null)
+        {
+            return;
+        }
+
+        var delayMilliseconds = (long)_sessionStopwatch.Elapsed.TotalMilliseconds;
+        if (Interlocked.CompareExchange(ref _firstFrameWrittenAtMilliseconds, delayMilliseconds, -1) == -1)
+        {
+            _logger.LogInformation("First frame submitted to ffmpeg after {DelayMs} ms", delayMilliseconds);
+        }
+    }
+
+    private void LogSessionSummary()
+    {
+        if (_sessionStopwatch is null || _fps <= 0)
+        {
+            return;
+        }
+
+        var attemptedFrames = Volatile.Read(ref _attemptedFrameCount);
+        var writtenFrames = Volatile.Read(ref _writtenFrameCount);
+        var droppedFrames = Volatile.Read(ref _droppedFrameCount);
+        var elapsed = _sessionStopwatch.Elapsed;
+        var firstFrameDelayMilliseconds = Volatile.Read(ref _firstFrameWrittenAtMilliseconds);
+        var effectiveOutputDuration = TimeSpan.FromSeconds((double)writtenFrames / _fps);
+        var droppedDuration = TimeSpan.FromSeconds((double)droppedFrames / _fps);
+
+        _logger.LogInformation(
+            "Recording session stats: elapsed={ElapsedMs} ms, attemptedFrames={AttemptedFrames}, writtenFrames={WrittenFrames}, droppedFrames={DroppedFrames}, firstWriteDelayMs={FirstWriteDelayMs}, outputDuration={OutputDuration:c}, droppedDuration={DroppedDuration:c}",
+            (long)elapsed.TotalMilliseconds,
+            attemptedFrames,
+            writtenFrames,
+            droppedFrames,
+            firstFrameDelayMilliseconds,
+            effectiveOutputDuration,
+            droppedDuration);
+    }
 
     private void RestoreMicrophoneMuteState()
     {
