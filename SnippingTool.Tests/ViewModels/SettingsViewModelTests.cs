@@ -386,7 +386,7 @@ public sealed class SettingsViewModelTests
 
         vm.ScreenshotSavePath = @"D:\Keep";
         vm.RecordingOutputPath = @"D:\Reset";
-    vm.RecordMicrophone = true;
+        vm.RecordMicrophone = true;
         vm.GifFps = 20;
         vm.RecordingCursorHighlightEnabled = false;
         vm.RecordingClickRippleEnabled = false;
