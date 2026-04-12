@@ -43,8 +43,7 @@ public partial class OverlayWindow
 
         var videosDir = _userSettings.Current.RecordingOutputPath;
         _fileSystem.CreateDirectory(videosDir);
-        var ext = _userSettings.Current.RecordingFormat == Models.RecordingFormat.Mp4 ? ".mp4" : ".avi";
-        var path = _fileSystem.CombinePath(videosDir, $"SnipRec-{DateTime.Now:yyyyMMdd-HHmmss}{ext}");
+        var path = _fileSystem.CombinePath(videosDir, $"SnipRec-{DateTime.Now:yyyyMMdd-HHmmss}.mp4");
 
         try
         {

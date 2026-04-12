@@ -1,6 +1,5 @@
 using SnippingTool.AutomationTests.Fixtures;
 using SnippingTool.AutomationTests.Support;
-using SnippingTool.Models;
 using Xunit;
 
 namespace SnippingTool.AutomationTests.Smoke;
@@ -18,11 +17,9 @@ public sealed class RecordingOverlaySmokeTests : IClassFixture<DesktopAutomation
     [Trait("Category", "DesktopAutomation")]
     public void StartAndStopRecording_WritesRecordingFileToAutomationOutput()
     {
-        const RecordingFormat recordingFormat = RecordingFormat.Avi;
-        _fixture.EnsureRecordingBackendAvailable(recordingFormat);
+        _fixture.EnsureRecordingBackendAvailable();
         _fixture.SeedSettings(
             autoSaveScreenshots: false,
-            recordingFormat: recordingFormat,
             recordingFps: 10);
 
         using (var app = AutomationApp.Launch("--automation-open-sample-recording-overlay", _fixture.CreateEnvironmentVariables()))
@@ -43,7 +40,7 @@ public sealed class RecordingOverlaySmokeTests : IClassFixture<DesktopAutomation
             app.WaitForExit();
         }
 
-        var recordingFiles = Directory.GetFiles(_fixture.RecordingOutputPath, "SnipRec-*.avi");
+        var recordingFiles = Directory.GetFiles(_fixture.RecordingOutputPath, "SnipRec-*.mp4");
         Assert.Single(recordingFiles);
         Assert.True(new FileInfo(recordingFiles[0]).Length > 0);
     }

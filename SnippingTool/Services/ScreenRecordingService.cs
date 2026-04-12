@@ -95,8 +95,7 @@ public sealed class ScreenRecordingService : IScreenRecordingService
             _bufferPool.Enqueue(new byte[bufferSize]);
         }
 
-        var format = _settings.Current.RecordingFormat;
-        _writer = _writerFactory.Create(format, width, height, fps, outputPath);
+        _writer = _writerFactory.Create(width, height, fps, outputPath);
 
         // Bounded channel: if the encode loop falls behind, CaptureFrameToChannel will
         // skip frames (TryWrite returns false) rather than stalling the capture thread.
@@ -111,7 +110,7 @@ public sealed class ScreenRecordingService : IScreenRecordingService
         IsRecording = true;
         _captureLoop = Task.Run(() => CaptureLoop(_cts.Token));
         _encodeLoop = Task.Run(EncodeLoop);
-        _logger.LogInformation("Recording started: {W}x{H} @ {Fps}fps ({Format}) → {Path}", width, height, fps, format, outputPath);
+        _logger.LogInformation("Recording started: {W}x{H} @ {Fps}fps (MP4) → {Path}", width, height, fps, outputPath);
     }
 
     public void Stop()

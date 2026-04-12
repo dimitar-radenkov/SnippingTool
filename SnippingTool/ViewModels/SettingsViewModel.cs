@@ -24,7 +24,6 @@ public partial class SettingsViewModel : ObservableObject
     private readonly IThemeService _themeService;
     private readonly AppTheme _originalTheme;
     private int _recordingFps;
-    private int _recordingJpegQuality;
     private int _hudGapPixels;
     private DateTime? _lastAutoUpdateCheckUtc;
 
@@ -38,7 +37,6 @@ public partial class SettingsViewModel : ObservableObject
         _screenshotSavePath = s.ScreenshotSavePath;
         _autoSaveScreenshots = s.AutoSaveScreenshots;
         _recordingOutputPath = s.RecordingOutputPath;
-        _recordingFormat = s.RecordingFormat;
         _gifFps = s.GifFps;
         _recordingCursorHighlightEnabled = s.RecordingCursorHighlightEnabled;
         _recordingClickRippleEnabled = s.RecordingClickRippleEnabled;
@@ -50,7 +48,6 @@ public partial class SettingsViewModel : ObservableObject
         _appTheme = s.Theme;
         _originalTheme = s.Theme;
         _recordingFps = s.RecordingFps;
-        _recordingJpegQuality = s.RecordingJpegQuality;
         _hudGapPixels = s.HudGapPixels;
         _lastAutoUpdateCheckUtc = s.LastAutoUpdateCheckUtc;
 
@@ -67,9 +64,6 @@ public partial class SettingsViewModel : ObservableObject
 
     [ObservableProperty]
     private string _recordingOutputPath;
-
-    [ObservableProperty]
-    private RecordingFormat _recordingFormat;
 
     [ObservableProperty]
     private int _gifFps;
@@ -179,9 +173,7 @@ public partial class SettingsViewModel : ObservableObject
             ScreenshotSavePath = ScreenshotSavePath,
             AutoSaveScreenshots = AutoSaveScreenshots,
             RecordingOutputPath = RecordingOutputPath,
-            RecordingFormat = RecordingFormat,
             RecordingFps = _recordingFps,
-            RecordingJpegQuality = _recordingJpegQuality,
             GifFps = GifFps,
             RecordingCursorHighlightEnabled = RecordingCursorHighlightEnabled,
             RecordingClickRippleEnabled = RecordingClickRippleEnabled,
@@ -223,7 +215,6 @@ public partial class SettingsViewModel : ObservableObject
                 break;
             case SettingsSection.Recording:
                 RecordingOutputPath = defaults.RecordingOutputPath;
-                RecordingFormat = defaults.RecordingFormat;
                 GifFps = defaults.GifFps;
                 RecordingCursorHighlightEnabled = defaults.RecordingCursorHighlightEnabled;
                 RecordingClickRippleEnabled = defaults.RecordingClickRippleEnabled;
@@ -245,13 +236,11 @@ public partial class SettingsViewModel : ObservableObject
     {
         var defaults = new UserSettings();
         _recordingFps = defaults.RecordingFps;
-        _recordingJpegQuality = defaults.RecordingJpegQuality;
         _hudGapPixels = defaults.HudGapPixels;
         _lastAutoUpdateCheckUtc = defaults.LastAutoUpdateCheckUtc;
         ScreenshotSavePath = defaults.ScreenshotSavePath;
         AutoSaveScreenshots = defaults.AutoSaveScreenshots;
         RecordingOutputPath = defaults.RecordingOutputPath;
-        RecordingFormat = defaults.RecordingFormat;
         GifFps = defaults.GifFps;
         RecordingCursorHighlightEnabled = defaults.RecordingCursorHighlightEnabled;
         RecordingClickRippleEnabled = defaults.RecordingClickRippleEnabled;

@@ -51,7 +51,6 @@ public class DesktopAutomationFixture : IDisposable
 
     public void SeedSettings(
         bool autoSaveScreenshots,
-        RecordingFormat recordingFormat = RecordingFormat.Mp4,
         int recordingFps = 20)
     {
         if (Directory.Exists(OutputDirectory))
@@ -67,20 +66,14 @@ public class DesktopAutomationFixture : IDisposable
             AutoSaveScreenshots = autoSaveScreenshots,
             ScreenshotSavePath = ScreenshotOutputPath,
             RecordingOutputPath = RecordingOutputPath,
-            RecordingFormat = recordingFormat,
             RecordingFps = recordingFps,
         };
 
         File.WriteAllText(SettingsPath, JsonSerializer.Serialize(settings, SerializerOptions));
     }
 
-    public void EnsureRecordingBackendAvailable(RecordingFormat recordingFormat)
+    public void EnsureRecordingBackendAvailable()
     {
-        if (recordingFormat != RecordingFormat.Mp4)
-        {
-            return;
-        }
-
         var appDirectory = AppContext.BaseDirectory;
         var directPath = Path.Combine(appDirectory, "ffmpeg.exe");
         var bundledPath = Path.Combine(appDirectory, "Assets", "ffmpeg", "ffmpeg.exe");

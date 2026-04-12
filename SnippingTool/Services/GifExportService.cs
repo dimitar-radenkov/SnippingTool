@@ -1,5 +1,5 @@
+using System.ComponentModel;
 using System.Diagnostics;
-using System.IO;
 using Microsoft.Extensions.Logging;
 
 namespace SnippingTool.Services;
@@ -15,14 +15,7 @@ public sealed class GifExportService : IGifExportService
 
     public async Task Export(string inputPath, string outputPath, int fps, CancellationToken ct = default)
     {
-        var ffmpegPath = FfmpegResolver.Resolve();
-        if (!File.Exists(ffmpegPath))
-        {
-            throw new FileNotFoundException(
-                "ffmpeg.exe not found. GIF export requires ffmpeg. " +
-                "Please place ffmpeg.exe in the application directory or configure its path in Settings.",
-                ffmpegPath);
-        }
+        var ffmpegPath = FfmpegResolver.ResolveRequired("GIF export");
 
         // Two-pass palette filtergraph: palettegen + paletteuse gives near-lossless colour fidelity
         // compared to the default 256-colour GIF quantisation.
@@ -47,7 +40,15 @@ public sealed class GifExportService : IGifExportService
             }
         };
 
-        process.Start();
+        try
+        {
+            process.Start();
+        }
+        catch (Win32Exception ex) when (string.Equals(ffmpegPath, "ffmpeg.exe", StringComparison.OrdinalIgnoreCase))
+        {
+            throw FfmpegResolver.CreateMissingException("GIF export", ffmpegPath, ex);
+        }
+
         _ = ConsumeStderr(process);
 
         await process.WaitForExitAsync(ct).ConfigureAwait(false);
