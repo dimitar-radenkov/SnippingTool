@@ -422,6 +422,48 @@ public sealed class SettingsViewModelTests
     }
 
     [Fact]
+    public void RestoreDefaultsCommand_ThenEditingVisibleSetting_StillPersistsHiddenDefaults()
+    {
+        var current = new UserSettings
+        {
+            RecordingFps = 7,
+            RecordingJpegQuality = 11,
+            HudGapPixels = 99,
+            LastAutoUpdateCheckUtc = new DateTime(2025, 1, 1, 12, 0, 0, DateTimeKind.Utc),
+        };
+        var defaults = new UserSettings();
+        var mock = new Mock<IUserSettingsService>();
+        mock.SetupGet(s => s.Current).Returns(current);
+        UserSettings? saved = null;
+        mock.Setup(s => s.Save(It.IsAny<UserSettings>())).Callback<UserSettings>(s => saved = s);
+        var vm = new SettingsViewModel(mock.Object, Mock.Of<IThemeService>(), Mock.Of<IDialogService>());
+
+        vm.RestoreDefaultsCommand.Execute(null);
+        vm.ScreenshotSavePath = @"D:\Screens";
+        vm.SaveCommand.Execute(null);
+
+        Assert.NotNull(saved);
+        Assert.Equal(@"D:\Screens", saved!.ScreenshotSavePath);
+        Assert.Equal(defaults.RecordingFps, saved.RecordingFps);
+        Assert.Equal(defaults.RecordingJpegQuality, saved.RecordingJpegQuality);
+        Assert.Equal(defaults.HudGapPixels, saved.HudGapPixels);
+        Assert.Equal(defaults.LastAutoUpdateCheckUtc, saved.LastAutoUpdateCheckUtc);
+    }
+
+    [Fact]
+    public void Sections_ProvideSingleSourceOfTruthForHeaderMetadata()
+    {
+        var vm = CreateVm();
+
+        var appSection = Assert.Single(vm.Sections, section => section.Section == SettingsSection.App);
+
+        Assert.Equal(appSection.DisplayName, vm.SelectedSectionDisplayName.Replace("Capture", "App"));
+        vm.SelectedSection = SettingsSection.App;
+        Assert.Equal(appSection.DisplayName, vm.SelectedSectionDisplayName);
+        Assert.Equal(appSection.Description, vm.SelectedSectionDescription);
+    }
+
+    [Fact]
     public void AnnotationPreviewThickness_HasMinimumOfOne()
     {
         var vm = CreateVm();

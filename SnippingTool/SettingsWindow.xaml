@@ -180,44 +180,39 @@
                                Margin="0,6,0,0"/>
                 </StackPanel>
 
-                <ListBox SelectedValue="{Binding SelectedSection}"
-                         SelectedValuePath="Tag"
+                <ListBox ItemsSource="{Binding Sections}"
+                         SelectedValue="{Binding SelectedSection}"
                          Style="{StaticResource SidebarListBox}"
-                         ItemContainerStyle="{StaticResource SidebarListItem}"
                          SelectionChanged="SectionNavigation_SelectionChanged"
                          AutomationProperties.AutomationId="SettingsWindow.SectionNavigation">
-                    <ListBoxItem Tag="{x:Static models:SettingsSection.Capture}"
-                                 AutomationProperties.AutomationId="SettingsWindow.Section.Capture">
-                        <StackPanel>
-                            <TextBlock Text="Capture" Style="{StaticResource SidebarTitleText}"/>
-                            <TextBlock Text="Folders, delay, and shortcut"
-                                       Style="{StaticResource SidebarDescriptionText}"/>
-                        </StackPanel>
-                    </ListBoxItem>
-                    <ListBoxItem Tag="{x:Static models:SettingsSection.Recording}"
-                                 AutomationProperties.AutomationId="SettingsWindow.Section.Recording">
-                        <StackPanel>
-                            <TextBlock Text="Recording" Style="{StaticResource SidebarTitleText}"/>
-                            <TextBlock Text="Output and pointer effects"
-                                       Style="{StaticResource SidebarDescriptionText}"/>
-                        </StackPanel>
-                    </ListBoxItem>
-                    <ListBoxItem Tag="{x:Static models:SettingsSection.Annotation}"
-                                 AutomationProperties.AutomationId="SettingsWindow.Section.Annotation">
-                        <StackPanel>
-                            <TextBlock Text="Annotation" Style="{StaticResource SidebarTitleText}"/>
-                            <TextBlock Text="Default look and preview"
-                                       Style="{StaticResource SidebarDescriptionText}"/>
-                        </StackPanel>
-                    </ListBoxItem>
-                    <ListBoxItem Tag="{x:Static models:SettingsSection.App}"
-                                 AutomationProperties.AutomationId="SettingsWindow.Section.App">
-                        <StackPanel>
-                            <TextBlock Text="App" Style="{StaticResource SidebarTitleText}"/>
-                            <TextBlock Text="Theme and update checks"
-                                       Style="{StaticResource SidebarDescriptionText}"/>
-                        </StackPanel>
-                    </ListBoxItem>
+                    <ListBox.SelectedValuePath>Section</ListBox.SelectedValuePath>
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem" BasedOn="{StaticResource SidebarListItem}">
+                            <Style.Triggers>
+                                <DataTrigger Binding="{Binding Section}" Value="{x:Static models:SettingsSection.Capture}">
+                                    <Setter Property="AutomationProperties.AutomationId" Value="SettingsWindow.Section.Capture"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Section}" Value="{x:Static models:SettingsSection.Recording}">
+                                    <Setter Property="AutomationProperties.AutomationId" Value="SettingsWindow.Section.Recording"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Section}" Value="{x:Static models:SettingsSection.Annotation}">
+                                    <Setter Property="AutomationProperties.AutomationId" Value="SettingsWindow.Section.Annotation"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding Section}" Value="{x:Static models:SettingsSection.App}">
+                                    <Setter Property="AutomationProperties.AutomationId" Value="SettingsWindow.Section.App"/>
+                                </DataTrigger>
+                            </Style.Triggers>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <StackPanel>
+                                <TextBlock Text="{Binding DisplayName}" Style="{StaticResource SidebarTitleText}"/>
+                                <TextBlock Text="{Binding Description}"
+                                           Style="{StaticResource SidebarDescriptionText}"/>
+                            </StackPanel>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
                 </ListBox>
             </DockPanel>
         </Border>
@@ -234,8 +229,8 @@
                             Command="{Binding ResetCurrentSectionCommand}"
                             AutomationProperties.AutomationId="SettingsWindow.ResetCurrentSection"/>
                     <StackPanel Margin="0,0,12,0">
-                        <TextBlock Text="{Binding SelectedSectionDisplayName}" Style="{StaticResource PageTitle}"/>
-                        <TextBlock Text="{Binding SelectedSectionDescription}"
+                        <TextBlock Text="{Binding SelectedSectionItem.DisplayName}" Style="{StaticResource PageTitle}"/>
+                        <TextBlock Text="{Binding SelectedSectionItem.Description}"
                                    Style="{StaticResource PageDescription}"
                                    Margin="0,6,0,0"/>
                     </StackPanel>
