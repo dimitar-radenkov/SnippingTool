@@ -124,6 +124,39 @@ public sealed class FFMpegVideoWriterTests
         }
     }
 
+    [Fact]
+    public void BuildArguments_WithoutMicrophone_DoesNotAddAudioInput()
+    {
+        var args = FFMpegVideoWriter.BuildArguments(128, 72, 20, "capture.mp4", null);
+
+        Assert.DoesNotContain("-f dshow", args, StringComparison.Ordinal);
+        Assert.DoesNotContain("-map 0:v:0", args, StringComparison.Ordinal);
+        Assert.DoesNotContain("-map 1:a:0", args, StringComparison.Ordinal);
+        Assert.DoesNotContain("-c:a aac", args, StringComparison.Ordinal);
+        Assert.DoesNotContain("-shortest", args, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void BuildArguments_WithMicrophone_AddsDirectShowAudioInput()
+    {
+        var args = FFMpegVideoWriter.BuildArguments(128, 72, 20, "capture.mp4", "Studio Mic");
+
+        Assert.Contains("-f dshow", args, StringComparison.Ordinal);
+        Assert.Contains("-i audio=\"Studio Mic\"", args, StringComparison.Ordinal);
+        Assert.Contains("-map 0:v:0", args, StringComparison.Ordinal);
+        Assert.Contains("-map 1:a:0", args, StringComparison.Ordinal);
+        Assert.Contains("-c:a aac", args, StringComparison.Ordinal);
+        Assert.Contains("-shortest", args, StringComparison.Ordinal);
+    }
+
+    [Fact]
+    public void BuildArguments_WithQuotedMicrophone_EscapesDeviceName()
+    {
+        var args = FFMpegVideoWriter.BuildArguments(128, 72, 20, "capture.mp4", "Studio \"Mic\"");
+
+        Assert.Contains("-i audio=\"Studio \\\"Mic\\\"\"", args, StringComparison.Ordinal);
+    }
+
     private static string InvokeResolveFfmpegPath()
     {
         return FfmpegResolver.Resolve();

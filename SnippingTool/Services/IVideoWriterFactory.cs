@@ -2,5 +2,5 @@ namespace SnippingTool.Services;
 
 public interface IVideoWriterFactory
 {
-    IVideoWriter Create(int width, int height, int fps, string outputPath);
+    IVideoWriter Create(int width, int height, int fps, string outputPath, string? microphoneDeviceName);
 }

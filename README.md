@@ -77,7 +77,7 @@ winget install DimitarRadenkov.SnippingTool
 - **Pin screenshot** — Pin the captured screenshot as a floating, always-on-top, resizable window for quick reference while you work
 - **Undo / redo** — Full undo/redo stack during annotation
 - **Copy & auto-save** — Copy to clipboard; optional auto-save to a configurable folder
-- **Screen recording** — Record a selected region to MP4 (H.264 via ffmpeg)
+- **Screen recording** — Record a selected region to MP4 (H.264 via ffmpeg), with optional microphone audio from a selected Windows input device
 - **Recording-time annotations** — Add shapes and text directly on top of a recording while it is in progress
 - **Capture delay** — Configurable countdown (0 / 3 / 5 / 10 s) before the selection overlay appears, useful for capturing menus and hover states
 - **Auto-updates** — A background service checks GitHub Releases on every launch and on a configurable schedule (every day / 2 days / 3 days). When a new version is found a tray balloon appears; click it to confirm, watch the progress bar, and the installer runs automatically — no browser, no manual downloads
@@ -165,6 +165,7 @@ Open **Settings** from the tray icon to configure:
 | Capture delay | Countdown (sec) before the selection overlay opens |
 | Capture hotkey | The key that triggers the capture overlay (default: Print Screen) |
 | Recording output folder | Where recorded videos are saved |
+| Record microphone | Include audio from the selected Windows recording device when screen recording starts |
 | HUD close delay | How long the recording HUD stays visible after stopping (0 / 3 / 5 / 10 / 15 / 30 s) |
 | Default annotation colour | Pre-selected colour when the overlay opens |
 | Stroke thickness | Default pen/shape width |

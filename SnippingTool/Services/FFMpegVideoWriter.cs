@@ -17,24 +17,14 @@ public sealed class FFMpegVideoWriter : IVideoWriter
         int height,
         int fps,
         string outputPath,
-        ILogger logger)
+        ILogger logger,
+        string? microphoneDeviceName = null)
     {
         _logger = logger;
 
         var ffmpegPath = FfmpegResolver.ResolveRequired("Screen recording");
 
-        var args = string.Join(" ",
-            "-y",
-            "-f rawvideo",
-            "-pix_fmt bgra",
-            $"-s {width}x{height}",
-            $"-r {fps}",
-            "-i pipe:0",
-            "-c:v libx264",
-            "-preset ultrafast",
-            "-crf 23",
-            "-pix_fmt yuv420p",
-            $"\"{outputPath}\"");
+        var args = BuildArguments(width, height, fps, outputPath, microphoneDeviceName);
 
         _ffmpeg = new Process
         {
@@ -64,6 +54,44 @@ public sealed class FFMpegVideoWriter : IVideoWriter
     }
 
     public void WriteFrame(byte[] frameData) => _stdin.Write(frameData, 0, frameData.Length);
+
+    internal static string BuildArguments(int width, int height, int fps, string outputPath, string? microphoneDeviceName)
+    {
+        var args = new List<string>
+        {
+            "-y",
+            "-f rawvideo",
+            "-pix_fmt bgra",
+            $"-s {width}x{height}",
+            $"-r {fps}",
+            "-i pipe:0",
+        };
+
+        if (!string.IsNullOrWhiteSpace(microphoneDeviceName))
+        {
+            args.Add("-thread_queue_size 512");
+            args.Add("-f dshow");
+            args.Add("-audio_buffer_size 50");
+            args.Add($"-i audio=\"{EscapeDirectShowDeviceName(microphoneDeviceName)}\"");
+            args.Add("-map 0:v:0");
+            args.Add("-map 1:a:0");
+        }
+
+        args.Add("-c:v libx264");
+        args.Add("-preset ultrafast");
+        args.Add("-crf 23");
+        args.Add("-pix_fmt yuv420p");
+
+        if (!string.IsNullOrWhiteSpace(microphoneDeviceName))
+        {
+            args.Add("-c:a aac");
+            args.Add("-b:a 128k");
+            args.Add("-shortest");
+        }
+
+        args.Add($"\"{outputPath}\"");
+        return string.Join(" ", args);
+    }
 
     public void Dispose()
     {
@@ -107,6 +135,11 @@ public sealed class FFMpegVideoWriter : IVideoWriter
         {
             _logger.LogWarning(ex, "Failed to read ffmpeg stderr");
         }
+    }
+
+    private static string EscapeDirectShowDeviceName(string microphoneDeviceName)
+    {
+        return microphoneDeviceName.Replace("\"", "\\\"");
     }
 
 }

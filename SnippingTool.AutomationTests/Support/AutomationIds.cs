@@ -29,5 +29,6 @@ internal static class AutomationIds
     public const string RecordingOverlayWindowHud = "RecordingOverlayWindow.Hud";
     public const string RecordingOverlayWindowToggleAnnotation = "RecordingOverlayWindow.ToggleAnnotation";
     public const string RecordingOverlayWindowPauseResume = "RecordingOverlayWindow.PauseResume";
+    public const string RecordingOverlayWindowToggleMicrophone = "RecordingOverlayWindow.ToggleMicrophone";
     public const string RecordingOverlayWindowStop = "RecordingOverlayWindow.Stop";
 }

@@ -519,13 +519,73 @@
                                         <ColumnDefinition Width="*"/>
                                         <ColumnDefinition Width="320"/>
                                     </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                        <RowDefinition Height="Auto"/>
+                                    </Grid.RowDefinitions>
 
-                                    <StackPanel Grid.Column="0" Margin="0,0,16,0">
+                                    <StackPanel Grid.Row="0" Grid.Column="0" Margin="0,0,16,0">
+                                        <TextBlock Text="Microphone" Style="{StaticResource RowTitle}"/>
+                                        <TextBlock Text="Record microphone audio alongside the screen capture when a recording starts."
+                                                   Style="{StaticResource RowDescription}"/>
+                                    </StackPanel>
+                                    <CheckBox Grid.Row="0"
+                                              Grid.Column="1"
+                                              Content="Include microphone audio"
+                                              IsChecked="{Binding RecordMicrophone}"
+                                              VerticalAlignment="Center"/>
+
+                                    <Border Grid.Row="1"
+                                            Grid.ColumnSpan="2"
+                                            Height="1"
+                                            Background="{DynamicResource DividerColor}"
+                                            Margin="0,16,0,16"/>
+
+                                    <StackPanel Grid.Row="2" Grid.Column="0" Margin="0,0,16,0">
+                                        <TextBlock Text="Microphone device" Style="{StaticResource RowTitle}"/>
+                                        <TextBlock Text="Choose which Windows input device is used when microphone recording is enabled."
+                                               Style="{StaticResource RowDescription}"/>
+                                    </StackPanel>
+                                    <StackPanel Grid.Row="2" Grid.Column="1">
+                                        <ComboBox Width="260"
+                                              Style="{StaticResource CompactComboBox}"
+                                              ItemsSource="{Binding AvailableMicrophoneDevices}"
+                                              SelectedItem="{Binding SelectedMicrophoneDeviceName}"
+                                              IsEnabled="{Binding RecordMicrophone}"/>
+                                        <TextBlock Margin="0,6,0,0"
+                                               Text="No compatible microphone devices were found on this machine."
+                                               Foreground="{DynamicResource MutedText}"
+                                               FontSize="11"
+                                               TextWrapping="Wrap">
+                                            <TextBlock.Style>
+                                                <Style TargetType="TextBlock" BasedOn="{StaticResource RowDescription}">
+                                                    <Setter Property="Visibility" Value="Collapsed"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding HasAvailableMicrophoneDevices}" Value="False">
+                                                            <Setter Property="Visibility" Value="Visible"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+                                        </TextBlock>
+                                    </StackPanel>
+
+                                    <Border Grid.Row="3"
+                                            Grid.ColumnSpan="2"
+                                            Height="1"
+                                            Background="{DynamicResource DividerColor}"
+                                            Margin="0,16,0,16"/>
+
+                                    <StackPanel Grid.Row="4" Grid.Column="0" Margin="0,0,16,0">
                                         <TextBlock Text="GIF export FPS" Style="{StaticResource RowTitle}"/>
                                         <TextBlock Text="Lower values make smaller files; higher values look smoother."
                                                    Style="{StaticResource RowDescription}"/>
                                     </StackPanel>
-                                    <ComboBox Grid.Column="1"
+                                    <ComboBox Grid.Row="4"
+                                              Grid.Column="1"
                                               Width="140"
                                               Style="{StaticResource CompactComboBox}"
                                               SelectedItem="{Binding GifFps}">

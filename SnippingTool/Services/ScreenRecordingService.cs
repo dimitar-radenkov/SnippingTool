@@ -16,6 +16,7 @@ public sealed class ScreenRecordingService : IScreenRecordingService
     private const int SrcCopy = 0x00CC0020;
 
     private readonly ILogger<ScreenRecordingService> _logger;
+    private readonly IMicrophoneDeviceService _microphoneDeviceService;
     private readonly IUserSettingsService _settings;
     private readonly IVideoWriterFactory _writerFactory;
 
@@ -35,17 +36,24 @@ public sealed class ScreenRecordingService : IScreenRecordingService
     private int _captureWidth;
     private int _captureHeight;
     private int _fps;
+    private string? _activeMicrophoneDeviceName;
+    private bool? _restoreMicrophoneMutedState;
     private readonly SemaphoreSlim _pauseGate = new SemaphoreSlim(1, 1);
 
     public bool IsRecording { get; private set; }
     public bool IsPaused { get; private set; }
+    public bool IsRecordingMicrophoneEnabled { get; private set; }
+    public bool CanToggleMicrophone { get; private set; }
+    public bool IsMicrophoneMuted { get; private set; }
 
     public ScreenRecordingService(
         ILogger<ScreenRecordingService> logger,
+        IMicrophoneDeviceService microphoneDeviceService,
         IUserSettingsService settings,
         IVideoWriterFactory writerFactory)
     {
         _logger = logger;
+        _microphoneDeviceService = microphoneDeviceService;
         _settings = settings;
         _writerFactory = writerFactory;
     }
@@ -95,7 +103,16 @@ public sealed class ScreenRecordingService : IScreenRecordingService
             _bufferPool.Enqueue(new byte[bufferSize]);
         }
 
-        _writer = _writerFactory.Create(width, height, fps, outputPath);
+        var microphoneDeviceName = ResolveMicrophoneDeviceName();
+        _writer = _writerFactory.Create(width, height, fps, outputPath, microphoneDeviceName);
+        IsRecordingMicrophoneEnabled = microphoneDeviceName is not null;
+        _activeMicrophoneDeviceName = microphoneDeviceName;
+        var initialMicrophoneMutedState = microphoneDeviceName is null
+            ? null
+            : _microphoneDeviceService.TryGetCaptureDeviceMuted(microphoneDeviceName);
+        _restoreMicrophoneMutedState = initialMicrophoneMutedState;
+        CanToggleMicrophone = initialMicrophoneMutedState.HasValue;
+        IsMicrophoneMuted = initialMicrophoneMutedState ?? false;
 
         // Bounded channel: if the encode loop falls behind, CaptureFrameToChannel will
         // skip frames (TryWrite returns false) rather than stalling the capture thread.
@@ -148,13 +165,23 @@ public sealed class ScreenRecordingService : IScreenRecordingService
             _captureGraphics = null;
             _captureBitmap?.Dispose();
             _captureBitmap = null;
+            IsRecordingMicrophoneEnabled = false;
+            CanToggleMicrophone = false;
+            IsMicrophoneMuted = false;
             while (_bufferPool.TryDequeue(out _))
             {
             }
 
-            _writer?.Dispose();
-            _writer = null;
-            _logger.LogInformation("Writer closed — file finalised");
+            try
+            {
+                _writer?.Dispose();
+                _logger.LogInformation("Writer closed — file finalised");
+            }
+            finally
+            {
+                RestoreMicrophoneMuteState();
+                _writer = null;
+            }
             _cts?.Dispose();
             _cts = null;
             _captureLoop = null;
@@ -272,6 +299,45 @@ public sealed class ScreenRecordingService : IScreenRecordingService
         _logger.LogDebug("Encode loop ended");
     }
 
+    private string? ResolveMicrophoneDeviceName()
+    {
+        if (!_settings.Current.RecordMicrophone)
+        {
+            return null;
+        }
+
+        var microphoneDeviceName = _settings.Current.RecordingMicrophoneDeviceName;
+        if (string.IsNullOrWhiteSpace(microphoneDeviceName))
+        {
+            microphoneDeviceName = _microphoneDeviceService.GetDefaultCaptureDeviceName();
+        }
+
+        var availableDevices = _microphoneDeviceService.GetAvailableCaptureDeviceNames();
+        if (!string.IsNullOrWhiteSpace(microphoneDeviceName) &&
+            availableDevices.Any(device => string.Equals(device, microphoneDeviceName, StringComparison.OrdinalIgnoreCase)))
+        {
+            _logger.LogInformation("Microphone recording enabled using capture device '{DeviceName}'", microphoneDeviceName);
+            return microphoneDeviceName;
+        }
+
+        microphoneDeviceName = _microphoneDeviceService.GetDefaultCaptureDeviceName();
+        if (!string.IsNullOrWhiteSpace(microphoneDeviceName) &&
+            availableDevices.Any(device => string.Equals(device, microphoneDeviceName, StringComparison.OrdinalIgnoreCase)))
+        {
+            _logger.LogInformation("Configured microphone device was unavailable; falling back to default capture device '{DeviceName}'", microphoneDeviceName);
+            return microphoneDeviceName;
+        }
+
+        if (string.IsNullOrWhiteSpace(microphoneDeviceName))
+        {
+            _logger.LogWarning("Microphone recording is enabled, but no default capture device is available. Continuing with video only.");
+            return null;
+        }
+
+        _logger.LogWarning("Microphone recording is enabled, but no compatible capture device name could be resolved. Continuing with video only.");
+        return null;
+    }
+
     public void Pause()
     {
         if (!IsRecording || IsPaused)
@@ -296,7 +362,43 @@ public sealed class ScreenRecordingService : IScreenRecordingService
         _logger.LogInformation("Recording resumed");
     }
 
+    public bool TrySetMicrophoneMuted(bool isMuted)
+    {
+        if (!CanToggleMicrophone || string.IsNullOrWhiteSpace(_activeMicrophoneDeviceName))
+        {
+            return false;
+        }
+
+        if (!_microphoneDeviceService.TrySetCaptureDeviceMuted(_activeMicrophoneDeviceName, isMuted))
+        {
+            _logger.LogWarning("Failed to set microphone mute state to {IsMuted} for active recording device '{DeviceName}'", isMuted, _activeMicrophoneDeviceName);
+            return false;
+        }
+
+        IsMicrophoneMuted = isMuted;
+        _logger.LogInformation("Recording microphone {State}", isMuted ? "muted" : "unmuted");
+        return true;
+    }
+
     public void Dispose() => Stop();
+
+    private void RestoreMicrophoneMuteState()
+    {
+        if (string.IsNullOrWhiteSpace(_activeMicrophoneDeviceName) || !_restoreMicrophoneMutedState.HasValue)
+        {
+            _activeMicrophoneDeviceName = null;
+            _restoreMicrophoneMutedState = null;
+            return;
+        }
+
+        if (!_microphoneDeviceService.TrySetCaptureDeviceMuted(_activeMicrophoneDeviceName, _restoreMicrophoneMutedState.Value))
+        {
+            _logger.LogWarning("Failed to restore microphone mute state for recording device '{DeviceName}'", _activeMicrophoneDeviceName);
+        }
+
+        _activeMicrophoneDeviceName = null;
+        _restoreMicrophoneMutedState = null;
+    }
 
     // Lightweight RAII wrapper around the screen device context.
     private sealed class ScreenDc : IDisposable

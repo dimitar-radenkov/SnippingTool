@@ -58,6 +58,13 @@ public partial class OverlayWindow
             return;
         }
 
+        if (_userSettings.Current.RecordMicrophone && !_recorder.IsRecordingMicrophoneEnabled)
+        {
+            _messageBox.ShowWarning(
+                "Microphone recording is enabled, but no compatible microphone device was available. The recording will continue without microphone audio.",
+                "Microphone unavailable");
+        }
+
         RecordingOverlayWindow? recordingOverlay = null;
         DpiAwarenessScope.RunPerMonitorV2(() =>
         {

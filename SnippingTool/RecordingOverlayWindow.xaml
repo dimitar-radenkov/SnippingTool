@@ -169,6 +169,8 @@
               <ColumnDefinition Width="Auto"/>
               <ColumnDefinition Width="Auto"/>
               <ColumnDefinition Width="Auto"/>
+              <ColumnDefinition Width="Auto"/>
+              <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
             <Button Grid.Row="0" Grid.Column="0"
@@ -229,13 +231,48 @@
 
             <Button Grid.Row="0" Grid.Column="4"
                     Style="{StaticResource RecordingHudActionBtn}"
+                    Command="{Binding ToggleMicrophoneCommand}"
+                    ToolTip="{Binding MicrophoneToolTip}"
+                    Visibility="{Binding CanToggleMicrophone, Converter={StaticResource BoolToVisibility}}"
+                    AutomationProperties.AutomationId="RecordingOverlayWindow.ToggleMicrophone">
+              <TextBlock Text="Mic" FontSize="10" HorizontalAlignment="Center">
+                <TextBlock.Style>
+                  <Style TargetType="TextBlock">
+                    <Setter Property="Foreground" Value="{DynamicResource PrimaryText}"/>
+                    <Style.Triggers>
+                      <DataTrigger Binding="{Binding IsMicrophoneMuted}" Value="True">
+                        <Setter Property="Foreground" Value="#FFB94A48"/>
+                      </DataTrigger>
+                    </Style.Triggers>
+                  </Style>
+                </TextBlock.Style>
+              </TextBlock>
+            </Button>
+
+            <TextBlock Grid.Row="1" Grid.Column="4"
+                       Text="{Binding MicrophoneActionLabel}"
+                       FontSize="8"
+                       Foreground="{DynamicResource SubLabelText}"
+                       TextAlignment="Center"
+                       Margin="0,2,0,0"
+                       Visibility="{Binding CanToggleMicrophone, Converter={StaticResource BoolToVisibility}}"/>
+
+            <Rectangle Grid.Row="0" Grid.RowSpan="2" Grid.Column="5"
+                       Width="1"
+                       Fill="{DynamicResource DividerColor}"
+                       Margin="3,7"
+                       VerticalAlignment="Stretch"
+                       Visibility="{Binding CanToggleMicrophone, Converter={StaticResource BoolToVisibility}}"/>
+
+            <Button Grid.Row="0" Grid.Column="6"
+                    Style="{StaticResource RecordingHudActionBtn}"
                     Command="{Binding StopCommand}"
                     ToolTip="Stop recording"
                     AutomationProperties.AutomationId="RecordingOverlayWindow.Stop">
               <TextBlock Text="⏹" FontSize="13" Foreground="#FF4444" HorizontalAlignment="Center"/>
             </Button>
 
-            <TextBlock Grid.Row="1" Grid.Column="4" Text="Stop" FontSize="8" Foreground="{DynamicResource SubLabelText}" TextAlignment="Center" Margin="0,2,0,0"/>
+            <TextBlock Grid.Row="1" Grid.Column="6" Text="Stop" FontSize="8" Foreground="{DynamicResource SubLabelText}" TextAlignment="Center" Margin="0,2,0,0"/>
           </Grid>
 
           <Border Grid.Column="1"
