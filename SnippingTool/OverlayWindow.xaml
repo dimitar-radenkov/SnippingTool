@@ -143,6 +143,23 @@
       </Setter>
     </Style>
 
+    <Style x:Key="FluentActionIconText" TargetType="TextBlock">
+      <Setter Property="FontFamily" Value="Segoe Fluent Icons, Segoe MDL2 Assets"/>
+      <Setter Property="FontSize" Value="15"/>
+      <Setter Property="Foreground" Value="{DynamicResource PrimaryText}"/>
+      <Setter Property="HorizontalAlignment" Value="Center"/>
+      <Setter Property="VerticalAlignment" Value="Center"/>
+      <Setter Property="TextAlignment" Value="Center"/>
+    </Style>
+
+    <Style x:Key="FluentToolIconText" TargetType="TextBlock" BasedOn="{StaticResource FluentActionIconText}">
+      <Setter Property="FontSize" Value="14"/>
+    </Style>
+
+    <Style x:Key="FluentDangerIconText" TargetType="TextBlock" BasedOn="{StaticResource FluentActionIconText}">
+      <Setter Property="Foreground" Value="#D96464"/>
+    </Style>
+
   </Window.Resources>
 
   <!-- Root canvas — near-transparent so WPF hit-tests it (fully transparent = no hit-test) -->
@@ -220,13 +237,35 @@
         <RadioButton Style="{StaticResource ToolBtn}"
                      GroupName="AnnotTool"
                      Tag="Arrow" Click="Tool_Click" ToolTip="Arrow">
-          <TextBlock Text="➤" FontSize="14" Foreground="{DynamicResource PrimaryText}"/>
+          <Viewbox Width="15" Height="15">
+            <Canvas Width="16" Height="16">
+              <Path Data="M2.5,13.5 L11.2,4.8"
+                    Stroke="{DynamicResource PrimaryText}"
+                    StrokeThickness="1.7"
+                    StrokeStartLineCap="Round"
+                    StrokeEndLineCap="Round"/>
+              <Path Data="M9.1,4.8 H13.4 V9.1"
+                    Stroke="{DynamicResource PrimaryText}"
+                    StrokeThickness="1.7"
+                    StrokeStartLineCap="Round"
+                    StrokeEndLineCap="Round"
+                    StrokeLineJoin="Round"/>
+            </Canvas>
+          </Viewbox>
         </RadioButton>
 
         <RadioButton Style="{StaticResource ToolBtn}"
                      GroupName="AnnotTool"
                      Tag="Line" Click="Tool_Click" ToolTip="Line">
-          <TextBlock Text="╱" FontSize="14" Foreground="{DynamicResource PrimaryText}"/>
+          <Viewbox Width="15" Height="15">
+            <Canvas Width="16" Height="16">
+              <Path Data="M3,13 L13,3"
+                    Stroke="{DynamicResource PrimaryText}"
+                    StrokeThickness="1.8"
+                    StrokeStartLineCap="Round"
+                    StrokeEndLineCap="Round"/>
+            </Canvas>
+          </Viewbox>
         </RadioButton>
 
         <RadioButton Style="{StaticResource ToolBtn}"
@@ -238,13 +277,13 @@
         <RadioButton Style="{StaticResource ToolBtn}"
                      GroupName="AnnotTool"
                      Tag="Circle" Click="Tool_Click" ToolTip="Circle">
-          <TextBlock Text="⬭" FontSize="14" Foreground="{DynamicResource PrimaryText}"/>
+          <Ellipse Width="14" Height="14" Stroke="{DynamicResource PrimaryText}" StrokeThickness="1.5" Fill="Transparent"/>
         </RadioButton>
 
         <RadioButton Style="{StaticResource ToolBtn}"
                      GroupName="AnnotTool"
                      Tag="Pen" Click="Tool_Click" ToolTip="Pen">
-          <TextBlock Text="✏" FontSize="14" Foreground="{DynamicResource PrimaryText}"/>
+          <TextBlock Text="&#xE70F;" Style="{StaticResource FluentToolIconText}"/>
         </RadioButton>
 
         <RadioButton Style="{StaticResource ToolBtn}"
@@ -257,25 +296,45 @@
         <RadioButton Style="{StaticResource ToolBtn}"
                      GroupName="AnnotTool"
                      Tag="Text" Click="Tool_Click" ToolTip="Text">
-          <TextBlock Text="T" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource PrimaryText}"/>
+          <TextBlock Text="A" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryText}"/>
         </RadioButton>
 
         <RadioButton Style="{StaticResource ToolBtn}"
                      GroupName="AnnotTool"
                      Tag="Number" Click="Tool_Click" ToolTip="Place numbered label">
-          <TextBlock Text="①" FontSize="15" Foreground="{DynamicResource PrimaryText}"/>
+          <Border Width="16" Height="16" BorderBrush="{DynamicResource PrimaryText}" BorderThickness="1.4" CornerRadius="8" Background="Transparent">
+            <TextBlock Text="1" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryText}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+          </Border>
         </RadioButton>
 
         <RadioButton Style="{StaticResource ToolBtn}"
                      GroupName="AnnotTool"
                      Tag="Blur" Click="Tool_Click" ToolTip="Blur / Pixelate">
-          <TextBlock Text="▒" FontSize="16" Foreground="{DynamicResource PrimaryText}"/>
+          <UniformGrid Rows="3" Columns="3" Width="15" Height="15">
+            <Rectangle Margin="0.6" RadiusX="0.6" RadiusY="0.6" Fill="{DynamicResource PrimaryText}" Opacity="0.25"/>
+            <Rectangle Margin="0.6" RadiusX="0.6" RadiusY="0.6" Fill="{DynamicResource PrimaryText}" Opacity="0.5"/>
+            <Rectangle Margin="0.6" RadiusX="0.6" RadiusY="0.6" Fill="{DynamicResource PrimaryText}" Opacity="0.25"/>
+            <Rectangle Margin="0.6" RadiusX="0.6" RadiusY="0.6" Fill="{DynamicResource PrimaryText}" Opacity="0.5"/>
+            <Rectangle Margin="0.6" RadiusX="0.6" RadiusY="0.6" Fill="{DynamicResource PrimaryText}" Opacity="0.8"/>
+            <Rectangle Margin="0.6" RadiusX="0.6" RadiusY="0.6" Fill="{DynamicResource PrimaryText}" Opacity="0.5"/>
+            <Rectangle Margin="0.6" RadiusX="0.6" RadiusY="0.6" Fill="{DynamicResource PrimaryText}" Opacity="0.25"/>
+            <Rectangle Margin="0.6" RadiusX="0.6" RadiusY="0.6" Fill="{DynamicResource PrimaryText}" Opacity="0.5"/>
+            <Rectangle Margin="0.6" RadiusX="0.6" RadiusY="0.6" Fill="{DynamicResource PrimaryText}" Opacity="0.25"/>
+          </UniformGrid>
         </RadioButton>
 
         <RadioButton Style="{StaticResource ToolBtn}"
                      GroupName="AnnotTool"
                      Tag="Callout" Click="Tool_Click" ToolTip="Callout / Speech bubble">
-          <TextBlock Text="💬" FontSize="14" Foreground="{DynamicResource PrimaryText}"/>
+          <Viewbox Width="15" Height="15">
+            <Canvas Width="16" Height="16">
+              <Path Data="M3.5,3 H12.5 C13.33,3 14,3.67 14,4.5 V9 C14,9.83 13.33,10.5 12.5,10.5 H8.5 L5.5,13.5 V10.5 H3.5 C2.67,10.5 2,9.83 2,9 V4.5 C2,3.67 2.67,3 3.5,3 Z"
+                    Stroke="{DynamicResource PrimaryText}"
+                    StrokeThickness="1.3"
+                    Fill="Transparent"
+                    StrokeLineJoin="Round"/>
+            </Canvas>
+          </Viewbox>
         </RadioButton>
 
         <!-- Divider -->
@@ -307,7 +366,7 @@
                 Click="Record_Click" ToolTip="Record region to video"
                 AutomationProperties.AutomationId="OverlayWindow.Record">
           <StackPanel>
-            <TextBlock Text="⏺" FontSize="13" Foreground="#FF4444" HorizontalAlignment="Center"/>
+            <Ellipse Width="11" Height="11" Fill="#FF4444" HorizontalAlignment="Center" VerticalAlignment="Center"/>
             <TextBlock Text="Record" FontSize="8" Foreground="{DynamicResource SubLabelText}" HorizontalAlignment="Center"/>
           </StackPanel>
         </Button>
@@ -317,7 +376,7 @@
         <Button Style="{StaticResource ActionBtn}"
                 Command="{Binding UndoCommand}" ToolTip="Undo (Ctrl+Z)">
           <StackPanel>
-            <TextBlock Text="↩" FontSize="13" Foreground="{DynamicResource PrimaryText}" HorizontalAlignment="Center"/>
+            <TextBlock Text="&#xE7A7;" Style="{StaticResource FluentActionIconText}"/>
             <TextBlock Text="Undo" FontSize="8" Foreground="{DynamicResource SubLabelText}" HorizontalAlignment="Center"/>
           </StackPanel>
         </Button>
@@ -327,7 +386,7 @@
         <Button Style="{StaticResource ActionBtn}"
                 Command="{Binding RedoCommand}" ToolTip="Redo (Ctrl+Y)">
           <StackPanel>
-            <TextBlock Text="↪" FontSize="13" Foreground="{DynamicResource PrimaryText}" HorizontalAlignment="Center"/>
+            <TextBlock Text="&#xE7A6;" Style="{StaticResource FluentActionIconText}"/>
             <TextBlock Text="Redo" FontSize="8" Foreground="{DynamicResource SubLabelText}" HorizontalAlignment="Center"/>
           </StackPanel>
         </Button>
@@ -338,7 +397,7 @@
           Command="{Binding CopyCommand}" ToolTip="Copy to clipboard (Ctrl+C)"
           AutomationProperties.AutomationId="OverlayWindow.Copy">
           <StackPanel>
-            <TextBlock Text="📋" FontSize="13" HorizontalAlignment="Center"/>
+            <TextBlock Text="&#xE8C8;" Style="{StaticResource FluentActionIconText}"/>
             <TextBlock Text="Copy" FontSize="8" Foreground="{DynamicResource SubLabelText}" HorizontalAlignment="Center"/>
           </StackPanel>
         </Button>
@@ -348,7 +407,13 @@
         <Button Style="{StaticResource ActionBtn}"
                 Command="{Binding CopyTextCommand}" ToolTip="Copy text from screenshot (OCR)">
           <StackPanel>
-            <TextBlock Text="🔤" FontSize="13" HorizontalAlignment="Center"/>
+            <Border Width="15" Height="15" BorderBrush="{DynamicResource PrimaryText}" BorderThickness="1.2" CornerRadius="1.5" HorizontalAlignment="Center">
+              <Grid>
+                <Rectangle Width="6" Height="1.2" Fill="{DynamicResource PrimaryText}" VerticalAlignment="Top" Margin="0,3.2,0,0"/>
+                <Rectangle Width="6" Height="1.2" Fill="{DynamicResource PrimaryText}" VerticalAlignment="Top" Margin="0,6.3,0,0"/>
+                <TextBlock Text="A" FontSize="7" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryText}" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,1"/>
+              </Grid>
+            </Border>
             <TextBlock Text="Text" FontSize="8" Foreground="{DynamicResource SubLabelText}" HorizontalAlignment="Center"/>
           </StackPanel>
         </Button>
@@ -359,7 +424,17 @@
                 Command="{Binding PinCommand}" ToolTip="Pin to screen"
                 AutomationProperties.AutomationId="OverlayWindow.Pin">
           <StackPanel>
-            <TextBlock Text="📌" FontSize="13" HorizontalAlignment="Center"/>
+            <Viewbox Width="15" Height="15">
+              <Canvas Width="16" Height="16">
+                <Path Data="M5.5,2.5 H10.5 L11.8,5.2 L8.7,6.8 V10.7 L7,13.5 L5.3,10.7 V6.8 L2.2,5.2 Z"
+                      Stroke="{DynamicResource PrimaryText}"
+                      StrokeThickness="1.3"
+                      Fill="Transparent"
+                      StrokeLineJoin="Round"
+                      StrokeStartLineCap="Round"
+                      StrokeEndLineCap="Round"/>
+              </Canvas>
+            </Viewbox>
             <TextBlock Text="Pin" FontSize="8" Foreground="{DynamicResource SubLabelText}" HorizontalAlignment="Center"/>
           </StackPanel>
         </Button>
@@ -370,7 +445,7 @@
                 Click="CloseBtn_Click" ToolTip="Close (Esc)"
                 AutomationProperties.AutomationId="OverlayWindow.Close">
           <StackPanel>
-            <TextBlock Text="✕" FontSize="13" Foreground="{DynamicResource PrimaryText}" HorizontalAlignment="Center"/>
+            <TextBlock Text="&#xE711;" Style="{StaticResource FluentActionIconText}"/>
             <TextBlock Text="Close" FontSize="8" Foreground="{DynamicResource SubLabelText}" HorizontalAlignment="Center"/>
           </StackPanel>
         </Button>
@@ -392,21 +467,21 @@
                 x:Name="CompactRecordBtn"
                 Click="Record_Click" ToolTip="Record region to video"
                 AutomationProperties.AutomationId="OverlayWindow.CompactRecord">
-          <TextBlock Text="⏺" FontSize="13" Foreground="#FF4444" HorizontalAlignment="Center"/>
+          <Ellipse Width="11" Height="11" Fill="#FF4444" HorizontalAlignment="Center" VerticalAlignment="Center"/>
         </Button>
 
         <Rectangle Width="1" Fill="{DynamicResource DividerColor}" Margin="3,7" VerticalAlignment="Stretch"/>
 
         <Button Style="{StaticResource ActionBtn}"
                 Command="{Binding UndoCommand}" ToolTip="Undo (Ctrl+Z)">
-          <TextBlock Text="↩" FontSize="13" Foreground="{DynamicResource PrimaryText}" HorizontalAlignment="Center"/>
+          <TextBlock Text="&#xE7A7;" Style="{StaticResource FluentActionIconText}"/>
         </Button>
 
         <Rectangle Width="1" Fill="{DynamicResource DividerColor}" Margin="3,7" VerticalAlignment="Stretch"/>
 
         <Button Style="{StaticResource ActionBtn}"
                 Command="{Binding RedoCommand}" ToolTip="Redo (Ctrl+Y)">
-          <TextBlock Text="↪" FontSize="13" Foreground="{DynamicResource PrimaryText}" HorizontalAlignment="Center"/>
+          <TextBlock Text="&#xE7A6;" Style="{StaticResource FluentActionIconText}"/>
         </Button>
 
         <Rectangle Width="1" Fill="{DynamicResource DividerColor}" Margin="3,7" VerticalAlignment="Stretch"/>
@@ -414,14 +489,20 @@
         <Button Style="{StaticResource ActionBtn}"
                 Command="{Binding CopyCommand}" ToolTip="Copy to clipboard (Ctrl+C)"
                 AutomationProperties.AutomationId="OverlayWindow.CompactCopy">
-          <TextBlock Text="📋" FontSize="13" HorizontalAlignment="Center"/>
+          <TextBlock Text="&#xE8C8;" Style="{StaticResource FluentActionIconText}"/>
         </Button>
 
         <Rectangle Width="1" Fill="{DynamicResource DividerColor}" Margin="3,7" VerticalAlignment="Stretch"/>
 
         <Button Style="{StaticResource ActionBtn}"
                 Command="{Binding CopyTextCommand}" ToolTip="Copy text from screenshot (OCR)">
-          <TextBlock Text="🔤" FontSize="13" HorizontalAlignment="Center"/>
+          <Border Width="15" Height="15" BorderBrush="{DynamicResource PrimaryText}" BorderThickness="1.2" CornerRadius="1.5" HorizontalAlignment="Center">
+            <Grid>
+              <Rectangle Width="6" Height="1.2" Fill="{DynamicResource PrimaryText}" VerticalAlignment="Top" Margin="0,3.2,0,0"/>
+              <Rectangle Width="6" Height="1.2" Fill="{DynamicResource PrimaryText}" VerticalAlignment="Top" Margin="0,6.3,0,0"/>
+              <TextBlock Text="A" FontSize="7" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryText}" HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,1"/>
+            </Grid>
+          </Border>
         </Button>
 
         <Rectangle Width="1" Fill="{DynamicResource DividerColor}" Margin="3,7" VerticalAlignment="Stretch"/>
@@ -429,7 +510,17 @@
         <Button Style="{StaticResource ActionBtn}"
                 Command="{Binding PinCommand}" ToolTip="Pin to screen"
                 AutomationProperties.AutomationId="OverlayWindow.CompactPin">
-          <TextBlock Text="📌" FontSize="13" HorizontalAlignment="Center"/>
+          <Viewbox Width="15" Height="15">
+            <Canvas Width="16" Height="16">
+              <Path Data="M5.5,2.5 H10.5 L11.8,5.2 L8.7,6.8 V10.7 L7,13.5 L5.3,10.7 V6.8 L2.2,5.2 Z"
+                    Stroke="{DynamicResource PrimaryText}"
+                    StrokeThickness="1.3"
+                    Fill="Transparent"
+                    StrokeLineJoin="Round"
+                    StrokeStartLineCap="Round"
+                    StrokeEndLineCap="Round"/>
+            </Canvas>
+          </Viewbox>
         </Button>
 
         <Rectangle Width="1" Fill="{DynamicResource DividerColor}" Margin="3,7" VerticalAlignment="Stretch"/>
@@ -437,7 +528,7 @@
         <Button Style="{StaticResource ActionBtn}"
                 Click="CloseBtn_Click" ToolTip="Close (Esc)"
                 AutomationProperties.AutomationId="OverlayWindow.CompactClose">
-          <TextBlock Text="✕" FontSize="13" Foreground="{DynamicResource PrimaryText}" HorizontalAlignment="Center"/>
+          <TextBlock Text="&#xE711;" Style="{StaticResource FluentActionIconText}"/>
         </Button>
 
       </StackPanel>
@@ -490,10 +581,7 @@
                     Command="{Binding ToggleAnnotationInputCommand}"
                     ToolTip="Switch between drawing and interacting with the app"
                     Visibility="{Binding CanToggleAnnotation, Converter={StaticResource BoolToVisibility}}">
-              <TextBlock Text="✎"
-                         FontSize="13"
-                         Foreground="{DynamicResource PrimaryText}"
-                         HorizontalAlignment="Center"/>
+              <TextBlock Text="&#xE70F;" Style="{StaticResource FluentActionIconText}"/>
             </Button>
 
             <TextBlock Grid.Row="1"
@@ -520,15 +608,13 @@
                     Command="{Binding PauseResumeCommand}"
                     IsEnabled="{Binding CanPauseResume}"
                     ToolTip="Pause or resume recording">
-              <TextBlock FontSize="13"
-                         Foreground="{DynamicResource PrimaryText}"
-                         HorizontalAlignment="Center">
+              <TextBlock>
                 <TextBlock.Style>
-                  <Style TargetType="TextBlock">
-                    <Setter Property="Text" Value="⏸"/>
+                  <Style TargetType="TextBlock" BasedOn="{StaticResource FluentActionIconText}">
+                    <Setter Property="Text" Value="&#xE769;"/>
                     <Style.Triggers>
                       <DataTrigger Binding="{Binding PauseResumeLabel}" Value="▶ Resume">
-                        <Setter Property="Text" Value="▶"/>
+                        <Setter Property="Text" Value="&#xE768;"/>
                       </DataTrigger>
                     </Style.Triggers>
                   </Style>
@@ -567,10 +653,7 @@
                     Style="{StaticResource RecordingHudActionBtn}"
                     Command="{Binding StopCommand}"
                     ToolTip="Stop recording">
-              <TextBlock Text="⏹"
-                         FontSize="13"
-                         Foreground="#FF4444"
-                         HorizontalAlignment="Center"/>
+              <TextBlock Text="&#xE71A;" Style="{StaticResource FluentDangerIconText}"/>
             </Button>
 
             <TextBlock Grid.Row="1"
@@ -620,7 +703,7 @@
                          IsChecked="True"
                          Checked="RecordingToolButton_Checked"
                          ToolTip="Pen">
-              <TextBlock Text="✏" FontSize="14" Foreground="{DynamicResource PrimaryText}"/>
+              <TextBlock Text="&#xE70F;" Style="{StaticResource FluentToolIconText}"/>
             </RadioButton>
 
             <RadioButton Style="{StaticResource ToolBtn}"
@@ -628,7 +711,21 @@
                          Tag="Arrow"
                          Checked="RecordingToolButton_Checked"
                          ToolTip="Arrow">
-              <TextBlock Text="➤" FontSize="14" Foreground="{DynamicResource PrimaryText}"/>
+              <Viewbox Width="15" Height="15">
+                <Canvas Width="16" Height="16">
+                  <Path Data="M2.5,13.5 L11.2,4.8"
+                        Stroke="{DynamicResource PrimaryText}"
+                        StrokeThickness="1.7"
+                        StrokeStartLineCap="Round"
+                        StrokeEndLineCap="Round"/>
+                  <Path Data="M9.1,4.8 H13.4 V9.1"
+                        Stroke="{DynamicResource PrimaryText}"
+                        StrokeThickness="1.7"
+                        StrokeStartLineCap="Round"
+                        StrokeEndLineCap="Round"
+                        StrokeLineJoin="Round"/>
+                </Canvas>
+              </Viewbox>
             </RadioButton>
 
             <RadioButton Style="{StaticResource ToolBtn}"
@@ -644,7 +741,7 @@
                          Tag="Text"
                          Checked="RecordingToolButton_Checked"
                          ToolTip="Text">
-              <TextBlock Text="T" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource PrimaryText}"/>
+              <TextBlock Text="A" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryText}"/>
             </RadioButton>
 
             <RadioButton Style="{StaticResource ToolBtn}"
@@ -652,7 +749,17 @@
                          Tag="Blur"
                          Checked="RecordingToolButton_Checked"
                          ToolTip="Blur / Redact">
-              <TextBlock Text="▒" FontSize="16" Foreground="{DynamicResource PrimaryText}"/>
+              <UniformGrid Rows="3" Columns="3" Width="15" Height="15">
+                <Rectangle Margin="0.6" RadiusX="0.6" RadiusY="0.6" Fill="{DynamicResource PrimaryText}" Opacity="0.25"/>
+                <Rectangle Margin="0.6" RadiusX="0.6" RadiusY="0.6" Fill="{DynamicResource PrimaryText}" Opacity="0.5"/>
+                <Rectangle Margin="0.6" RadiusX="0.6" RadiusY="0.6" Fill="{DynamicResource PrimaryText}" Opacity="0.25"/>
+                <Rectangle Margin="0.6" RadiusX="0.6" RadiusY="0.6" Fill="{DynamicResource PrimaryText}" Opacity="0.5"/>
+                <Rectangle Margin="0.6" RadiusX="0.6" RadiusY="0.6" Fill="{DynamicResource PrimaryText}" Opacity="0.8"/>
+                <Rectangle Margin="0.6" RadiusX="0.6" RadiusY="0.6" Fill="{DynamicResource PrimaryText}" Opacity="0.5"/>
+                <Rectangle Margin="0.6" RadiusX="0.6" RadiusY="0.6" Fill="{DynamicResource PrimaryText}" Opacity="0.25"/>
+                <Rectangle Margin="0.6" RadiusX="0.6" RadiusY="0.6" Fill="{DynamicResource PrimaryText}" Opacity="0.5"/>
+                <Rectangle Margin="0.6" RadiusX="0.6" RadiusY="0.6" Fill="{DynamicResource PrimaryText}" Opacity="0.25"/>
+              </UniformGrid>
             </RadioButton>
           </StackPanel>
 
@@ -662,7 +769,7 @@
             <Button Style="{StaticResource RecordingHudActionBtn}"
                     Command="{Binding UndoAnnotationsCommand}"
                     ToolTip="Undo annotation">
-              <TextBlock Text="↩" FontSize="13" Foreground="{DynamicResource PrimaryText}" HorizontalAlignment="Center"/>
+              <TextBlock Text="&#xE7A7;" Style="{StaticResource FluentActionIconText}"/>
             </Button>
 
             <Rectangle Width="1" Fill="{DynamicResource DividerColor}" Margin="3,7" VerticalAlignment="Stretch"/>
@@ -670,7 +777,7 @@
             <Button Style="{StaticResource RecordingHudActionBtn}"
                     Command="{Binding ClearAnnotationsCommand}"
                     ToolTip="Clear annotations">
-              <TextBlock Text="✕" FontSize="13" Foreground="#D96464" HorizontalAlignment="Center"/>
+              <TextBlock Text="&#xE711;" Style="{StaticResource FluentDangerIconText}"/>
             </Button>
           </StackPanel>
         </Grid>
