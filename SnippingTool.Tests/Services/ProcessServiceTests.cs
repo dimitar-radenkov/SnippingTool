@@ -21,15 +21,48 @@ public sealed class ProcessServiceTests : IDisposable
 
         sut.Start(startInfo);
 
-        SpinWait.SpinUntil(() => File.Exists(_outputPath), millisecondsTimeout: 3000);
-        Assert.True(File.Exists(_outputPath));
+        Assert.True(SpinWait.SpinUntil(() => this.TryReadOutput() is "coverage", millisecondsTimeout: 3000));
     }
 
     public void Dispose()
     {
         if (File.Exists(_outputPath))
         {
+            SpinWait.SpinUntil(this.TryDeleteOutput, millisecondsTimeout: 3000);
+        }
+    }
+
+    private string? TryReadOutput()
+    {
+        if (!File.Exists(_outputPath))
+        {
+            return null;
+        }
+
+        try
+        {
+            return File.ReadAllText(_outputPath).Trim();
+        }
+        catch (IOException)
+        {
+            return null;
+        }
+    }
+
+    private bool TryDeleteOutput()
+    {
+        try
+        {
             File.Delete(_outputPath);
+            return !File.Exists(_outputPath);
+        }
+        catch (IOException)
+        {
+            return false;
+        }
+        catch (UnauthorizedAccessException)
+        {
+            return false;
         }
     }
 }
