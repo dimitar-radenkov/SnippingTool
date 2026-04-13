@@ -3,15 +3,18 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using System.Windows;
 using SnippingTool.Services;
 using SnippingTool.Services.Messaging;
 using SnippingTool.Models;
+using SnippingTool.Automation;
 using SnippingTool.ViewModels;
 using SnippingTool.Tests.Services.Handlers;
 using Xunit;
 using System.IO;
+using WpfMenuItem = System.Windows.Controls.MenuItem;
 
 namespace SnippingTool.Tests;
 
@@ -216,6 +219,182 @@ public sealed class AppTests
         });
     }
 
+    [Fact]
+    public void RegisterAutomationWindow_WhenAutomationDisabled_DoesNotAttachHandler()
+    {
+        StaTestHelper.Run(() =>
+        {
+            var app = CreateAppWithoutRunning();
+            SetField(app, "_isAutomationMode", false);
+            var window = new Window();
+
+            var closedHandlers = 0;
+            window.Closed += (_, _) => closedHandlers++;
+
+            app.RegisterAutomationWindow(window);
+            window.Close();
+
+            Assert.Equal(1, closedHandlers);
+        });
+    }
+
+    [Fact]
+    public void CreateTrayMenuItem_AssignsHeaderAndClickHandler()
+    {
+        StaTestHelper.Run(() =>
+        {
+            var clicked = false;
+            var menuItem = (WpfMenuItem)InvokePrivateStaticResult(
+                "CreateTrayMenuItem",
+                "Test Item",
+                new RoutedEventHandler((_, _) => clicked = true));
+
+            Assert.Equal("Test Item", menuItem.Header);
+            menuItem.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.MenuItem.ClickEvent));
+            Assert.True(clicked);
+        });
+    }
+
+    [Fact]
+    public void OpenRecentRecordingFolder_Click_WithValidTag_OpensFolder()
+    {
+        StaTestHelper.Run(() =>
+        {
+            var app = CreateAppWithoutRunning();
+            var processMock = new Mock<IProcessService>();
+            SetField(app, "_host", CreateHost(processService: processMock.Object));
+
+            var recentRecording = CreateRecentRecordingItem(@"C:\\temp\\video.mp4", "00:10");
+            var menuItem = new WpfMenuItem { Tag = recentRecording };
+
+            InvokePrivateHandler(app, "OpenRecentRecordingFolder_Click", menuItem, new RoutedEventArgs());
+
+            processMock.Verify(process => process.Start(It.Is<ProcessStartInfo>(info =>
+                info.FileName == "explorer.exe" && info.Arguments == @"C:\temp")), Times.Once);
+        });
+    }
+
+    [Fact]
+    public void ExportRecentRecordingGif_Click_WhenRecordingMissing_ShowsWarning()
+    {
+        StaTestHelper.Run(() =>
+        {
+            var app = CreateAppWithoutRunning();
+            var messageBoxMock = new Mock<IMessageBoxService>();
+            SetField(app, "_messageBox", messageBoxMock.Object);
+
+            var missingPath = Path.Combine(Path.GetTempPath(), $"missing-{Guid.NewGuid()}.mp4");
+            var recentRecording = CreateRecentRecordingItem(missingPath, "00:07");
+            var menuItem = new WpfMenuItem { Tag = recentRecording };
+
+            InvokePrivateHandler(app, "ExportRecentRecordingGif_Click", menuItem, new RoutedEventArgs());
+
+            messageBoxMock.Verify(service => service.ShowWarning(
+                "The recording file could not be found.",
+                "Export to GIF"), Times.Once);
+            Assert.True(menuItem.IsEnabled);
+        });
+    }
+
+    [Fact]
+    public void ExportRecentRecordingGif_Click_WhenExportFails_ShowsWarningAndReenablesMenu()
+    {
+        StaTestHelper.RunAsync(async () =>
+        {
+            var app = CreateAppWithoutRunning();
+            var messageBoxMock = new Mock<IMessageBoxService>();
+            var userSettings = new UserSettings { GifFps = 12 };
+            var userSettingsMock = new Mock<IUserSettingsService>();
+            userSettingsMock.SetupGet(service => service.Current).Returns(userSettings);
+            var gifExportMock = new Mock<IGifExportService>();
+            gifExportMock
+                .Setup(service => service.Export(It.IsAny<string>(), It.IsAny<string>(), 12, It.IsAny<CancellationToken>()))
+                .ThrowsAsync(new InvalidOperationException("gif failed"));
+
+            SetField(app, "_logger", NullLogger<App>.Instance);
+            SetField(app, "_messageBox", messageBoxMock.Object);
+            SetField(app, "_userSettings", userSettingsMock.Object);
+            SetField(app, "_host", CreateHost(gifExportService: gifExportMock.Object));
+
+            var tempMp4 = Path.GetTempFileName();
+            var recentRecording = CreateRecentRecordingItem(tempMp4, "00:09");
+            var menuItem = new WpfMenuItem { Tag = recentRecording };
+
+            try
+            {
+                InvokePrivateHandler(app, "ExportRecentRecordingGif_Click", menuItem, new RoutedEventArgs());
+                await WaitForCondition(() => menuItem.IsEnabled, TimeSpan.FromSeconds(3));
+
+                messageBoxMock.Verify(service => service.ShowWarning(
+                    "The GIF export failed. Please try again.",
+                    "Export to GIF"), Times.Once);
+            }
+            finally
+            {
+                File.Delete(tempMp4);
+            }
+        });
+    }
+
+    [Fact]
+    public void OpenPath_WhenFileMissing_ShowsWarning()
+    {
+        StaTestHelper.Run(() =>
+        {
+            var app = CreateAppWithoutRunning();
+            var messageBoxMock = new Mock<IMessageBoxService>();
+            SetField(app, "_messageBox", messageBoxMock.Object);
+            SetField(app, "_host", CreateHost(processService: Mock.Of<IProcessService>()));
+
+            InvokePrivateHandler(app, "OpenPath", Path.Combine(Path.GetTempPath(), $"missing-{Guid.NewGuid()}.mp4"));
+
+            messageBoxMock.Verify(service => service.ShowWarning(
+                "The selected recording file could not be found.",
+                "Open Recording"), Times.Once);
+        });
+    }
+
+    [Fact]
+    public void OpenPath_WhenFileExists_StartsProcessWithShellExecute()
+    {
+        StaTestHelper.Run(() =>
+        {
+            var app = CreateAppWithoutRunning();
+            var processMock = new Mock<IProcessService>();
+            SetField(app, "_messageBox", Mock.Of<IMessageBoxService>());
+            SetField(app, "_host", CreateHost(processService: processMock.Object));
+
+            var tempPath = Path.GetTempFileName();
+            try
+            {
+                InvokePrivateHandler(app, "OpenPath", tempPath);
+
+                processMock.Verify(process => process.Start(It.Is<ProcessStartInfo>(info =>
+                    info.FileName == tempPath && info.UseShellExecute)), Times.Once);
+            }
+            finally
+            {
+                File.Delete(tempPath);
+            }
+        });
+    }
+
+    [Fact]
+    public void OpenRecentRecording_Click_WithInvalidSender_DoesNothing()
+    {
+        StaTestHelper.Run(() =>
+        {
+            var app = CreateAppWithoutRunning();
+            var processMock = new Mock<IProcessService>();
+            SetField(app, "_messageBox", Mock.Of<IMessageBoxService>());
+            SetField(app, "_host", CreateHost(processService: processMock.Object));
+
+            InvokePrivateHandler(app, "OpenRecentRecording_Click", new object(), new RoutedEventArgs());
+
+            processMock.Verify(process => process.Start(It.IsAny<ProcessStartInfo>()), Times.Never);
+        });
+    }
+
     private static App CreateAppWithoutRunning()
     {
         return (App)RuntimeHelpers.GetUninitializedObject(typeof(App));
@@ -252,18 +431,49 @@ public sealed class AppTests
     private static IHost CreateHost(
         IUpdateService? updateService = null,
         IMessageBoxService? messageBox = null,
-        IProcessService? processService = null)
+        IProcessService? processService = null,
+        IGifExportService? gifExportService = null)
     {
         var services = new ServiceCollection();
         services.AddSingleton(updateService ?? Mock.Of<IUpdateService>());
         services.AddSingleton(Mock.Of<IAppVersionService>(version => version.Current == new Version(1, 2, 3)));
         services.AddSingleton(messageBox ?? Mock.Of<IMessageBoxService>());
         services.AddSingleton(processService ?? Mock.Of<IProcessService>());
+        services.AddSingleton(gifExportService ?? Mock.Of<IGifExportService>());
 
         var provider = services.BuildServiceProvider();
         var host = new Mock<IHost>();
         host.SetupGet(current => current.Services).Returns(provider);
         return host.Object;
+    }
+
+    private static object CreateRecentRecordingItem(string outputPath, string elapsedText)
+    {
+        var recentRecordingType = typeof(App).GetNestedType("RecentRecordingItem", System.Reflection.BindingFlags.NonPublic);
+        Assert.NotNull(recentRecordingType);
+        return Activator.CreateInstance(recentRecordingType!, [outputPath, elapsedText])!;
+    }
+
+
+    private static object InvokePrivateStaticResult(string methodName, params object[] args)
+    {
+        var method = typeof(App).GetMethod(methodName, System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.NonPublic);
+        Assert.NotNull(method);
+        return method.Invoke(null, args)!;
+    }
+
+    private static async Task WaitForCondition(Func<bool> condition, TimeSpan timeout)
+    {
+        var started = DateTime.UtcNow;
+        while (!condition())
+        {
+            if (DateTime.UtcNow - started > timeout)
+            {
+                throw new TimeoutException("Condition was not met within the timeout.");
+            }
+
+            await Task.Delay(25);
+        }
     }
 
     private static DispatcherUnhandledExceptionEventArgs CreateDispatcherUnhandledExceptionArgs(Exception exception)
