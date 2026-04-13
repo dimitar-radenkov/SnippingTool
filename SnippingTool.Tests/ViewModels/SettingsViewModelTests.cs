@@ -8,11 +8,28 @@ namespace SnippingTool.Tests.ViewModels;
 
 public sealed class SettingsViewModelTests
 {
-    private static SettingsViewModel CreateVm(UserSettings? settings = null, IDialogService? dialogService = null)
+    private static IMicrophoneDeviceService CreateMicrophoneDeviceService(
+        IReadOnlyList<string>? availableDeviceNames = null,
+        string? defaultDeviceName = "Studio Mic")
+    {
+        availableDeviceNames ??= ["Studio Mic", "USB Mic"];
+        return Mock.Of<IMicrophoneDeviceService>(service =>
+            service.GetAvailableCaptureDeviceNames() == availableDeviceNames &&
+            service.GetDefaultCaptureDeviceName() == defaultDeviceName);
+    }
+
+    private static SettingsViewModel CreateVm(
+        UserSettings? settings = null,
+        IDialogService? dialogService = null,
+        IMicrophoneDeviceService? microphoneDeviceService = null)
     {
         var mock = new Mock<IUserSettingsService>();
         mock.SetupGet(s => s.Current).Returns(settings ?? new UserSettings());
-        return new SettingsViewModel(mock.Object, Mock.Of<IThemeService>(), dialogService ?? Mock.Of<IDialogService>());
+        return new SettingsViewModel(
+            mock.Object,
+            Mock.Of<IThemeService>(),
+            dialogService ?? Mock.Of<IDialogService>(),
+            microphoneDeviceService ?? CreateMicrophoneDeviceService());
     }
 
     [Fact]
@@ -47,7 +64,7 @@ public sealed class SettingsViewModelTests
         mock.SetupGet(s => s.Current).Returns(new UserSettings());
         UserSettings? saved = null;
         mock.Setup(s => s.Save(It.IsAny<UserSettings>())).Callback<UserSettings>(s => saved = s);
-        var vm = new SettingsViewModel(mock.Object, Mock.Of<IThemeService>(), Mock.Of<IDialogService>());
+        var vm = new SettingsViewModel(mock.Object, Mock.Of<IThemeService>(), Mock.Of<IDialogService>(), CreateMicrophoneDeviceService());
         vm.CaptureDelaySeconds = 10;
 
         // Act
@@ -100,7 +117,7 @@ public sealed class SettingsViewModelTests
         mock.SetupGet(s => s.Current).Returns(new UserSettings());
         UserSettings? saved = null;
         mock.Setup(s => s.Save(It.IsAny<UserSettings>())).Callback<UserSettings>(s => saved = s);
-        var vm = new SettingsViewModel(mock.Object, Mock.Of<IThemeService>(), Mock.Of<IDialogService>());
+        var vm = new SettingsViewModel(mock.Object, Mock.Of<IThemeService>(), Mock.Of<IDialogService>(), CreateMicrophoneDeviceService());
         vm.RegionCaptureHotkey = 0x42u; // 'B'
 
         // Act
@@ -208,6 +225,69 @@ public sealed class SettingsViewModelTests
     }
 
     [Fact]
+    public void LoadsFromSettings_RecordMicrophone()
+    {
+        var vm = CreateVm(new UserSettings { RecordMicrophone = true });
+
+        Assert.True(vm.RecordMicrophone);
+    }
+
+    [Fact]
+    public void DefaultSettings_RecordMicrophone_IsEnabled()
+    {
+        var vm = CreateVm();
+
+        Assert.True(vm.RecordMicrophone);
+    }
+
+    [Fact]
+    public void LoadsFromSettings_RecordingMicrophoneDeviceName()
+    {
+        var vm = CreateVm(new UserSettings { RecordingMicrophoneDeviceName = "USB Mic" });
+
+        Assert.Equal("USB Mic", vm.SelectedMicrophoneDeviceName);
+    }
+
+    [Fact]
+    public void Save_PersistsRecordMicrophone()
+    {
+        var mock = new Mock<IUserSettingsService>();
+        mock.SetupGet(s => s.Current).Returns(new UserSettings());
+        UserSettings? saved = null;
+        mock.Setup(s => s.Save(It.IsAny<UserSettings>())).Callback<UserSettings>(s => saved = s);
+        var vm = new SettingsViewModel(mock.Object, Mock.Of<IThemeService>(), Mock.Of<IDialogService>(), CreateMicrophoneDeviceService());
+        vm.RecordMicrophone = true;
+        vm.SelectedMicrophoneDeviceName = "USB Mic";
+
+        vm.SaveCommand.Execute(null);
+
+        Assert.True(saved?.RecordMicrophone);
+        Assert.Equal("USB Mic", saved?.RecordingMicrophoneDeviceName);
+    }
+
+    [Fact]
+    public void RecordMicrophone_PropertyChanged_Fired()
+    {
+        var vm = CreateVm();
+        var raised = new List<string?>();
+        vm.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
+
+        vm.RecordMicrophone = false;
+
+        Assert.Contains(nameof(vm.RecordMicrophone), raised);
+    }
+
+    [Fact]
+    public void SelectedMicrophoneDeviceName_DefaultsToResolvedDevice()
+    {
+        var vm = CreateVm();
+
+        Assert.Equal("Studio Mic", vm.SelectedMicrophoneDeviceName);
+        Assert.Equal(2, vm.AvailableMicrophoneDevices.Count);
+        Assert.True(vm.HasAvailableMicrophoneDevices);
+    }
+
+    [Fact]
     public void LoadsFromSettings_RecordingCursorEffectSettings()
     {
         var vm = CreateVm(new UserSettings
@@ -229,7 +309,11 @@ public sealed class SettingsViewModelTests
         mock.SetupGet(s => s.Current).Returns(new UserSettings());
         UserSettings? saved = null;
         mock.Setup(s => s.Save(It.IsAny<UserSettings>())).Callback<UserSettings>(s => saved = s);
-        var vm = new SettingsViewModel(mock.Object, Mock.Of<IThemeService>(), Mock.Of<IDialogService>());
+        var vm = new SettingsViewModel(
+            mock.Object,
+            Mock.Of<IThemeService>(),
+            Mock.Of<IDialogService>(),
+            CreateMicrophoneDeviceService());
         vm.RecordingCursorHighlightEnabled = false;
         vm.RecordingClickRippleEnabled = false;
         vm.RecordingCursorHighlightSize = 36d;
@@ -304,6 +388,7 @@ public sealed class SettingsViewModelTests
         {
             ScreenshotSavePath = @"C:\Shots",
             RecordingOutputPath = @"C:\Videos",
+            RecordMicrophone = true,
             GifFps = 20,
             RecordingCursorHighlightEnabled = false,
             RecordingClickRippleEnabled = false,
@@ -312,6 +397,7 @@ public sealed class SettingsViewModelTests
 
         vm.ScreenshotSavePath = @"D:\Keep";
         vm.RecordingOutputPath = @"D:\Reset";
+        vm.RecordMicrophone = true;
         vm.GifFps = 20;
         vm.RecordingCursorHighlightEnabled = false;
         vm.RecordingClickRippleEnabled = false;
@@ -323,6 +409,7 @@ public sealed class SettingsViewModelTests
         var defaults = new UserSettings();
         Assert.Equal(@"D:\Keep", vm.ScreenshotSavePath);
         Assert.Equal(defaults.RecordingOutputPath, vm.RecordingOutputPath);
+        Assert.Equal(defaults.RecordMicrophone, vm.RecordMicrophone);
         Assert.Equal(defaults.GifFps, vm.GifFps);
         Assert.Equal(defaults.RecordingCursorHighlightEnabled, vm.RecordingCursorHighlightEnabled);
         Assert.Equal(defaults.RecordingClickRippleEnabled, vm.RecordingClickRippleEnabled);
@@ -343,7 +430,7 @@ public sealed class SettingsViewModelTests
         mock.SetupGet(s => s.Current).Returns(current);
         UserSettings? saved = null;
         mock.Setup(s => s.Save(It.IsAny<UserSettings>())).Callback<UserSettings>(s => saved = s);
-        var vm = new SettingsViewModel(mock.Object, Mock.Of<IThemeService>(), Mock.Of<IDialogService>());
+        var vm = new SettingsViewModel(mock.Object, Mock.Of<IThemeService>(), Mock.Of<IDialogService>(), CreateMicrophoneDeviceService());
 
         vm.RestoreDefaultsCommand.Execute(null);
         vm.SaveCommand.Execute(null);
@@ -368,7 +455,7 @@ public sealed class SettingsViewModelTests
         mock.SetupGet(s => s.Current).Returns(current);
         UserSettings? saved = null;
         mock.Setup(s => s.Save(It.IsAny<UserSettings>())).Callback<UserSettings>(s => saved = s);
-        var vm = new SettingsViewModel(mock.Object, Mock.Of<IThemeService>(), Mock.Of<IDialogService>());
+        var vm = new SettingsViewModel(mock.Object, Mock.Of<IThemeService>(), Mock.Of<IDialogService>(), CreateMicrophoneDeviceService());
 
         vm.RestoreDefaultsCommand.Execute(null);
         vm.ScreenshotSavePath = @"D:\Screens";

@@ -106,6 +106,23 @@
         </Setter.Value>
       </Setter>
     </Style>
+
+    <Style x:Key="FluentActionIconText" TargetType="TextBlock">
+      <Setter Property="FontFamily" Value="Segoe Fluent Icons, Segoe MDL2 Assets"/>
+      <Setter Property="FontSize" Value="15"/>
+      <Setter Property="Foreground" Value="{DynamicResource PrimaryText}"/>
+      <Setter Property="HorizontalAlignment" Value="Center"/>
+      <Setter Property="VerticalAlignment" Value="Center"/>
+      <Setter Property="TextAlignment" Value="Center"/>
+    </Style>
+
+    <Style x:Key="FluentToolIconText" TargetType="TextBlock" BasedOn="{StaticResource FluentActionIconText}">
+      <Setter Property="FontSize" Value="14"/>
+    </Style>
+
+    <Style x:Key="FluentDangerIconText" TargetType="TextBlock" BasedOn="{StaticResource FluentActionIconText}">
+      <Setter Property="Foreground" Value="#D96464"/>
+    </Style>
   </Window.Resources>
 
   <Canvas x:Name="Root" Background="#01000000">
@@ -169,6 +186,8 @@
               <ColumnDefinition Width="Auto"/>
               <ColumnDefinition Width="Auto"/>
               <ColumnDefinition Width="Auto"/>
+              <ColumnDefinition Width="Auto"/>
+              <ColumnDefinition Width="Auto"/>
             </Grid.ColumnDefinitions>
 
             <Button Grid.Row="0" Grid.Column="0"
@@ -177,7 +196,12 @@
                     ToolTip="Switch between drawing and interacting with the app"
                     Visibility="{Binding CanToggleAnnotation, Converter={StaticResource BoolToVisibility}}"
                     AutomationProperties.AutomationId="RecordingOverlayWindow.ToggleAnnotation">
-              <TextBlock Text="✎" FontSize="13" Foreground="{DynamicResource PrimaryText}" HorizontalAlignment="Center"/>
+              <TextBlock Text="&#xE70F;"
+                         FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                         FontSize="15"
+                         Foreground="{DynamicResource PrimaryText}"
+                         HorizontalAlignment="Center"
+                         VerticalAlignment="Center"/>
             </Button>
 
             <TextBlock Grid.Row="1" Grid.Column="0"
@@ -198,13 +222,17 @@
                     IsEnabled="{Binding CanPauseResume}"
                     ToolTip="Pause or resume recording"
                     AutomationProperties.AutomationId="RecordingOverlayWindow.PauseResume">
-              <TextBlock FontSize="13" Foreground="{DynamicResource PrimaryText}" HorizontalAlignment="Center">
+              <TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                         FontSize="15"
+                         Foreground="{DynamicResource PrimaryText}"
+                         HorizontalAlignment="Center"
+                         VerticalAlignment="Center">
                 <TextBlock.Style>
                   <Style TargetType="TextBlock">
-                    <Setter Property="Text" Value="⏸"/>
+                    <Setter Property="Text" Value="&#xE769;"/>
                     <Style.Triggers>
                       <DataTrigger Binding="{Binding PauseResumeLabel}" Value="▶ Resume">
-                        <Setter Property="Text" Value="▶"/>
+                        <Setter Property="Text" Value="&#xE768;"/>
                       </DataTrigger>
                     </Style.Triggers>
                   </Style>
@@ -229,13 +257,61 @@
 
             <Button Grid.Row="0" Grid.Column="4"
                     Style="{StaticResource RecordingHudActionBtn}"
+                    Command="{Binding ToggleMicrophoneCommand}"
+                    IsEnabled="{Binding CanToggleMicrophone}"
+                    ToolTip="{Binding MicrophoneToolTip}"
+                    ToolTipService.ShowOnDisabled="True"
+                    AutomationProperties.AutomationId="RecordingOverlayWindow.ToggleMicrophone">
+              <TextBlock FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                         FontSize="15"
+                         HorizontalAlignment="Center"
+                         VerticalAlignment="Center">
+                <TextBlock.Style>
+                  <Style TargetType="TextBlock">
+                    <Setter Property="Text" Value="&#xE720;"/>
+                    <Setter Property="Foreground" Value="{DynamicResource PrimaryText}"/>
+                    <Style.Triggers>
+                      <DataTrigger Binding="{Binding CanToggleMicrophone}" Value="False">
+                        <Setter Property="Text" Value="&#xEC54;"/>
+                        <Setter Property="Foreground" Value="{DynamicResource SubLabelText}"/>
+                      </DataTrigger>
+                      <DataTrigger Binding="{Binding IsMicrophoneMuted}" Value="True">
+                        <Setter Property="Text" Value="&#xEC54;"/>
+                        <Setter Property="Foreground" Value="#FFB94A48"/>
+                      </DataTrigger>
+                    </Style.Triggers>
+                  </Style>
+                </TextBlock.Style>
+              </TextBlock>
+            </Button>
+
+            <TextBlock Grid.Row="1" Grid.Column="4"
+                       Text="{Binding MicrophoneActionLabel}"
+                       FontSize="8"
+                       Foreground="{DynamicResource SubLabelText}"
+                       TextAlignment="Center"
+                       Margin="0,2,0,0"/>
+
+            <Rectangle Grid.Row="0" Grid.RowSpan="2" Grid.Column="5"
+                       Width="1"
+                       Fill="{DynamicResource DividerColor}"
+                       Margin="3,7"
+                       VerticalAlignment="Stretch"/>
+
+            <Button Grid.Row="0" Grid.Column="6"
+                    Style="{StaticResource RecordingHudActionBtn}"
                     Command="{Binding StopCommand}"
                     ToolTip="Stop recording"
                     AutomationProperties.AutomationId="RecordingOverlayWindow.Stop">
-              <TextBlock Text="⏹" FontSize="13" Foreground="#FF4444" HorizontalAlignment="Center"/>
+              <TextBlock Text="&#xE71A;"
+                         FontFamily="Segoe Fluent Icons, Segoe MDL2 Assets"
+                         FontSize="15"
+                         Foreground="#FF4444"
+                         HorizontalAlignment="Center"
+                         VerticalAlignment="Center"/>
             </Button>
 
-            <TextBlock Grid.Row="1" Grid.Column="4" Text="Stop" FontSize="8" Foreground="{DynamicResource SubLabelText}" TextAlignment="Center" Margin="0,2,0,0"/>
+            <TextBlock Grid.Row="1" Grid.Column="6" Text="Stop" FontSize="8" Foreground="{DynamicResource SubLabelText}" TextAlignment="Center" Margin="0,2,0,0"/>
           </Grid>
 
           <Border Grid.Column="1"
@@ -268,30 +344,54 @@
 
           <StackPanel Orientation="Horizontal" Grid.Column="0" HorizontalAlignment="Left">
             <RadioButton Style="{StaticResource ToolBtn}" GroupName="RecordingAnnotTool" Tag="Pen" IsChecked="True" Checked="RecordingToolButton_Checked" ToolTip="Pen">
-              <TextBlock Text="✏" FontSize="14" Foreground="{DynamicResource PrimaryText}"/>
+              <TextBlock Text="&#xE70F;" Style="{StaticResource FluentToolIconText}"/>
             </RadioButton>
             <RadioButton Style="{StaticResource ToolBtn}" GroupName="RecordingAnnotTool" Tag="Arrow" Checked="RecordingToolButton_Checked" ToolTip="Arrow">
-              <TextBlock Text="➤" FontSize="14" Foreground="{DynamicResource PrimaryText}"/>
+              <Viewbox Width="15" Height="15">
+                <Canvas Width="16" Height="16">
+                  <Path Data="M2.5,13.5 L11.2,4.8"
+                        Stroke="{DynamicResource PrimaryText}"
+                        StrokeThickness="1.7"
+                        StrokeStartLineCap="Round"
+                        StrokeEndLineCap="Round"/>
+                  <Path Data="M9.1,4.8 H13.4 V9.1"
+                        Stroke="{DynamicResource PrimaryText}"
+                        StrokeThickness="1.7"
+                        StrokeStartLineCap="Round"
+                        StrokeEndLineCap="Round"
+                        StrokeLineJoin="Round"/>
+                </Canvas>
+              </Viewbox>
             </RadioButton>
             <RadioButton Style="{StaticResource ToolBtn}" GroupName="RecordingAnnotTool" Tag="Rectangle" Checked="RecordingToolButton_Checked" ToolTip="Rectangle">
               <Border Width="16" Height="12" BorderBrush="{DynamicResource SubLabelText}" BorderThickness="1.5" Background="Transparent"/>
             </RadioButton>
             <RadioButton Style="{StaticResource ToolBtn}" GroupName="RecordingAnnotTool" Tag="Text" Checked="RecordingToolButton_Checked" ToolTip="Text">
-              <TextBlock Text="T" FontSize="15" FontWeight="Bold" Foreground="{DynamicResource PrimaryText}"/>
+              <TextBlock Text="A" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryText}"/>
             </RadioButton>
             <RadioButton Style="{StaticResource ToolBtn}" GroupName="RecordingAnnotTool" Tag="Blur" Checked="RecordingToolButton_Checked" ToolTip="Blur / Redact">
-              <TextBlock Text="▒" FontSize="16" Foreground="{DynamicResource PrimaryText}"/>
+              <UniformGrid Rows="3" Columns="3" Width="15" Height="15">
+                <Rectangle Margin="0.6" RadiusX="0.6" RadiusY="0.6" Fill="{DynamicResource PrimaryText}" Opacity="0.25"/>
+                <Rectangle Margin="0.6" RadiusX="0.6" RadiusY="0.6" Fill="{DynamicResource PrimaryText}" Opacity="0.5"/>
+                <Rectangle Margin="0.6" RadiusX="0.6" RadiusY="0.6" Fill="{DynamicResource PrimaryText}" Opacity="0.25"/>
+                <Rectangle Margin="0.6" RadiusX="0.6" RadiusY="0.6" Fill="{DynamicResource PrimaryText}" Opacity="0.5"/>
+                <Rectangle Margin="0.6" RadiusX="0.6" RadiusY="0.6" Fill="{DynamicResource PrimaryText}" Opacity="0.8"/>
+                <Rectangle Margin="0.6" RadiusX="0.6" RadiusY="0.6" Fill="{DynamicResource PrimaryText}" Opacity="0.5"/>
+                <Rectangle Margin="0.6" RadiusX="0.6" RadiusY="0.6" Fill="{DynamicResource PrimaryText}" Opacity="0.25"/>
+                <Rectangle Margin="0.6" RadiusX="0.6" RadiusY="0.6" Fill="{DynamicResource PrimaryText}" Opacity="0.5"/>
+                <Rectangle Margin="0.6" RadiusX="0.6" RadiusY="0.6" Fill="{DynamicResource PrimaryText}" Opacity="0.25"/>
+              </UniformGrid>
             </RadioButton>
           </StackPanel>
 
           <StackPanel Orientation="Horizontal" Grid.Column="1" Margin="8,0,0,0" HorizontalAlignment="Right">
             <Rectangle Width="1" Fill="{DynamicResource DividerColor}" Margin="3,7" VerticalAlignment="Stretch"/>
             <Button Style="{StaticResource RecordingHudActionBtn}" Command="{Binding UndoAnnotationsCommand}" ToolTip="Undo annotation">
-              <TextBlock Text="↩" FontSize="13" Foreground="{DynamicResource PrimaryText}" HorizontalAlignment="Center"/>
+              <TextBlock Text="&#xE7A7;" Style="{StaticResource FluentActionIconText}"/>
             </Button>
             <Rectangle Width="1" Fill="{DynamicResource DividerColor}" Margin="3,7" VerticalAlignment="Stretch"/>
             <Button Style="{StaticResource RecordingHudActionBtn}" Command="{Binding ClearAnnotationsCommand}" ToolTip="Clear annotations">
-              <TextBlock Text="✕" FontSize="13" Foreground="#D96464" HorizontalAlignment="Center"/>
+              <TextBlock Text="&#xE711;" Style="{StaticResource FluentDangerIconText}"/>
             </Button>
           </StackPanel>
         </Grid>

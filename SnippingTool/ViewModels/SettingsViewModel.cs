@@ -20,23 +20,29 @@ public partial class SettingsViewModel : ObservableObject
     ];
 
     private readonly IDialogService _dialogService;
+    private readonly IMicrophoneDeviceService _microphoneDeviceService;
     private readonly IUserSettingsService _settingsService;
     private readonly IThemeService _themeService;
     private readonly AppTheme _originalTheme;
+    private readonly IReadOnlyList<string> _availableMicrophoneDevices;
     private int _recordingFps;
     private int _hudGapPixels;
     private DateTime? _lastAutoUpdateCheckUtc;
 
-    public SettingsViewModel(IUserSettingsService settingsService, IThemeService themeService, IDialogService dialogService)
+    public SettingsViewModel(IUserSettingsService settingsService, IThemeService themeService, IDialogService dialogService, IMicrophoneDeviceService microphoneDeviceService)
     {
         _dialogService = dialogService;
+        _microphoneDeviceService = microphoneDeviceService;
         _settingsService = settingsService;
         _themeService = themeService;
+        _availableMicrophoneDevices = microphoneDeviceService.GetAvailableCaptureDeviceNames();
 
         var s = settingsService.Current;
         _screenshotSavePath = s.ScreenshotSavePath;
         _autoSaveScreenshots = s.AutoSaveScreenshots;
         _recordingOutputPath = s.RecordingOutputPath;
+        _recordMicrophone = s.RecordMicrophone;
+        _selectedMicrophoneDeviceName = ResolveInitialMicrophoneDeviceName(s.RecordingMicrophoneDeviceName);
         _gifFps = s.GifFps;
         _recordingCursorHighlightEnabled = s.RecordingCursorHighlightEnabled;
         _recordingClickRippleEnabled = s.RecordingClickRippleEnabled;
@@ -64,6 +70,12 @@ public partial class SettingsViewModel : ObservableObject
 
     [ObservableProperty]
     private string _recordingOutputPath;
+
+    [ObservableProperty]
+    private bool _recordMicrophone;
+
+    [ObservableProperty]
+    private string? _selectedMicrophoneDeviceName;
 
     [ObservableProperty]
     private int _gifFps;
@@ -116,6 +128,8 @@ public partial class SettingsViewModel : ObservableObject
     public string RegionCaptureHotkeyDisplayName => VkToDisplayName(RegionCaptureHotkey);
     public string SelectedSectionDisplayName => SelectedSectionItem.DisplayName;
     public string SelectedSectionDescription => SelectedSectionItem.Description;
+    public IReadOnlyList<string> AvailableMicrophoneDevices => _availableMicrophoneDevices;
+    public bool HasAvailableMicrophoneDevices => _availableMicrophoneDevices.Count > 0;
     public bool IsCaptureSectionSelected => SelectedSection == SettingsSection.Capture;
     public bool IsRecordingSectionSelected => SelectedSection == SettingsSection.Recording;
     public bool IsAnnotationSectionSelected => SelectedSection == SettingsSection.Annotation;
@@ -173,6 +187,8 @@ public partial class SettingsViewModel : ObservableObject
             ScreenshotSavePath = ScreenshotSavePath,
             AutoSaveScreenshots = AutoSaveScreenshots,
             RecordingOutputPath = RecordingOutputPath,
+            RecordMicrophone = RecordMicrophone,
+            RecordingMicrophoneDeviceName = SelectedMicrophoneDeviceName,
             RecordingFps = _recordingFps,
             GifFps = GifFps,
             RecordingCursorHighlightEnabled = RecordingCursorHighlightEnabled,
@@ -215,6 +231,8 @@ public partial class SettingsViewModel : ObservableObject
                 break;
             case SettingsSection.Recording:
                 RecordingOutputPath = defaults.RecordingOutputPath;
+                RecordMicrophone = defaults.RecordMicrophone;
+                SelectedMicrophoneDeviceName = ResolveInitialMicrophoneDeviceName(defaults.RecordingMicrophoneDeviceName);
                 GifFps = defaults.GifFps;
                 RecordingCursorHighlightEnabled = defaults.RecordingCursorHighlightEnabled;
                 RecordingClickRippleEnabled = defaults.RecordingClickRippleEnabled;
@@ -241,6 +259,8 @@ public partial class SettingsViewModel : ObservableObject
         ScreenshotSavePath = defaults.ScreenshotSavePath;
         AutoSaveScreenshots = defaults.AutoSaveScreenshots;
         RecordingOutputPath = defaults.RecordingOutputPath;
+        RecordMicrophone = defaults.RecordMicrophone;
+        SelectedMicrophoneDeviceName = ResolveInitialMicrophoneDeviceName(defaults.RecordingMicrophoneDeviceName);
         GifFps = defaults.GifFps;
         RecordingCursorHighlightEnabled = defaults.RecordingCursorHighlightEnabled;
         RecordingClickRippleEnabled = defaults.RecordingClickRippleEnabled;
@@ -273,6 +293,37 @@ public partial class SettingsViewModel : ObservableObject
     private static double ClampRecordingCursorHighlightSize(double size)
     {
         return Math.Clamp(size, MinRecordingCursorHighlightSize, MaxRecordingCursorHighlightSize);
+    }
+
+    private string? ResolveInitialMicrophoneDeviceName(string? configuredDeviceName)
+    {
+        if (_availableMicrophoneDevices.Count == 0)
+        {
+            return null;
+        }
+
+        if (!string.IsNullOrWhiteSpace(configuredDeviceName))
+        {
+            var matchingConfiguredDevice = _availableMicrophoneDevices.FirstOrDefault(device =>
+                string.Equals(device, configuredDeviceName, StringComparison.OrdinalIgnoreCase));
+            if (matchingConfiguredDevice is not null)
+            {
+                return matchingConfiguredDevice;
+            }
+        }
+
+        var defaultDeviceName = _microphoneDeviceService.GetDefaultCaptureDeviceName();
+        if (!string.IsNullOrWhiteSpace(defaultDeviceName))
+        {
+            var matchingDefaultDevice = _availableMicrophoneDevices.FirstOrDefault(device =>
+                string.Equals(device, defaultDeviceName, StringComparison.OrdinalIgnoreCase));
+            if (matchingDefaultDevice is not null)
+            {
+                return matchingDefaultDevice;
+            }
+        }
+
+        return _availableMicrophoneDevices[0];
     }
 
     private static Color ParseAnnotationColorOrFallback(string colorText)

@@ -183,7 +183,13 @@ public sealed class SettingsWindowTests
         var settings = new UserSettings { DefaultAnnotationColor = "#FFFF0000" };
         var settingsMock = new Mock<IUserSettingsService>();
         settingsMock.SetupGet(service => service.Current).Returns(settings);
-        viewModel = new SettingsViewModel(settingsMock.Object, Mock.Of<IThemeService>(), Mock.Of<IDialogService>());
+        viewModel = new SettingsViewModel(
+            settingsMock.Object,
+            Mock.Of<IThemeService>(),
+            Mock.Of<IDialogService>(),
+            Mock.Of<IMicrophoneDeviceService>(service =>
+                service.GetAvailableCaptureDeviceNames() == new[] { "Studio Mic", "USB Mic" } &&
+                service.GetDefaultCaptureDeviceName() == "Studio Mic"));
         return new SettingsWindow(viewModel);
     }
 

@@ -35,7 +35,7 @@ public sealed class VideoWriterFactoryTests
 
         try
         {
-            using var writer = factory.Create(100, 100, 10, tempPath);
+            using var writer = factory.Create(100, 100, 10, tempPath, null);
             Assert.IsType<FFMpegVideoWriter>(writer);
         }
         finally
@@ -53,7 +53,7 @@ public sealed class VideoWriterFactoryTests
         var factory = CreateSut();
 
         Assert.Throws<System.IO.FileNotFoundException>(() =>
-            factory.Create(100, 100, 10, "test.mp4"));
+            factory.Create(100, 100, 10, "test.mp4", null));
     }
 
     private sealed class ActionDisposable : IDisposable

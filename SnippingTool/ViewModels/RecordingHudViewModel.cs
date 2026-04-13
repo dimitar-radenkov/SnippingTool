@@ -28,6 +28,16 @@ public partial class RecordingHudViewModel : ObservableObject
     private bool _canPauseResume = true;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(MicrophoneActionLabel))]
+    [NotifyPropertyChangedFor(nameof(MicrophoneToolTip))]
+    private bool _canToggleMicrophone;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(MicrophoneActionLabel))]
+    [NotifyPropertyChangedFor(nameof(MicrophoneToolTip))]
+    private bool _isMicrophoneMuted;
+
+    [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(IsAnnotationPanelVisible))]
     private bool _canToggleAnnotation;
 
@@ -47,6 +57,14 @@ public partial class RecordingHudViewModel : ObservableObject
 
     public bool IsAnnotationPanelVisible => CanManageAnnotations && IsAnnotationInputArmed;
     public string CurrentModeLabel => IsAnnotationInputArmed ? "Drawing" : "Interactive";
+    public string MicrophoneActionLabel => CanToggleMicrophone
+        ? (IsMicrophoneMuted ? "Unmute" : "Mute")
+        : "Mic off";
+    public string MicrophoneToolTip => CanToggleMicrophone
+        ? (IsMicrophoneMuted
+            ? "Enable microphone audio for the rest of this recording"
+            : "Disable microphone audio for the rest of this recording")
+        : "Microphone controls are unavailable for this recording. Enable Record microphone in Settings and make sure a compatible microphone device is selected.";
 
     public event Action? CloseRequested;
 
@@ -60,6 +78,8 @@ public partial class RecordingHudViewModel : ObservableObject
         OutputPath = outputPath;
         _eventAggregator = eventAggregator;
         _logger = logger;
+        CanToggleMicrophone = svc.CanToggleMicrophone;
+        IsMicrophoneMuted = svc.IsMicrophoneMuted;
     }
 
     public void StartElapsedTimer()
@@ -132,6 +152,25 @@ public partial class RecordingHudViewModel : ObservableObject
             PauseResumeLabel = "▶ Resume";
             _logger.LogInformation("Recording paused from HUD");
         }
+    }
+
+    [RelayCommand]
+    private void ToggleMicrophone()
+    {
+        if (!CanToggleMicrophone)
+        {
+            return;
+        }
+
+        var nextMutedState = !IsMicrophoneMuted;
+        if (!_svc.TrySetMicrophoneMuted(nextMutedState))
+        {
+            _logger.LogWarning("Recording microphone toggle failed. Requested muted state: {IsMuted}", nextMutedState);
+            return;
+        }
+
+        IsMicrophoneMuted = nextMutedState;
+        _logger.LogInformation("Recording microphone toggled from HUD: {State}", nextMutedState ? "muted" : "unmuted");
     }
 
     [RelayCommand]

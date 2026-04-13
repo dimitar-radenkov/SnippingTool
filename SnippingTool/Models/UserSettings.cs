@@ -14,6 +14,8 @@ public sealed class UserSettings
             Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
             "SnippingTool", "Videos");
 
+    public bool RecordMicrophone { get; set; } = true;
+    public string? RecordingMicrophoneDeviceName { get; set; }
     public int RecordingFps { get; set; } = 20;
     public int GifFps { get; set; } = 10;
     public int HudGapPixels { get; set; } = 8;

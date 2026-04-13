@@ -11,8 +11,8 @@ public sealed class VideoWriterFactory : IVideoWriterFactory
         _ffmpegLogger = ffmpegLogger;
     }
 
-    public IVideoWriter Create(int width, int height, int fps, string outputPath)
+    public IVideoWriter Create(int width, int height, int fps, string outputPath, string? microphoneDeviceName)
     {
-        return new FFMpegVideoWriter(width, height, fps, outputPath, _ffmpegLogger);
+        return new FFMpegVideoWriter(width, height, fps, outputPath, _ffmpegLogger, microphoneDeviceName);
     }
 }

@@ -148,6 +148,7 @@ public partial class App : Application
         services.AddSingleton<IMouseHookService, MouseHookService>();
         services.AddSingleton<IMessageBoxService, MessageBoxService>();
         services.AddSingleton<IFileSystemService, FileSystemService>();
+        services.AddSingleton<IMicrophoneDeviceService, MicrophoneDeviceService>();
         services.AddSingleton<IUserSettingsService, UserSettingsService>();
         services.AddTransient<IScreenCaptureService, ScreenCaptureService>();
         services.AddTransient<IVideoWriterFactory, VideoWriterFactory>();

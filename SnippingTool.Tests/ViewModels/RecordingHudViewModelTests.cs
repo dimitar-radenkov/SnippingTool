@@ -63,6 +63,36 @@ public sealed class RecordingHudViewModelTests
     }
 
     [Fact]
+    public void InitialState_UsesMicrophoneStateFromService()
+    {
+        var svcMock = new Mock<IScreenRecordingService>();
+        svcMock.SetupGet(service => service.CanToggleMicrophone).Returns(true);
+        svcMock.SetupGet(service => service.IsMicrophoneMuted).Returns(false);
+
+        var vm = CreateVm(svcMock: svcMock);
+
+        Assert.True(vm.CanToggleMicrophone);
+        Assert.False(vm.IsMicrophoneMuted);
+        Assert.Equal("Mute", vm.MicrophoneActionLabel);
+    }
+
+    [Fact]
+    public void InitialState_WhenMicrophoneUnavailable_ShowsOffLabelAndExplanation()
+    {
+        var svcMock = new Mock<IScreenRecordingService>();
+        svcMock.SetupGet(service => service.CanToggleMicrophone).Returns(false);
+        svcMock.SetupGet(service => service.IsMicrophoneMuted).Returns(false);
+
+        var vm = CreateVm(svcMock: svcMock);
+
+        Assert.False(vm.CanToggleMicrophone);
+        Assert.Equal("Mic off", vm.MicrophoneActionLabel);
+        Assert.Equal(
+            "Microphone controls are unavailable for this recording. Enable Record microphone in Settings and make sure a compatible microphone device is selected.",
+            vm.MicrophoneToolTip);
+    }
+
+    [Fact]
     public void OutputPath_ExposesConstructorValue()
     {
         var vm = CreateVm(outputPath: @"C:\Videos\test.mp4");
@@ -176,6 +206,52 @@ public sealed class RecordingHudViewModelTests
         vm.PauseResumeCommand.Execute(null);
 
         Assert.Contains(nameof(vm.PauseResumeLabel), changed);
+    }
+
+    [Fact]
+    public void ToggleMicrophoneCommand_WhenAvailable_MutesMicrophone()
+    {
+        var svcMock = new Mock<IScreenRecordingService>();
+        svcMock.SetupGet(service => service.CanToggleMicrophone).Returns(true);
+        svcMock.SetupGet(service => service.IsMicrophoneMuted).Returns(false);
+        svcMock.Setup(service => service.TrySetMicrophoneMuted(true)).Returns(true);
+        var vm = CreateVm(svcMock: svcMock);
+
+        vm.ToggleMicrophoneCommand.Execute(null);
+
+        svcMock.Verify(service => service.TrySetMicrophoneMuted(true), Times.Once);
+        Assert.True(vm.IsMicrophoneMuted);
+        Assert.Equal("Unmute", vm.MicrophoneActionLabel);
+    }
+
+    [Fact]
+    public void ToggleMicrophoneCommand_WhenMuted_UnmutesMicrophone()
+    {
+        var svcMock = new Mock<IScreenRecordingService>();
+        svcMock.SetupGet(service => service.CanToggleMicrophone).Returns(true);
+        svcMock.SetupGet(service => service.IsMicrophoneMuted).Returns(true);
+        svcMock.Setup(service => service.TrySetMicrophoneMuted(false)).Returns(true);
+        var vm = CreateVm(svcMock: svcMock);
+
+        vm.ToggleMicrophoneCommand.Execute(null);
+
+        svcMock.Verify(service => service.TrySetMicrophoneMuted(false), Times.Once);
+        Assert.False(vm.IsMicrophoneMuted);
+        Assert.Equal("Mute", vm.MicrophoneActionLabel);
+    }
+
+    [Fact]
+    public void ToggleMicrophoneCommand_WhenUnavailable_IsNoOp()
+    {
+        var svcMock = new Mock<IScreenRecordingService>();
+        svcMock.SetupGet(service => service.CanToggleMicrophone).Returns(false);
+        var vm = CreateVm(svcMock: svcMock);
+
+        vm.ToggleMicrophoneCommand.Execute(null);
+
+        svcMock.Verify(service => service.TrySetMicrophoneMuted(It.IsAny<bool>()), Times.Never);
+        Assert.False(vm.IsMicrophoneMuted);
+        Assert.Equal("Mic off", vm.MicrophoneActionLabel);
     }
 
     [Fact]

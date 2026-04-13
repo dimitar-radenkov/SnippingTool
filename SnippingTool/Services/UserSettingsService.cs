@@ -111,6 +111,8 @@ public sealed class UserSettingsService : IUserSettingsService
             ScreenshotSavePath = settings.ScreenshotSavePath,
             AutoSaveScreenshots = settings.AutoSaveScreenshots,
             RecordingOutputPath = settings.RecordingOutputPath,
+            RecordMicrophone = settings.RecordMicrophone,
+            RecordingMicrophoneDeviceName = settings.RecordingMicrophoneDeviceName,
             RecordingFps = settings.RecordingFps,
             GifFps = settings.GifFps,
             HudGapPixels = settings.HudGapPixels,
