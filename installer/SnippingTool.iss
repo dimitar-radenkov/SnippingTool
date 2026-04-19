@@ -1,5 +1,5 @@
 ; ============================================================
-;  SnippingTool  –  Inno Setup 6 installer script
+;  Pointframe  –  Inno Setup 6 installer script
 ;  Requires: Inno Setup 6.1+  https://jrsoftware.org/isinfo.php
 ;
 ;  Build this script with:
