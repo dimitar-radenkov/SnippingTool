@@ -70,8 +70,10 @@ public sealed class GitHubUpdateService : IUpdateService
         }
 
         var downloadUrl = release.Assets
-            .FirstOrDefault(a => a.Name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
-            ?.BrowserDownloadUrl ?? string.Empty;
+            .Where(a => a.Name.EndsWith(".exe", StringComparison.OrdinalIgnoreCase))
+            .OrderByDescending(a => IsPreferredInstallerAsset(a.Name))
+            .Select(a => a.BrowserDownloadUrl)
+            .FirstOrDefault(url => !string.IsNullOrEmpty(url)) ?? string.Empty;
 
         if (!string.IsNullOrEmpty(downloadUrl) && !IsAllowedDownloadUrl(downloadUrl))
         {
@@ -90,6 +92,11 @@ public sealed class GitHubUpdateService : IUpdateService
 
     private static bool IsAllowedDownloadUrl(string url) =>
         AllowedDownloadHosts.Any(h => url.StartsWith(h, StringComparison.OrdinalIgnoreCase));
+
+    private static bool IsPreferredInstallerAsset(string assetName) =>
+        assetName.StartsWith("Pointframe-Setup-", StringComparison.OrdinalIgnoreCase)
+        || assetName.StartsWith("SnippingTool-Setup-", StringComparison.OrdinalIgnoreCase)
+        || assetName.Contains("-Setup-", StringComparison.OrdinalIgnoreCase) && assetName.EndsWith(".exe", StringComparison.OrdinalIgnoreCase);
 
     private sealed class GitHubRelease
     {
