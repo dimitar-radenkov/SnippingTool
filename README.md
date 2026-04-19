@@ -146,14 +146,14 @@ Download the latest installer from the [Releases](https://github.com/dimitar-rad
 git clone https://github.com/dimitar-radenkov/Pointframe.git
 cd Pointframe
 
-dotnet build SnippingTool/Pointframe.csproj
-dotnet run   --project SnippingTool/Pointframe.csproj
+dotnet build Pointframe/Pointframe.csproj
+dotnet run   --project Pointframe/Pointframe.csproj
 ```
 
 ## Running tests
 
 ```powershell
-dotnet test SnippingTool.Tests/Pointframe.Tests.csproj
+dotnet test Pointframe.Tests/Pointframe.Tests.csproj
 ```
 
 ## Settings

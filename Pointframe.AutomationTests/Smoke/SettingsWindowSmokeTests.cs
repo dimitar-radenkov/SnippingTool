@@ -20,7 +20,7 @@ public sealed class SettingsWindowSmokeTests : IClassFixture<SettingsAutomationF
     public void Save_Relaunch_PersistsAutoSaveScreenshots()
     {
         // Manual run:
-        // dotnet test SnippingTool.AutomationTests\Pointframe.AutomationTests.csproj --filter "Category=DesktopAutomation"
+        // dotnet test Pointframe.AutomationTests\Pointframe.AutomationTests.csproj --filter "Category=DesktopAutomation"
         _fixture.SeedSettings(autoSaveScreenshots: false);
 
         using (var app = AutomationApp.LaunchSettingsWindow(_fixture.SettingsPath))

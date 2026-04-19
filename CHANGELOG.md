@@ -38,7 +38,7 @@
 - **Coverage path** – specified the Cobertura coverage file path in `ci.yml` for correct coverage reporting.
 
 ### Installer
-- Added `CloseApplications` directive to `SnippingTool.iss` so the installer prompts to close any running instance before upgrading.
+- Added `CloseApplications` directive to `Pointframe.iss` so the installer prompts to close any running instance before upgrading.
 
 ### Tests
 - Added `AppVersionServiceTests` (33 lines), `AboutViewModelTests` (54 lines), and `UpdateDownloadViewModelTests` (237 lines).

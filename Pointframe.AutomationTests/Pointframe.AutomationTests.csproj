@@ -19,7 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\SnippingTool\Pointframe.csproj" />
+    <ProjectReference Include="..\Pointframe\Pointframe.csproj" />
   </ItemGroup>
 
 </Project>

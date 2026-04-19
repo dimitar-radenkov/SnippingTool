@@ -2,7 +2,7 @@
 
 Thanks for your interest in contributing to Pointframe.
 
-The product is now branded as `Pointframe`. The main app and test folders still use `SnippingTool` during the transition, while the solution, project files, and namespaces use `Pointframe`.
+The product is now branded as `Pointframe`, and the main solution, project files, namespaces, and top-level source folders use `Pointframe`.
 
 ## Getting Started
 
@@ -11,8 +11,8 @@ The product is now branded as `Pointframe`. The main app and test folders still 
 ```powershell
 git clone https://github.com/dimitar-radenkov/Pointframe.git
 cd Pointframe
-dotnet build SnippingTool/Pointframe.csproj
-dotnet test  SnippingTool.Tests/Pointframe.Tests.csproj
+dotnet build Pointframe/Pointframe.csproj
+dotnet test  Pointframe.Tests/Pointframe.Tests.csproj
 ```
 
 ## Before You Submit
@@ -20,7 +20,7 @@ dotnet test  SnippingTool.Tests/Pointframe.Tests.csproj
 Run the formatter — CI will reject unformatted code:
 
 ```powershell
-dotnet format SnippingTool/Pointframe.csproj
+dotnet format Pointframe/Pointframe.csproj
 ```
 
 ## Key Conventions
@@ -38,7 +38,7 @@ dotnet format SnippingTool/Pointframe.csproj
 2. Add a matching `sealed record` in `Models/ShapeParameters.cs`.
 3. Handle the new case in `AnnotationViewModel.TryGetShapeParameters()`.
 4. Render it in `AnnotationCanvasRenderer` (`UpdateDragFeedback` + `CommitShape`).
-5. Add unit tests in `SnippingTool.Tests/ViewModels/AnnotationViewModelTests.cs`.
+5. Add unit tests in `Pointframe.Tests/ViewModels/AnnotationViewModelTests.cs`.
 
 ## Pull Request Tips
 

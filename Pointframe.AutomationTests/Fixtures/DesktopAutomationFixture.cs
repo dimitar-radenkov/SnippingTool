@@ -90,7 +90,7 @@ public class DesktopAutomationFixture : IDisposable
         var repositoryRoot = FindRepositoryRoot();
         if (repositoryRoot is not null)
         {
-            var binRoot = Path.Combine(repositoryRoot.FullName, "SnippingTool", "bin");
+            var binRoot = Path.Combine(repositoryRoot.FullName, "Pointframe", "bin");
             if (Directory.Exists(binRoot))
             {
                 var builtBackend = Directory
@@ -121,8 +121,8 @@ public class DesktopAutomationFixture : IDisposable
         var directory = new DirectoryInfo(AppContext.BaseDirectory);
         while (directory is not null)
         {
-            var appProjectDirectory = Path.Combine(directory.FullName, "SnippingTool");
-            var automationProjectDirectory = Path.Combine(directory.FullName, "SnippingTool.AutomationTests");
+            var appProjectDirectory = Path.Combine(directory.FullName, "Pointframe");
+            var automationProjectDirectory = Path.Combine(directory.FullName, "Pointframe.AutomationTests");
 
             if (Directory.Exists(appProjectDirectory) && Directory.Exists(automationProjectDirectory))
             {
