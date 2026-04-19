@@ -22,7 +22,7 @@
   <a href="https://github.com/dimitar-radenkov/SnippingTool/actions/workflows/ci.yml"><img src="https://github.com/dimitar-radenkov/SnippingTool/actions/workflows/ci.yml/badge.svg" alt="CI"></a>
   <a href="https://codecov.io/gh/dimitar-radenkov/SnippingTool"><img src="https://codecov.io/gh/dimitar-radenkov/SnippingTool/branch/master/graph/badge.svg" alt="codecov"></a>
   <a href="https://github.com/dimitar-radenkov/SnippingTool/releases/latest"><img src="https://img.shields.io/github/v/release/dimitar-radenkov/SnippingTool?color=success" alt="Latest release"></a>
-  <a href="https://github.com/microsoft/winget-pkgs/tree/master/manifests/d/DimitarRadenkov/SnippingTool"><img src="https://img.shields.io/winget/v/DimitarRadenkov.SnippingTool?label=winget&color=blue" alt="winget"></a>
+  <a href="https://github.com/microsoft/winget-pkgs/tree/master/manifests/d/DimitarRadenkov/Pointframe"><img src="https://img.shields.io/winget/v/DimitarRadenkov.Pointframe?label=winget&color=blue" alt="winget"></a>
   <a href="https://github.com/dimitar-radenkov/SnippingTool/releases"><img src="https://img.shields.io/github/downloads/dimitar-radenkov/SnippingTool/total?label=downloads&color=purple" alt="Downloads"></a>
 </p>
 
@@ -34,15 +34,15 @@
 
 Get up and running in seconds using the Windows Package Manager (winget):
 
-The package ID remains `DimitarRadenkov.SnippingTool` during the rebrand transition.
+Starting with the `5.0` release line, the winget package ID is `DimitarRadenkov.Pointframe`.
 
 ```powershell
-winget install DimitarRadenkov.SnippingTool
+winget install DimitarRadenkov.Pointframe
 ```
 
 *Prefer a manual install? Download the latest installer from the [Releases](https://github.com/dimitar-radenkov/SnippingTool/releases) page.*
 
-1. Install Pointframe with `winget install DimitarRadenkov.SnippingTool` or download the latest installer from [Releases](https://github.com/dimitar-radenkov/SnippingTool/releases).
+1. Install Pointframe with `winget install DimitarRadenkov.Pointframe` or download the latest installer from [Releases](https://github.com/dimitar-radenkov/SnippingTool/releases).
 2. Press `Print Screen` to open the capture overlay and select the region you want.
 3. Annotate, copy, save, pin, or record the region from the overlay and recording HUD.
 
@@ -126,7 +126,7 @@ winget install DimitarRadenkov.SnippingTool
 **Via winget (recommended)**
 
 ```powershell
-winget install DimitarRadenkov.SnippingTool
+winget install DimitarRadenkov.Pointframe
 ```
 
 **Manual installer**
