@@ -69,7 +69,7 @@ jobs:
           try {
             $signtool = (Get-ChildItem 'C:\Program Files (x86)\Windows Kits\10\bin' -Recurse -Filter signtool.exe |
               Sort-Object -Property FullName -Descending | Select-Object -First 1).FullName
-            $exePath = 'SnippingTool\bin\publish\win-x64\Pointframe.exe'
+            $exePath = 'Pointframe\bin\publish\win-x64\Pointframe.exe'
             & $signtool sign /fd SHA256 /p $env:SIGNING_CERT_PASSWORD /f $pfxPath /tr http://timestamp.digicert.com /td SHA256 $exePath
             if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
           } finally {
