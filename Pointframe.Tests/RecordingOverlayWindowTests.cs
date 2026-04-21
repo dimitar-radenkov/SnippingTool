@@ -148,6 +148,60 @@ public sealed class RecordingOverlayWindowTests
     }
 
     [Fact]
+    public void WndProc_HitTestInsideCapture_WhenInteractive_ReturnsTransparent()
+    {
+        StaTestHelper.Run(() =>
+        {
+            var context = CreateContext();
+            try
+            {
+                var result = InvokeWndProc(
+                    context.Window,
+                    hwnd: IntPtr.Zero,
+                    msg: 0x0084,
+                    lParam: BuildLParam(150, 150),
+                    out var handled);
+
+                Assert.Equal(new IntPtr(-1), result);
+                Assert.True(handled);
+            }
+            finally
+            {
+                context.Window.Close();
+                context.EventAggregator.Dispose();
+            }
+        });
+    }
+
+    [Fact]
+    public void WndProc_HitTestInsideCapture_WhenDrawing_ReturnsClientHitTest()
+    {
+        StaTestHelper.Run(() =>
+        {
+            var context = CreateContext();
+            try
+            {
+                InvokePrivate(context.Window, "SetRecordingAnnotationInputArmed", true, false);
+
+                var result = InvokeWndProc(
+                    context.Window,
+                    hwnd: IntPtr.Zero,
+                    msg: 0x0084,
+                    lParam: BuildLParam(150, 150),
+                    out var handled);
+
+                Assert.Equal(IntPtr.Zero, result);
+                Assert.False(handled);
+            }
+            finally
+            {
+                context.Window.Close();
+                context.EventAggregator.Dispose();
+            }
+        });
+    }
+
+    [Fact]
     public void WndProc_HitTestOutsideHudAndCanvas_ReturnsTransparent()
     {
         StaTestHelper.Run(() =>
@@ -196,7 +250,9 @@ public sealed class RecordingOverlayWindowTests
             NullLogger<RecordingHudViewModel>.Instance);
     }
 
-    private static TestContext CreateContext(bool isRecorderRecording = false)
+    private static TestContext CreateContext(
+        bool isRecorderRecording = false,
+        Point? cursorScreenPoint = null)
     {
         var recorderMock = new Mock<IScreenRecordingService>();
         recorderMock.SetupGet(service => service.IsRecording).Returns(isRecorderRecording);
@@ -236,7 +292,8 @@ public sealed class RecordingOverlayWindowTests
             eventAggregator,
             NullLoggerFactory.Instance,
             userSettingsMock.Object,
-            annotationViewModel);
+            annotationViewModel,
+            getCursorScreenPoint: () => cursorScreenPoint);
 
         return new TestContext(window, geometry, annotationViewModel, recorderMock, mouseHookMock, eventAggregator);
     }
