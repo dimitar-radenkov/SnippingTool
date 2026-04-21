@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Runtime.InteropServices;
 using System.Windows;
 
@@ -7,9 +8,6 @@ internal static class RecordingOverlayNativeInterop
 {
     private const int GwlExStyle = -20;
     private const int WsExTransparent = 0x20;
-    private const uint InputMouse = 0;
-    private const uint MouseEventfLeftDown = 0x0002;
-    private const uint MouseEventfLeftUp = 0x0004;
     private const uint SwpNoSize = 0x0001;
     private const uint SwpNoMove = 0x0002;
     private const uint SwpNoZOrder = 0x0004;
@@ -26,31 +24,6 @@ internal static class RecordingOverlayNativeInterop
     }
 
     [StructLayout(LayoutKind.Sequential)]
-    private struct INPUT
-    {
-        public uint Type;
-        public InputUnion Union;
-    }
-
-    [StructLayout(LayoutKind.Explicit)]
-    private struct InputUnion
-    {
-        [FieldOffset(0)]
-        public MOUSEINPUT MouseInput;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
-    private struct MOUSEINPUT
-    {
-        public int Dx;
-        public int Dy;
-        public uint MouseData;
-        public uint DwFlags;
-        public uint Time;
-        public IntPtr DwExtraInfo;
-    }
-
-    [StructLayout(LayoutKind.Sequential)]
     private struct POINT
     {
         public int X;
@@ -62,12 +35,6 @@ internal static class RecordingOverlayNativeInterop
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool GetWindowRect(IntPtr hWnd, out RECT lpRect);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    private static extern bool SetCursorPos(int x, int y);
-
-    [DllImport("user32.dll", SetLastError = true)]
-    private static extern uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize);
 
     [DllImport("user32.dll", SetLastError = true)]
     private static extern bool SetWindowPos(
@@ -113,11 +80,6 @@ internal static class RecordingOverlayNativeInterop
             rect.Bottom - rect.Top);
     }
 
-    public static void SetCursorScreenPosition(Point screenPoint)
-    {
-        _ = SetCursorPos((int)Math.Round(screenPoint.X), (int)Math.Round(screenPoint.Y));
-    }
-
     public static Point? GetCursorScreenPoint()
     {
         if (GetCursorPos(out var nativePoint))
@@ -126,37 +88,6 @@ internal static class RecordingOverlayNativeInterop
         }
 
         return null;
-    }
-
-    public static void SendLeftClick()
-    {
-        INPUT[] inputs =
-        [
-            new()
-            {
-                Type = InputMouse,
-                Union = new InputUnion
-                {
-                    MouseInput = new MOUSEINPUT
-                    {
-                        DwFlags = MouseEventfLeftDown,
-                    },
-                },
-            },
-            new()
-            {
-                Type = InputMouse,
-                Union = new InputUnion
-                {
-                    MouseInput = new MOUSEINPUT
-                    {
-                        DwFlags = MouseEventfLeftUp,
-                    },
-                },
-            },
-        ];
-
-        _ = SendInput((uint)inputs.Length, inputs, Marshal.SizeOf<INPUT>());
     }
 
     public static void SetMouseTransparency(IntPtr handle, bool isTransparent)
@@ -172,31 +103,66 @@ internal static class RecordingOverlayNativeInterop
         }
 
         SetWindowExStyle(handle, nextStyle);
-        _ = SetWindowPos(
-            handle,
-            IntPtr.Zero,
-            0,
-            0,
-            0,
-            0,
-            SwpNoMove | SwpNoSize | SwpNoZOrder | SwpNoActivate | SwpFrameChanged);
+        if (!SetWindowPos(
+                handle,
+                IntPtr.Zero,
+                0,
+                0,
+                0,
+                0,
+                SwpNoMove | SwpNoSize | SwpNoZOrder | SwpNoActivate | SwpFrameChanged))
+        {
+            throw new Win32Exception(Marshal.GetLastPInvokeError(), "Failed to refresh window styles after updating recording overlay mouse transparency.");
+        }
     }
 
     private static int GetWindowExStyle(IntPtr handle)
     {
-        return IntPtr.Size == 8
+        Marshal.SetLastPInvokeError(0);
+
+        var style = IntPtr.Size == 8
             ? unchecked((int)GetWindowLongPtr64(handle, GwlExStyle).ToInt64())
             : GetWindowLong32(handle, GwlExStyle);
+
+        if (style == 0)
+        {
+            var error = Marshal.GetLastPInvokeError();
+            if (error != 0)
+            {
+                throw new Win32Exception(error, "Failed to get the recording overlay window style.");
+            }
+        }
+
+        return style;
     }
 
     private static void SetWindowExStyle(IntPtr handle, int style)
     {
+        Marshal.SetLastPInvokeError(0);
+
         if (IntPtr.Size == 8)
         {
-            _ = SetWindowLongPtr64(handle, GwlExStyle, new IntPtr(style));
+            var previousStyle = SetWindowLongPtr64(handle, GwlExStyle, new IntPtr(style));
+            if (previousStyle == IntPtr.Zero)
+            {
+                var error = Marshal.GetLastPInvokeError();
+                if (error != 0)
+                {
+                    throw new Win32Exception(error, "Failed to set the recording overlay window style.");
+                }
+            }
+
             return;
         }
 
-        _ = SetWindowLong32(handle, GwlExStyle, style);
+        var previousStyle32 = SetWindowLong32(handle, GwlExStyle, style);
+        if (previousStyle32 == 0)
+        {
+            var error = Marshal.GetLastPInvokeError();
+            if (error != 0)
+            {
+                throw new Win32Exception(error, "Failed to set the recording overlay window style.");
+            }
+        }
     }
 }
