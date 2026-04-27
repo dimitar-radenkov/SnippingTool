@@ -235,7 +235,15 @@ public partial class App : Application
             var kb = Marshal.PtrToStructure<KBDLLHOOKSTRUCT>(lParam);
             if (kb.vkCode == _userSettings.Current.RegionCaptureHotkey)
             {
-                Dispatcher.InvokeAsync(StartSnip);
+                if (GetAsyncKeyState(VK_SHIFT) < 0)
+                {
+                    Dispatcher.InvokeAsync(StartWholeScreenSnip);
+                }
+                else
+                {
+                    Dispatcher.InvokeAsync(StartSnip);
+                }
+
                 return (IntPtr)1; // suppress — prevents Windows from handling Print Screen
             }
         }
