@@ -54,7 +54,8 @@ internal static class AutomationSampleFactory
             selectionRectDips,
             selectionBoundsPixels,
             monitorScale,
-            monitorScale);
+            monitorScale,
+            SelectionSessionMode.Region);
     }
 
     private static string GetOutputDirectory()
@@ -130,3 +131,4 @@ internal static class AutomationSampleFactory
         encoder.Save(stream);
     }
 }
+

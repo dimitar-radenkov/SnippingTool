@@ -176,7 +176,8 @@ internal sealed class SelectionMonitorWindow : Window
             selectionRect,
             selectionBoundsPixels,
             _dpiScaleX,
-            _dpiScaleY));
+            _dpiScaleY,
+            SelectionSessionMode.Region));
 
         e.Handled = true;
         base.OnMouseLeftButtonUp(e);
@@ -190,7 +191,7 @@ internal sealed class SelectionMonitorWindow : Window
         _selectionBorder.Width = selectionRect.Width;
         _selectionBorder.Height = selectionRect.Height;
 
-        _sizeLabelText.Text = $"{Math.Round(selectionRect.Width * _dpiScaleX):F0}Ã—{Math.Round(selectionRect.Height * _dpiScaleY):F0}";
+        _sizeLabelText.Text = $"{Math.Round(selectionRect.Width * _dpiScaleX):F0}×{Math.Round(selectionRect.Height * _dpiScaleY):F0}";
         _sizeLabelBorder.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
         var labelY = selectionRect.Y - _sizeLabelBorder.DesiredSize.Height - 4;
         if (labelY < 0)

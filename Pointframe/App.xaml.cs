@@ -45,6 +45,7 @@ public partial class App : Application
     private const int WH_KEYBOARD_LL = 13;
     private const int WM_KEYDOWN = 0x0100;
     private const uint VK_PRINTSCREEN = 0x2C;
+    private const int VK_SHIFT = 0x10;
 
     private delegate IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam);
     private LowLevelKeyboardProc? _keyboardProc; // keep delegate alive to prevent GC
@@ -54,6 +55,7 @@ public partial class App : Application
     [DllImport("user32.dll")] private static extern bool UnhookWindowsHookEx(IntPtr hhk);
     [DllImport("user32.dll")] private static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
     [DllImport("kernel32.dll")] private static extern IntPtr GetModuleHandle(string? lpModuleName);
+    [DllImport("user32.dll")] private static extern short GetAsyncKeyState(int vKey);
 
     [StructLayout(LayoutKind.Sequential)]
 #pragma warning disable IDE1006 // P/Invoke struct fields must match Windows API names exactly
@@ -132,7 +134,7 @@ public partial class App : Application
         AddDebugMenuItems();
 #endif
         RegisterGlobalHotkey();
-        _logger.LogInformation("Global hotkey (Print Screen) registered");
+        _logger.LogInformation("Global hotkey registered");
         _host.StartAsync().GetAwaiter().GetResult();
     }
 
@@ -292,6 +294,7 @@ public partial class App : Application
     {
         var contextMenu = new WpfContextMenu();
         contextMenu.Items.Add(CreateTrayMenuItem("New Snip", NewSnip_Click));
+        contextMenu.Items.Add(CreateTrayMenuItem("Whole screen snip", WholeScreenSnip_Click));
         contextMenu.Items.Add(CreateTrayMenuItem("Open image...", OpenImage_Click));
         contextMenu.Items.Add(new WpfSeparator());
         contextMenu.Items.Add(CreateTrayMenuItem("Settings", Settings_Click));
@@ -314,6 +317,7 @@ public partial class App : Application
 
     private void TrayIcon_LeftClick(object sender, RoutedEventArgs e) => StartSnip();
     private void NewSnip_Click(object sender, RoutedEventArgs e) => StartSnip();
+    private void WholeScreenSnip_Click(object sender, RoutedEventArgs e) => StartWholeScreenSnip();
 
     private void InitializeRecentRecordingsMenu()
     {
@@ -571,24 +575,36 @@ public partial class App : Application
         }));
     }
 
-    private void StartSnip()
+    private enum SnipLaunchMode
     {
-        _logger?.LogDebug("Snip started");
+        Region,
+        WholeScreen
+    }
+
+    private void StartSnip() => StartCapture(SnipLaunchMode.Region);
+
+    private void StartWholeScreenSnip() => StartCapture(SnipLaunchMode.WholeScreen);
+
+    private void StartCapture(SnipLaunchMode launchMode)
+    {
+        _logger?.LogDebug("{Mode} snip started", launchMode);
         var delay = _host.Services.GetRequiredService<IUserSettingsService>().Current.CaptureDelaySeconds;
         if (delay > 0)
         {
-            new CountdownWindow(delay, ShowSelectionOverlay).Show();
+            new CountdownWindow(delay, () => ShowSelectionOverlay(launchMode)).Show();
             return;
         }
 
-        ShowSelectionOverlay();
+        ShowSelectionOverlay(launchMode);
     }
 
-    private async void ShowSelectionOverlay()
+    private async void ShowSelectionOverlay(SnipLaunchMode launchMode)
     {
-        var selection = await SelectionSession.SelectAsync(
-            _host.Services.GetRequiredService<IScreenCaptureService>(),
-            _host.Services.GetRequiredService<ILoggerFactory>());
+        var screenCapture = _host.Services.GetRequiredService<IScreenCaptureService>();
+        var loggerFactory = _host.Services.GetRequiredService<ILoggerFactory>();
+        var selection = launchMode == SnipLaunchMode.WholeScreen
+            ? await SelectionSession.SelectWholeScreenAsync(screenCapture, loggerFactory)
+            : await SelectionSession.SelectAsync(screenCapture, loggerFactory);
 
         if (selection is null)
         {
@@ -833,3 +849,4 @@ public partial class App : Application
         e.SetObserved();
     }
 }
+

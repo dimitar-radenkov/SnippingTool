@@ -12,4 +12,5 @@ internal sealed record SelectionSessionResult(
     Rect SelectionRectDips,
     Int32Rect SelectionBoundsPixels,
     double DpiScaleX,
-    double DpiScaleY);
+    double DpiScaleY,
+    SelectionSessionMode SessionMode);

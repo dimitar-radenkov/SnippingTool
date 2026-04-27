@@ -78,7 +78,8 @@ public sealed class OverlayWindowInteractionTests
                     new Rect(30, 50, 200, 120),
                     new Int32Rect(60, 100, 400, 240),
                     2d,
-                    2d);
+                    2d,
+                    SelectionSessionMode.Region);
 
                 context.Window.InitializeFromSelectionSession(selectionSession);
 

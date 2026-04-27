@@ -70,4 +70,68 @@ public sealed class OverlayToolbarLayoutTests
         Assert.True(layout.ToolBounds.Left >= 0);
         Assert.True(layout.ActionBounds.Bottom <= 120);
     }
+
+    [Fact]
+    public void Calculate_FullScreenMode_ToolOnLeftEdge()
+    {
+        var layout = OverlayToolbarLayoutHelper.Calculate(
+            Rect.Empty,
+            new Size(1920, 1080),
+            new Size(42, 430),
+            new Size(360, 50),
+            new Size(270, 48),
+            OverlayToolbarLayoutMode.FullScreen);
+
+        Assert.True(layout.ToolBounds.Left < 100, "Tool should be near the left edge");
+        Assert.True(layout.ToolBounds.Right <= 1920);
+        Assert.True(layout.ToolBounds.Top >= 0);
+        Assert.True(layout.ToolBounds.Bottom <= 1080);
+    }
+
+    [Fact]
+    public void Calculate_FullScreenMode_ActionBarWithinOverlay()
+    {
+        var layout = OverlayToolbarLayoutHelper.Calculate(
+            Rect.Empty,
+            new Size(1920, 1080),
+            new Size(42, 430),
+            new Size(360, 50),
+            new Size(270, 48),
+            OverlayToolbarLayoutMode.FullScreen);
+
+        Assert.True(layout.ActionBounds.Left >= 0);
+        Assert.True(layout.ActionBounds.Right <= 1920);
+        Assert.True(layout.ActionBounds.Top >= 0);
+        Assert.True(layout.ActionBounds.Bottom <= 1080);
+    }
+
+    [Fact]
+    public void Calculate_FullScreenMode_ToolAndActionBarDoNotOverlap()
+    {
+        var layout = OverlayToolbarLayoutHelper.Calculate(
+            Rect.Empty,
+            new Size(1920, 1080),
+            new Size(42, 430),
+            new Size(360, 50),
+            new Size(270, 48),
+            OverlayToolbarLayoutMode.FullScreen);
+
+        Assert.False(layout.ToolBounds.IntersectsWith(layout.ActionBounds));
+    }
+
+    [Fact]
+    public void Calculate_FullScreenMode_CompactScreenStillFitsLayout()
+    {
+        var layout = OverlayToolbarLayoutHelper.Calculate(
+            Rect.Empty,
+            new Size(800, 600),
+            new Size(42, 300),
+            new Size(360, 50),
+            new Size(200, 40),
+            OverlayToolbarLayoutMode.FullScreen);
+
+        Assert.True(layout.ToolBounds.Right <= 800);
+        Assert.True(layout.ActionBounds.Bottom <= 600);
+        Assert.False(layout.ToolBounds.IntersectsWith(layout.ActionBounds));
+    }
 }

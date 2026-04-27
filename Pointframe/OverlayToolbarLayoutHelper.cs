@@ -8,6 +8,12 @@ internal enum OverlayActionBarMode
     Compact
 }
 
+internal enum OverlayToolbarLayoutMode
+{
+    SelectionAdjacent,
+    FullScreen
+}
+
 internal sealed record OverlayToolbarLayout(Rect ToolBounds, Rect ActionBounds, OverlayActionBarMode ActionBarMode);
 
 internal static class OverlayToolbarLayoutHelper
@@ -18,6 +24,19 @@ internal static class OverlayToolbarLayoutHelper
     private const double ToolbarSpacing = 12d;
 
     public static OverlayToolbarLayout Calculate(
+        Rect selectionRect,
+        Size overlaySize,
+        Size toolSize,
+        Size fullActionSize,
+        Size compactActionSize,
+        OverlayToolbarLayoutMode layoutMode = OverlayToolbarLayoutMode.SelectionAdjacent)
+    {
+        return layoutMode == OverlayToolbarLayoutMode.FullScreen
+            ? CalculateFullScreen(overlaySize, toolSize, fullActionSize, compactActionSize)
+            : CalculateSelectionAdjacent(selectionRect, overlaySize, toolSize, fullActionSize, compactActionSize);
+    }
+
+    private static OverlayToolbarLayout CalculateSelectionAdjacent(
         Rect selectionRect,
         Size overlaySize,
         Size toolSize,
@@ -33,7 +52,7 @@ internal static class OverlayToolbarLayoutHelper
             {
                 foreach (var actionBounds in GetActionCandidates(selectionRect, overlaySize, fullActionSize, allowDockedCandidates: false))
                 {
-                    if (IsValidLayout(selectionRect, overlaySize, toolBounds, actionBounds))
+                    if (IsValidSelectionLayout(selectionRect, overlaySize, toolBounds, actionBounds))
                     {
                         return new OverlayToolbarLayout(toolBounds, actionBounds, OverlayActionBarMode.Full);
                     }
@@ -45,7 +64,7 @@ internal static class OverlayToolbarLayoutHelper
         {
             foreach (var actionBounds in GetActionCandidates(selectionRect, overlaySize, compactActionSize, allowDockedCandidates: true))
             {
-                if (IsValidLayout(selectionRect, overlaySize, toolBounds, actionBounds))
+                if (IsValidSelectionLayout(selectionRect, overlaySize, toolBounds, actionBounds))
                 {
                     return new OverlayToolbarLayout(toolBounds, actionBounds, OverlayActionBarMode.Compact);
                 }
@@ -62,6 +81,47 @@ internal static class OverlayToolbarLayoutHelper
             overlaySize);
 
         return new OverlayToolbarLayout(fallbackToolBounds, fallbackActionBounds, OverlayActionBarMode.Compact);
+    }
+
+    private static OverlayToolbarLayout CalculateFullScreen(
+        Size overlaySize,
+        Size toolSize,
+        Size fullActionSize,
+        Size compactActionSize)
+    {
+        var toolBounds = ClampRectToOverlay(
+            new Rect(
+                OverlayPadding,
+                (overlaySize.Height - toolSize.Height) / 2d,
+                toolSize.Width,
+                toolSize.Height),
+            overlaySize);
+
+        foreach (var candidate in GetFullScreenActionCandidates(overlaySize, fullActionSize))
+        {
+            if (IsValidFullScreenLayout(overlaySize, toolBounds, candidate))
+            {
+                return new OverlayToolbarLayout(toolBounds, candidate, OverlayActionBarMode.Full);
+            }
+        }
+
+        foreach (var candidate in GetFullScreenActionCandidates(overlaySize, compactActionSize))
+        {
+            if (IsValidFullScreenLayout(overlaySize, toolBounds, candidate))
+            {
+                return new OverlayToolbarLayout(toolBounds, candidate, OverlayActionBarMode.Compact);
+            }
+        }
+
+        var fallbackActionBounds = ClampRectToOverlay(
+            new Rect(
+                overlaySize.Width - compactActionSize.Width - OverlayPadding,
+                OverlayPadding,
+                compactActionSize.Width,
+                compactActionSize.Height),
+            overlaySize);
+
+        return new OverlayToolbarLayout(toolBounds, fallbackActionBounds, OverlayActionBarMode.Compact);
     }
 
     private static IEnumerable<Rect> GetToolCandidates(Rect selectionRect, Size overlaySize, Size toolSize)
@@ -93,6 +153,26 @@ internal static class OverlayToolbarLayoutHelper
                 toolSize.Width,
                 toolSize.Height),
             overlaySize);
+    }
+
+    private static IEnumerable<Rect> GetFullScreenActionCandidates(Size overlaySize, Size actionSize)
+    {
+        foreach (var top in new[]
+                 {
+                     OverlayPadding,
+                     overlaySize.Height - actionSize.Height - OverlayPadding
+                 })
+        {
+            foreach (var left in new[]
+                     {
+                         Clamp((overlaySize.Width - actionSize.Width) / 2d, OverlayPadding, Math.Max(OverlayPadding, overlaySize.Width - actionSize.Width - OverlayPadding)),
+                         overlaySize.Width - actionSize.Width - OverlayPadding,
+                         OverlayPadding
+                     })
+            {
+                yield return ClampRectToOverlay(new Rect(left, top, actionSize.Width, actionSize.Height), overlaySize);
+            }
+        }
     }
 
     private static Rect? TryCreateToolBounds(double left, double top, Size toolSize, Size overlaySize)
@@ -151,12 +231,19 @@ internal static class OverlayToolbarLayoutHelper
         }
     }
 
-    private static bool IsValidLayout(Rect selectionRect, Size overlaySize, Rect toolBounds, Rect actionBounds)
+    private static bool IsValidSelectionLayout(Rect selectionRect, Size overlaySize, Rect toolBounds, Rect actionBounds)
     {
         return IsWithinOverlay(toolBounds, overlaySize)
             && IsWithinOverlay(actionBounds, overlaySize)
             && !IntersectsWithPadding(toolBounds, selectionRect, SelectionGap)
             && !IntersectsWithPadding(actionBounds, selectionRect, SelectionGap)
+            && !IntersectsWithPadding(toolBounds, actionBounds, ToolbarSpacing / 2d);
+    }
+
+    private static bool IsValidFullScreenLayout(Size overlaySize, Rect toolBounds, Rect actionBounds)
+    {
+        return IsWithinOverlay(toolBounds, overlaySize)
+            && IsWithinOverlay(actionBounds, overlaySize)
             && !IntersectsWithPadding(toolBounds, actionBounds, ToolbarSpacing / 2d);
     }
 
