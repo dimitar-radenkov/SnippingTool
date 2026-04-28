@@ -372,3 +372,4 @@ MigrationBackup/
 
 # ffmpeg binary — downloaded by developer locally, not committed
 /Pointframe/Assets/ffmpeg/ffmpeg.exe
+.playwright-mcp/

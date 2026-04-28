@@ -46,6 +46,8 @@ winget install DimitarRadenkov.Pointframe
 2. Press `Print Screen` to open the capture overlay and select the region you want.
 3. Annotate, copy, save, pin, or record the region from the overlay and recording HUD.
 
+If you find Pointframe useful, a ⭐ on GitHub helps others discover it — thank you!
+
 ## ✨ Why use this over the built-in Windows tool?
 
 - **Live Video Annotations:** Draw, highlight, and redact *while* recording. No need for post-production video editing.
