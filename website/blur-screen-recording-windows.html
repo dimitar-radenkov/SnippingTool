@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>How to Blur a Screen Recording on Windows | Pointframe</title>
+    <meta name="description" content="Need to blur sensitive content in a screen recording on Windows? Pointframe lets you apply live blur while recording — no post-editing required.">
+    <meta name="robots" content="index, follow">
+    <link rel="canonical" href="https://dimitar-radenkov.github.io/Pointframe/blur-screen-recording-windows.html">
+    <link rel="icon" href="./favicon.ico" sizes="any">
+    <link rel="apple-touch-icon" href="./app-icon.png">
+    <meta property="og:type" content="article">
+    <meta property="og:title" content="How to Blur a Screen Recording on Windows | Pointframe">
+    <meta property="og:description" content="Apply live blur to sensitive content while recording your screen on Windows. No video editor needed.">
+    <meta property="og:url" content="https://dimitar-radenkov.github.io/Pointframe/blur-screen-recording-windows.html">
+    <meta property="og:site_name" content="Pointframe">
+    <meta property="og:image" content="https://dimitar-radenkov.github.io/Pointframe/social-preview.png">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="Pointframe social preview showing screen capture, recording, and OCR workflow highlights.">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="How to Blur a Screen Recording on Windows | Pointframe">
+    <meta name="twitter:description" content="Blur passwords, emails, and sensitive data live while screen recording on Windows — no post-editing required.">
+    <meta name="twitter:image" content="https://dimitar-radenkov.github.io/Pointframe/social-preview.png">
+    <meta name="twitter:image:alt" content="Pointframe social preview showing screen capture, recording, and OCR workflow highlights.">
+    <link rel="stylesheet" href="./styles.css">
+    <script type="application/ld+json">
+        {
+            "@context": "https://schema.org",
+            "@type": "HowTo",
+            "name": "How to blur sensitive content in a screen recording on Windows",
+            "description": "Apply a live Gaussian blur to passwords, emails, and private data while recording your screen on Windows using Pointframe.",
+            "step": [
+                {
+                    "@type": "HowToStep",
+                    "name": "Start a screen recording",
+                    "text": "Press the capture hotkey, select the region you want to record, then click the Record button in the overlay toolbar."
+                },
+                {
+                    "@type": "HowToStep",
+                    "name": "Switch to the Blur tool",
+                    "text": "From the recording HUD, select the Blur annotation tool."
+                },
+                {
+                    "@type": "HowToStep",
+                    "name": "Draw over the sensitive content",
+                    "text": "Drag a blur rectangle over passwords, emails, API keys, or any private data. The blur is applied live and samples from the actual recording region."
+                },
+                {
+                    "@type": "HowToStep",
+                    "name": "Stop and export",
+                    "text": "Stop the recording from the HUD. The blurred regions are baked into the exported MP4 — no video editor needed."
+                }
+            ],
+            "url": "https://dimitar-radenkov.github.io/Pointframe/blur-screen-recording-windows.html"
+        }
+    </script>
+</head>
+<body>
+    <nav class="site-nav">
+        <div class="container nav-inner">
+            <a class="brand" href="./index.html" aria-label="Go to the Pointframe homepage">
+                <img src="./app-icon.png" alt="" class="brand-logo" width="32" height="32">
+                <span>Pointframe</span>
+            </a>
+            <div class="nav-links">
+                <a href="./index.html#compare" class="nav-link">Compare</a>
+                <a href="./index.html#resources" class="nav-link">Guides</a>
+                <a href="https://github.com/dimitar-radenkov/Pointframe/releases/latest" class="nav-link">Download</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="hero article-hero">
+        <div class="container hero-panel">
+            <p class="hero-eyebrow">Live blur for screen recordings on Windows</p>
+            <h1 class="hero-title article-title">How to Blur a Screen Recording on Windows</h1>
+            <p class="hero-copy">Most screen recording tools require you to blur sensitive content in a video editor after the fact. Pointframe lets you draw blur annotations live while you record — the redaction is baked into the exported video with no post-processing needed.</p>
+            <div class="hero-actions">
+                <a href="https://github.com/dimitar-radenkov/Pointframe/releases/latest" class="primary-button">Download for Windows</a>
+                <a href="./index.html#features" class="secondary-link">See all features</a>
+            </div>
+        </div>
+    </main>
+
+    <section class="section section-alt">
+        <div class="container">
+            <div class="content-shell">
+                <article class="content-card">
+                    <h2>The problem with blurring recordings after the fact</h2>
+                    <p>Standard workflows for blurring screen recordings involve opening the exported video in an editor, adding a blur or mosaic effect to a region, and then re-exporting. This takes time, requires video editing knowledge, and risks introducing compression artefacts. If you need to blur a dynamic area — like a browser address bar that scrolls — tracking it frame by frame becomes a significant effort.</p>
+
+                    <h2>How live blur works in Pointframe</h2>
+                    <p>When you select the Blur tool during a recording session, you drag a rectangle over the content you want to hide. Pointframe applies a Gaussian blur that samples directly from the live capture region. The blurred content appears blurred in the final exported MP4 from the moment you placed the annotation — no editor, no tracking, no re-export.</p>
+
+                    <h2>Step-by-step: blurring during a screen recording</h2>
+                    <ol>
+                        <li>Press your capture hotkey (default: <kbd>Print Screen</kbd>) and draw a selection around the area you want to record.</li>
+                        <li>Click the <strong>Record</strong> button in the overlay toolbar to start recording.</li>
+                        <li>When you need to hide sensitive content, select the <strong>Blur</strong> tool from the recording HUD.</li>
+                        <li>Drag a blur rectangle over the content — a password field, an email address, an API key, or any private data.</li>
+                        <li>Stop the recording from the HUD when you are done.</li>
+                        <li>The exported MP4 has the blur baked in. No video editor required.</li>
+                    </ol>
+
+                    <h2>Common use cases</h2>
+                    <ul>
+                        <li>Recording a product demo that shows authenticated screens</li>
+                        <li>Making a support video that involves your email or account details</li>
+                        <li>Sharing a development walkthrough that includes API keys or tokens in an IDE</li>
+                        <li>Recording a tutorial on a shared machine with personal notifications visible</li>
+                    </ul>
+
+                    <h2>Blur also works on screenshots</h2>
+                    <p>The same blur tool is available in the screenshot annotation overlay. Select a region, annotate with blur, copy or save — the exported image has the blur baked in from the start.</p>
+
+                    <div class="cta-panel">
+                        <h3>Blur sensitive content without a video editor</h3>
+                        <p>Pointframe is free, open-source, and ships as a signed Windows installer. No account or subscription required.</p>
+                        <div class="hero-actions compact-actions">
+                            <a href="https://github.com/dimitar-radenkov/Pointframe/releases/latest" class="primary-button">Get Pointframe Free</a>
+                            <a href="./screen-recorder-with-annotations-windows.html" class="secondary-link">See the full recording workflow</a>
+                        </div>
+                    </div>
+                </article>
+
+                <div class="related-links-block">
+                    <h2 class="related-heading">Related pages</h2>
+                    <div class="resource-grid compact-grid">
+                        <a href="./screen-recorder-with-annotations-windows.html" class="resource-card">
+                            <h3 class="resource-title">Screen recorder with annotations</h3>
+                            <p class="resource-copy">Draw, highlight, and point things out while recording — no post-editing needed.</p>
+                        </a>
+                        <a href="./copy-text-from-screenshot-windows.html" class="resource-card">
+                            <h3 class="resource-title">Copy text from a screenshot</h3>
+                            <p class="resource-copy">Use OCR to extract text from screenshots and images on Windows.</p>
+                        </a>
+                        <a href="./free-snagit-alternative-windows.html" class="resource-card">
+                            <h3 class="resource-title">Free Snagit alternative</h3>
+                            <p class="resource-copy">See how Pointframe compares with Snagit for everyday capture workflows.</p>
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="container footer-inner">
+            <div class="brand">
+                <img src="./app-icon.png" alt="" class="brand-logo" width="32" height="32">
+                <span>Pointframe</span>
+            </div>
+            <div class="footer-links">
+                <a href="./index.html">Home</a>
+                <a href="https://github.com/dimitar-radenkov/Pointframe">GitHub</a>
+                <a href="https://github.com/dimitar-radenkov/Pointframe/releases/latest">Download</a>
+            </div>
+        </div>
+    </footer>
+</body>
+</html>
