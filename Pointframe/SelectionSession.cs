@@ -80,4 +80,62 @@ internal static class SelectionSession
 
         return completionSource.Task;
     }
+
+    internal static Task<SelectionSessionResult?> SelectWholeScreenAsync(
+        IScreenCaptureService screenCapture,
+        ILoggerFactory loggerFactory)
+    {
+        var logger = loggerFactory.CreateLogger("SnippingTool.SelectionSession");
+        var targetScreen = Forms.Screen.FromPoint(Forms.Cursor.Position);
+        var monitorScale = MonitorDpiHelper.GetMonitorScale(targetScreen.Bounds.Location);
+        var hostBoundsDips = MonitorDpiHelper.CalculateWindowBounds(targetScreen.Bounds, monitorScale);
+        var hostBoundsPixels = new System.Windows.Int32Rect(
+            targetScreen.Bounds.X,
+            targetScreen.Bounds.Y,
+            targetScreen.Bounds.Width,
+            targetScreen.Bounds.Height);
+        var monitorSnapshot = screenCapture.Capture(
+            targetScreen.Bounds.X,
+            targetScreen.Bounds.Y,
+            targetScreen.Bounds.Width,
+            targetScreen.Bounds.Height);
+        var selection = CreateWholeScreenSelectionResult(
+            targetScreen.DeviceName,
+            monitorSnapshot,
+            hostBoundsDips,
+            hostBoundsPixels,
+            monitorScale,
+            monitorScale);
+
+        logger.LogDebug(
+            "Whole-screen selection created: monitor={Monitor} hostPx={HostX},{HostY},{HostW},{HostH}",
+            selection.MonitorName,
+            selection.HostBoundsPixels.X,
+            selection.HostBoundsPixels.Y,
+            selection.HostBoundsPixels.Width,
+            selection.HostBoundsPixels.Height);
+
+        return Task.FromResult<SelectionSessionResult?>(selection);
+    }
+
+    internal static SelectionSessionResult CreateWholeScreenSelectionResult(
+        string monitorName,
+        System.Windows.Media.Imaging.BitmapSource monitorSnapshot,
+        System.Windows.Rect hostBoundsDips,
+        System.Windows.Int32Rect hostBoundsPixels,
+        double dpiScaleX,
+        double dpiScaleY)
+    {
+        return new SelectionSessionResult(
+            monitorName,
+            monitorSnapshot,
+            monitorSnapshot,
+            hostBoundsDips,
+            hostBoundsPixels,
+            new System.Windows.Rect(0d, 0d, hostBoundsDips.Width, hostBoundsDips.Height),
+            hostBoundsPixels,
+            dpiScaleX,
+            dpiScaleY,
+            SelectionSessionMode.FullScreen);
+    }
 }

@@ -44,6 +44,7 @@ public partial class OverlayWindow : Window
     private BitmapSource? _annotatingMonitorSnapshot;
     private BitmapSource? _pendingPinnedBitmap;
     private bool _closeLeavesRecorderRunning;
+    private SelectionSessionMode _selectionSessionMode = SelectionSessionMode.Region;
     private SelectionSessionResult? _pendingSelectionSession;
     private readonly List<SelectionBackdropWindow> _annotatingBackdropWindows = [];
 
@@ -183,13 +184,15 @@ public partial class OverlayWindow : Window
             selectionSession.SelectionBoundsPixels.Width,
             selectionSession.SelectionBoundsPixels.Height);
 
+        _selectionSessionMode = selectionSession.SessionMode;
         _vm.CommitSelection(selectionSession.SelectionRectDips, selectionSession.SelectionBoundsPixels);
         EnterAnnotatingSession(
             selectionSession.SelectionRectDips,
             selectionSession.SelectionBackground,
             selectionSession.DpiScaleX,
             selectionSession.DpiScaleY,
-            allowRecording: true);
+            allowRecording: true,
+            selectionSession.SessionMode);
     }
 
     private void Annot_Down(object sender, MouseButtonEventArgs e)
@@ -429,15 +432,60 @@ public partial class OverlayWindow : Window
     private async void ShowOcrToast(string message)
     {
         OcrToastText.Text = message;
-        var sel = _vm.SelectionRect;
         OcrToast.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
-        var sz = OcrToast.DesiredSize;
-        Canvas.SetLeft(OcrToast, sel.X + (sel.Width - sz.Width) / 2);
-        Canvas.SetTop(OcrToast, sel.Y + (sel.Height - sz.Height) / 2);
+        var toastSize = OcrToast.DesiredSize;
+
+        if (_selectionSessionMode == SelectionSessionMode.FullScreen)
+        {
+            PositionOcrToastNearActionBar(toastSize);
+        }
+        else
+        {
+            var selection = _vm.SelectionRect;
+            Canvas.SetLeft(OcrToast, selection.X + ((selection.Width - toastSize.Width) / 2d));
+            Canvas.SetTop(OcrToast, selection.Y + ((selection.Height - toastSize.Height) / 2d));
+        }
+
         OcrToast.Visibility = Visibility.Visible;
 
         await Task.Delay(1500);
         OcrToast.Visibility = Visibility.Collapsed;
+    }
+
+    private void PositionOcrToastNearActionBar(Size toastSize)
+    {
+        FrameworkElement? actionBar = null;
+        if (ActionBar.Visibility == Visibility.Visible)
+        {
+            actionBar = ActionBar;
+        }
+        else if (CompactActionBar.Visibility == Visibility.Visible)
+        {
+            actionBar = CompactActionBar;
+        }
+
+        if (actionBar is null)
+        {
+            var selection = _vm.SelectionRect;
+            Canvas.SetLeft(OcrToast, selection.X + ((selection.Width - toastSize.Width) / 2d));
+            Canvas.SetTop(OcrToast, selection.Y + ((selection.Height - toastSize.Height) / 2d));
+            return;
+        }
+
+        actionBar.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+        var actionBarSize = actionBar.RenderSize.Width > 0d && actionBar.RenderSize.Height > 0d
+            ? actionBar.RenderSize
+            : actionBar.DesiredSize;
+        var left = Canvas.GetLeft(actionBar) + ((actionBarSize.Width - toastSize.Width) / 2d);
+        var top = Canvas.GetTop(actionBar) + actionBarSize.Height + 10d;
+
+        if (top + toastSize.Height > Height - 16d)
+        {
+            top = Canvas.GetTop(actionBar) - toastSize.Height - 10d;
+        }
+
+        Canvas.SetLeft(OcrToast, Math.Max(16d, Math.Min(left, Width - toastSize.Width - 16d)));
+        Canvas.SetTop(OcrToast, Math.Max(16d, Math.Min(top, Height - toastSize.Height - 16d)));
     }
 
     private void Window_KeyDown(object sender, KeyEventArgs e)

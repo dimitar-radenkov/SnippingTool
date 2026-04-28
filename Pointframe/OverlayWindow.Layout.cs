@@ -13,6 +13,7 @@ public partial class OverlayWindow
 {
     private void InitializeFromOpenedImage(BitmapSource openedImage)
     {
+        _selectionSessionMode = SelectionSessionMode.OpenedImage;
         _openedImageDisplayRect = CalculateOpenedImageDisplayRect(openedImage);
         _openedImageScaleX = openedImage.PixelWidth / _openedImageDisplayRect.Width;
         _openedImageScaleY = openedImage.PixelHeight / _openedImageDisplayRect.Height;
@@ -30,7 +31,8 @@ public partial class OverlayWindow
             openedImage,
             _openedImageScaleX,
             _openedImageScaleY,
-            allowRecording: false);
+            allowRecording: false,
+            SelectionSessionMode.OpenedImage);
     }
 
     private Rect CalculateOpenedImageDisplayRect(BitmapSource openedImage)
@@ -73,15 +75,23 @@ public partial class OverlayWindow
             workingArea.Height / _vm.DpiY);
     }
 
-    private void EnterAnnotatingSession(Rect selectionRect, BitmapSource backgroundBitmap, double pixelScaleX, double pixelScaleY, bool allowRecording)
+    private void EnterAnnotatingSession(
+        Rect selectionRect,
+        BitmapSource backgroundBitmap,
+        double pixelScaleX,
+        double pixelScaleY,
+        bool allowRecording,
+        SelectionSessionMode sessionMode)
     {
+        _selectionSessionMode = sessionMode;
         RecordBtn.Visibility = allowRecording ? Visibility.Visible : Visibility.Collapsed;
         CompactRecordBtn.Visibility = allowRecording ? Visibility.Visible : Visibility.Collapsed;
 
-        Rect hostBounds;
-        selectionRect = allowRecording
-            ? RehostAnnotatingOverlay(selectionRect, out hostBounds)
-            : selectionRect;
+        var hostBounds = selectionRect;
+        if (allowRecording && sessionMode == SelectionSessionMode.Region)
+        {
+            selectionRect = RehostAnnotatingOverlay(selectionRect, out hostBounds);
+        }
 
         _vm.InitializeAnnotatingSession(selectionRect, pixelScaleX, pixelScaleY);
 
@@ -97,22 +107,29 @@ public partial class OverlayWindow
             Canvas.SetLeft(ScreenSnapshot, 0d);
             Canvas.SetTop(ScreenSnapshot, 0d);
             ScreenSnapshot.Visibility = Visibility.Visible;
-            LayoutDimStrips(selectionRect);
+
+            if (sessionMode == SelectionSessionMode.Region)
+            {
+                LayoutDimStrips(selectionRect);
+            }
+            else
+            {
+                HideDimStrips();
+            }
         }
         else
         {
             ScreenSnapshot.Visibility = Visibility.Collapsed;
-            DimTop.Visibility = Visibility.Collapsed;
-            DimBottom.Visibility = Visibility.Collapsed;
-            DimLeft.Visibility = Visibility.Collapsed;
-            DimRight.Visibility = Visibility.Collapsed;
+            HideDimStrips();
         }
 
         Canvas.SetLeft(SelectionBorder, selectionRect.X);
         Canvas.SetTop(SelectionBorder, selectionRect.Y);
         SelectionBorder.Width = selectionRect.Width;
         SelectionBorder.Height = selectionRect.Height;
-        SelectionBorder.Visibility = Visibility.Visible;
+        SelectionBorder.Visibility = sessionMode == SelectionSessionMode.FullScreen
+            ? Visibility.Collapsed
+            : Visibility.Visible;
 
         _renderer.SetBackground(backgroundBitmap, pixelScaleX, pixelScaleY);
 
@@ -133,7 +150,7 @@ public partial class OverlayWindow
         AnnotationCanvas.MouseMove += Annot_Move;
         AnnotationCanvas.MouseLeftButtonUp += Annot_Up;
 
-        PositionToolbars(selectionRect);
+        PositionToolbars(selectionRect, sessionMode);
     }
 
     private Rect RehostAnnotatingOverlay(Rect selectionRect, out Rect hostBounds)
@@ -147,7 +164,8 @@ public partial class OverlayWindow
             new Size(Width, Height),
             toolSize,
             fullActionSize,
-            compactActionSize);
+            compactActionSize,
+            OverlayToolbarLayoutMode.SelectionAdjacent);
 
         hostBounds = selectionRect;
         hostBounds.Union(layout.ToolBounds);
@@ -222,6 +240,14 @@ public partial class OverlayWindow
         DimRight.Visibility = Visibility.Visible;
     }
 
+    private void HideDimStrips()
+    {
+        DimTop.Visibility = Visibility.Collapsed;
+        DimBottom.Visibility = Visibility.Collapsed;
+        DimLeft.Visibility = Visibility.Collapsed;
+        DimRight.Visibility = Visibility.Collapsed;
+    }
+
     private static BitmapSource CreateAnnotatingBackdropCrop(Rect hostBounds, double pixelScaleX, double pixelScaleY, BitmapSource monitorSnapshot)
     {
         var cropX = Math.Max(0, (int)Math.Round(hostBounds.X * pixelScaleX));
@@ -237,7 +263,7 @@ public partial class OverlayWindow
         return croppedBitmap;
     }
 
-    private void PositionToolbars(Rect selectionRect)
+    private void PositionToolbars(Rect selectionRect, SelectionSessionMode sessionMode)
     {
         var toolSize = MeasureFloatingElement(AnnotToolbar);
         var fullActionSize = MeasureFloatingElement(ActionBar);
@@ -247,7 +273,10 @@ public partial class OverlayWindow
             new Size(Width, Height),
             toolSize,
             fullActionSize,
-            compactActionSize);
+            compactActionSize,
+            sessionMode == SelectionSessionMode.FullScreen
+                ? OverlayToolbarLayoutMode.FullScreen
+                : OverlayToolbarLayoutMode.SelectionAdjacent);
 
         AnnotToolbar.Visibility = Visibility.Visible;
         Canvas.SetLeft(AnnotToolbar, layout.ToolBounds.Left);

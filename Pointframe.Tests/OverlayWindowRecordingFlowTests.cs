@@ -228,7 +228,8 @@ public sealed class OverlayWindowRecordingFlowTests
             new Rect(10, 10, 80, 40),
             new Int32Rect(10, 10, 80, 40),
             1d,
-            1d);
+            1d,
+            SelectionSessionMode.Region);
     }
 
     private sealed record TestContext(

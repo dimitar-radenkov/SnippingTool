@@ -110,7 +110,7 @@ public sealed class OverlayWindowLayoutInteractionTests
                 var selection = new Rect(50, 60, 300, 180);
                 var background = CreateBitmap(300, 180);
 
-                InvokePrivate(context.Window, "EnterAnnotatingSession", selection, background, 1d, 1d, false);
+                InvokePrivate(context.Window, "EnterAnnotatingSession", selection, background, 1d, 1d, false, SelectionSessionMode.Region);
 
                 var recordBtn = Assert.IsType<Button>(context.Window.FindName("RecordBtn"));
                 var compactRecordBtn = Assert.IsType<Button>(context.Window.FindName("CompactRecordBtn"));
@@ -151,7 +151,7 @@ public sealed class OverlayWindowLayoutInteractionTests
                 var selection = new Rect(100, 120, 600, 320);
                 var background = CreateBitmap(600, 320);
 
-                InvokePrivate(context.Window, "EnterAnnotatingSession", selection, background, 1d, 1d, true);
+                InvokePrivate(context.Window, "EnterAnnotatingSession", selection, background, 1d, 1d, true, SelectionSessionMode.Region);
 
                 var recordBtn = Assert.IsType<Button>(context.Window.FindName("RecordBtn"));
                 var compactRecordBtn = Assert.IsType<Button>(context.Window.FindName("CompactRecordBtn"));

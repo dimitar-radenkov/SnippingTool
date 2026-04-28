@@ -176,7 +176,8 @@ internal sealed class SelectionMonitorWindow : Window
             selectionRect,
             selectionBoundsPixels,
             _dpiScaleX,
-            _dpiScaleY));
+            _dpiScaleY,
+            SelectionSessionMode.Region));
 
         e.Handled = true;
         base.OnMouseLeftButtonUp(e);
