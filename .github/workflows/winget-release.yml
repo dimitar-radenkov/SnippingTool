@@ -84,6 +84,6 @@ jobs:
           identifier: DimitarRadenkov.Pointframe
           version: ${{ steps.version.outputs.display }}
           release-tag: ${{ steps.version.outputs.tag }}
-          installers-regex: 'Setup\.exe$'
+          installers-regex: 'x64-Setup\.exe$'
           fork-user: dimitar-radenkov
           token: ${{ secrets.WINGET_TOKEN }}
