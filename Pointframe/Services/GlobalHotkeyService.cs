@@ -45,6 +45,13 @@ internal sealed class GlobalHotkeyService : IGlobalHotkeyService
             var kb = Marshal.PtrToStructure<NativeMethods.KBDLLHOOKSTRUCT>(lParam);
             var shiftHeld = NativeMethods.GetAsyncKeyState(NativeMethods.VK_SHIFT) < 0;
 
+            var recordHotkey = _userSettings.Current.WholeScreenRecordHotkey;
+            if (recordHotkey != 0 && kb.vkCode == recordHotkey && shiftHeld)
+            {
+                WpfApplication.Current.Dispatcher.InvokeAsync(() => WholeScreenRecordRequested?.Invoke());
+                return (IntPtr)1;
+            }
+
             if (kb.vkCode == _userSettings.Current.RegionCaptureHotkey)
             {
                 if (shiftHeld)
@@ -56,13 +63,6 @@ internal sealed class GlobalHotkeyService : IGlobalHotkeyService
                     WpfApplication.Current.Dispatcher.InvokeAsync(() => RegionSnipRequested?.Invoke());
                 }
 
-                return (IntPtr)1;
-            }
-
-            var recordHotkey = _userSettings.Current.WholeScreenRecordHotkey;
-            if (recordHotkey != 0 && kb.vkCode == recordHotkey && shiftHeld)
-            {
-                WpfApplication.Current.Dispatcher.InvokeAsync(() => WholeScreenRecordRequested?.Invoke());
                 return (IntPtr)1;
             }
         }

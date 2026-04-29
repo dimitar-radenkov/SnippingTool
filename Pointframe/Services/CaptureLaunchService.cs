@@ -101,7 +101,7 @@ internal sealed class CaptureLaunchService : ICaptureLaunchService
 
         var videosDir = _userSettings.Current.RecordingOutputPath;
         _fileSystem.CreateDirectory(videosDir);
-        var path = Path.Combine(videosDir, $"SnipRec-{DateTime.Now:yyyyMMdd-HHmmss}.mp4");
+        var path = _fileSystem.CombinePath(videosDir, $"SnipRec-{DateTime.Now:yyyyMMdd-HHmmss}.mp4");
 
         try
         {
@@ -116,6 +116,13 @@ internal sealed class CaptureLaunchService : ICaptureLaunchService
         {
             _messageBox.ShowWarning(ex.Message, "ffmpeg not found");
             return;
+        }
+
+        if (_userSettings.Current.RecordMicrophone && !recorder.IsRecordingMicrophoneEnabled)
+        {
+            _messageBox.ShowWarning(
+                "Microphone recording is enabled, but no compatible microphone device was available. The recording will continue without microphone audio.",
+                "Microphone unavailable");
         }
 
         RecordingOverlayWindow? recordingOverlay = null;
