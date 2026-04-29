@@ -26,6 +26,11 @@ public sealed record RecordingSessionGeometry(
 
     public bool IsEmpty => HostBoundsPixels.Width <= 0 || HostBoundsPixels.Height <= 0;
 
+    public bool IsFullScreenCapture => CaptureBoundsPixels.X == HostBoundsPixels.X
+        && CaptureBoundsPixels.Y == HostBoundsPixels.Y
+        && CaptureBoundsPixels.Width == HostBoundsPixels.Width
+        && CaptureBoundsPixels.Height == HostBoundsPixels.Height;
+
     public Point MapHostDipPointToScreenPixels(Point hostPoint)
     {
         EnsureValidScale();

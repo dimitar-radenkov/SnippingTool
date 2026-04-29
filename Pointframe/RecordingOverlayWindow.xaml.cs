@@ -95,17 +95,19 @@ public partial class RecordingOverlayWindow : Window
             _userSettings,
             () => _recordingAnnotationViewModel.IsInputArmed,
             loggerFactory.CreateLogger<RecordingCursorEffectsService>());
-        _recordingHudCoordinator = new RecordingHudCoordinator(
-            RecordingHudPanel,
-            _geometry,
-            _userSettings,
-            _logger);
         _recordingMousePassthroughCoordinator = new RecordingMousePassthroughCoordinator(
             () => _recordingAnnotationViewModel.IsInputArmed,
             _getCursorScreenPoint,
             IsPointInsideRecordingHud,
             SetWindowMouseTransparency,
             Dispatcher);
+        _recordingHudCoordinator = new RecordingHudCoordinator(
+            RecordingHudPanel,
+            RecordingHudCompactPanel,
+            _geometry,
+            _userSettings,
+            _logger,
+            () => _recordingMousePassthroughCoordinator.Update());
         _recordingUndoSubscription = _eventAggregator.Subscribe<UndoGroupMessage>(HandleRecordingUndoGroup);
         _recordingRedoSubscription = _eventAggregator.Subscribe<RedoGroupMessage>(HandleRecordingRedoGroup);
         _recordingAnnotationViewModel.ClearRequested += HandleRecordingClearRequested;
@@ -132,6 +134,7 @@ public partial class RecordingOverlayWindow : Window
 
         var hudViewModel = _recordingHudViewModelFactory(_recorder, _outputPath);
         hudViewModel.AttachAnnotationSession(_recordingAnnotationViewModel, ToggleRecordingAnnotationInput);
+        hudViewModel.InitializeDisplayMode(_geometry.IsFullScreenCapture);
         ShowRecordingHud(hudViewModel);
     }
 
@@ -207,17 +210,14 @@ public partial class RecordingOverlayWindow : Window
 
     private bool IsPointInsideRecordingHud(Point screenPoint)
     {
-        if (!IsVisibleWithBounds(RecordingHudPanel))
+        if (IsVisibleWithBounds(RecordingHudCompactPanel)
+            && IsPointInsideHudPanel(RecordingHudCompactPanel, screenPoint))
         {
-            return false;
+            return true;
         }
 
-        var hudBounds = new Rect(
-            Canvas.GetLeft(RecordingHudPanel),
-            Canvas.GetTop(RecordingHudPanel),
-            RecordingHudPanel.ActualWidth,
-            RecordingHudPanel.ActualHeight);
-        return _geometry.IsScreenPixelPointInsideHostRect(screenPoint, hudBounds);
+        return IsVisibleWithBounds(RecordingHudPanel)
+            && IsPointInsideHudPanel(RecordingHudPanel, screenPoint);
     }
 
     private bool IsPointInsideRecordingCaptureSurface(Point screenPoint)
@@ -240,6 +240,16 @@ public partial class RecordingOverlayWindow : Window
     {
         return element.Visibility == Visibility.Visible
             && HasBounds(element);
+    }
+
+    private bool IsPointInsideHudPanel(FrameworkElement element, Point screenPoint)
+    {
+        var hudBounds = new Rect(
+            Canvas.GetLeft(element),
+            Canvas.GetTop(element),
+            element.ActualWidth,
+            element.ActualHeight);
+        return _geometry.IsScreenPixelPointInsideHostRect(screenPoint, hudBounds);
     }
 
     private void PositionRecordingBorder()
@@ -438,7 +448,8 @@ public partial class RecordingOverlayWindow : Window
 
     private void RecordingHudPanel_SizeChanged(object sender, SizeChangedEventArgs e)
     {
-        if (RecordingHudPanel.Visibility == Visibility.Visible)
+        if (sender is FrameworkElement element
+            && element.Visibility == Visibility.Visible)
         {
             _recordingHudCoordinator.Position();
             _recordingMousePassthroughCoordinator.Update();
