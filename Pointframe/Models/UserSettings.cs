@@ -29,6 +29,8 @@ public sealed class UserSettings
 
     public uint RegionCaptureHotkey { get; set; } = 0x2C; // VK_SNAPSHOT (Print Screen)
 
+    public uint WholeScreenRecordHotkey { get; set; } = 0x52; // VK_R (Shift+R)
+
     public UpdateCheckInterval AutoUpdateCheckInterval { get; set; } = UpdateCheckInterval.EveryDay;
     public DateTime? LastAutoUpdateCheckUtc { get; set; } = null;
 

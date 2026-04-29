@@ -20,7 +20,6 @@ public partial class App : Application
     private IHost _host = null!;
     private bool _isAutomationMode;
     private ILogger<App>? _logger;
-    private ILoggerFactory _loggerFactory = null!;
     private IMessageBoxService _messageBox = null!;
     private IUserSettingsService _userSettings = null!;
     private IThemeService _themeService = null!;
@@ -30,6 +29,7 @@ public partial class App : Application
     private IGlobalHotkeyService _globalHotkey = null!;
     private IAppErrorHandler _errorHandler = null!;
     private ITrayIconManager _trayIconManager = null!;
+    private ICaptureLaunchService _captureLaunch = null!;
     private IEventSubscription? _updateAvailableSubscription;
     private IEventSubscription? _recordingCompletedSubscription;
     private SettingsWindow? _settingsWindow;
@@ -78,7 +78,6 @@ public partial class App : Application
             .Build();
 
         _logger = _host.Services.GetRequiredService<ILogger<App>>();
-        _loggerFactory = _host.Services.GetRequiredService<ILoggerFactory>();
         _messageBox = _host.Services.GetRequiredService<IMessageBoxService>();
         _userSettings = _host.Services.GetRequiredService<IUserSettingsService>();
         _themeService = _host.Services.GetRequiredService<IThemeService>();
@@ -86,6 +85,7 @@ public partial class App : Application
         _imageFileService = _host.Services.GetRequiredService<IImageFileService>();
         _globalHotkey = _host.Services.GetRequiredService<IGlobalHotkeyService>();
         _errorHandler = _host.Services.GetRequiredService<IAppErrorHandler>();
+        _captureLaunch = _host.Services.GetRequiredService<ICaptureLaunchService>();
         _themeService.Apply(_userSettings.Current.Theme);
         if (!automationLaunchOptions.IsAutomationMode)
         {
@@ -115,8 +115,8 @@ public partial class App : Application
             _autoUpdate,
             _userSettings,
             _host.Services.GetRequiredService<IGifExportService>(),
-            onNewSnip: StartSnip,
-            onWholeScreenSnip: StartWholeScreenSnip,
+            onNewSnip: _captureLaunch.StartRegionSnip,
+            onWholeScreenSnip: _captureLaunch.StartWholeScreenSnip,
             onOpenImage: () => Dispatcher.InvokeAsync(OpenImage, System.Windows.Threading.DispatcherPriority.ApplicationIdle),
             onShowSettings: ShowSettingsWindow,
             onShowAbout: ShowAboutWindow);
@@ -124,8 +124,9 @@ public partial class App : Application
 #if DEBUG
         _trayIconManager.AddDebugMenuItems();
 #endif
-        _globalHotkey.RegionSnipRequested += StartSnip;
-        _globalHotkey.WholeScreenSnipRequested += StartWholeScreenSnip;
+        _globalHotkey.RegionSnipRequested += _captureLaunch.StartRegionSnip;
+        _globalHotkey.WholeScreenSnipRequested += _captureLaunch.StartWholeScreenSnip;
+        _globalHotkey.WholeScreenRecordRequested += _captureLaunch.StartWholeScreenRecord;
         _globalHotkey.Register();
         _logger.LogInformation("Global hotkey registered");
         _host.StartAsync().GetAwaiter().GetResult();
@@ -147,6 +148,7 @@ public partial class App : Application
         services.AddSingleton<IUserSettingsService, UserSettingsService>();
         services.AddSingleton<IGlobalHotkeyService, GlobalHotkeyService>();
         services.AddSingleton<IAppErrorHandler, AppErrorHandler>();
+        services.AddSingleton<ICaptureLaunchService, CaptureLaunchService>();
         services.AddTransient<IScreenCaptureService, ScreenCaptureService>();
         services.AddTransient<IVideoWriterFactory, VideoWriterFactory>();
         services.AddTransient<IScreenRecordingService, ScreenRecordingService>();
@@ -362,46 +364,6 @@ public partial class App : Application
                 Current.Shutdown();
             }
         }));
-    }
-
-    private enum SnipLaunchMode
-    {
-        Region,
-        WholeScreen
-    }
-
-    private void StartSnip() => StartCapture(SnipLaunchMode.Region);
-
-    private void StartWholeScreenSnip() => StartCapture(SnipLaunchMode.WholeScreen);
-
-    private void StartCapture(SnipLaunchMode launchMode)
-    {
-        _logger?.LogDebug("{Mode} snip started", launchMode);
-        var delay = _userSettings.Current.CaptureDelaySeconds;
-        if (delay > 0)
-        {
-            new CountdownWindow(delay, () => ShowSelectionOverlay(launchMode)).Show();
-            return;
-        }
-
-        ShowSelectionOverlay(launchMode);
-    }
-
-    private async void ShowSelectionOverlay(SnipLaunchMode launchMode)
-    {
-        var screenCapture = _host.Services.GetRequiredService<IScreenCaptureService>();
-        var selection = launchMode == SnipLaunchMode.WholeScreen
-            ? await SelectionSession.SelectWholeScreenAsync(screenCapture, _loggerFactory)
-            : await SelectionSession.SelectAsync(screenCapture, _loggerFactory);
-
-        if (selection is null)
-        {
-            return;
-        }
-
-        var overlay = _host.Services.GetRequiredService<OverlayWindow>();
-        overlay.InitializeFromSelectionSession(selection);
-        DpiAwarenessScope.RunPerMonitorV2(() => overlay.Show());
     }
 
     private ValueTask HandleUpdateAvailable(UpdateAvailableMessage message)

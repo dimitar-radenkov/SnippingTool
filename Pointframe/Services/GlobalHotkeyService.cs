@@ -16,6 +16,7 @@ internal sealed class GlobalHotkeyService : IGlobalHotkeyService
 
     public event Action? RegionSnipRequested;
     public event Action? WholeScreenSnipRequested;
+    public event Action? WholeScreenRecordRequested;
 
     public GlobalHotkeyService(IUserSettingsService userSettings, ILogger<GlobalHotkeyService> logger)
     {
@@ -42,9 +43,11 @@ internal sealed class GlobalHotkeyService : IGlobalHotkeyService
         if (nCode >= 0 && wParam == (IntPtr)NativeMethods.WM_KEYDOWN)
         {
             var kb = Marshal.PtrToStructure<NativeMethods.KBDLLHOOKSTRUCT>(lParam);
+            var shiftHeld = NativeMethods.GetAsyncKeyState(NativeMethods.VK_SHIFT) < 0;
+
             if (kb.vkCode == _userSettings.Current.RegionCaptureHotkey)
             {
-                if (NativeMethods.GetAsyncKeyState(NativeMethods.VK_SHIFT) < 0)
+                if (shiftHeld)
                 {
                     WpfApplication.Current.Dispatcher.InvokeAsync(() => WholeScreenSnipRequested?.Invoke());
                 }
@@ -53,6 +56,13 @@ internal sealed class GlobalHotkeyService : IGlobalHotkeyService
                     WpfApplication.Current.Dispatcher.InvokeAsync(() => RegionSnipRequested?.Invoke());
                 }
 
+                return (IntPtr)1;
+            }
+
+            var recordHotkey = _userSettings.Current.WholeScreenRecordHotkey;
+            if (recordHotkey != 0 && kb.vkCode == recordHotkey && shiftHeld)
+            {
+                WpfApplication.Current.Dispatcher.InvokeAsync(() => WholeScreenRecordRequested?.Invoke());
                 return (IntPtr)1;
             }
         }

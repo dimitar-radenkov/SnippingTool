@@ -444,6 +444,80 @@
                                             Command="{Binding BrowseRecordingPathCommand}"
                                             Margin="10,0,0,0"/>
                                 </Grid>
+
+                                <Border Grid.Row="1"
+                                        Grid.ColumnSpan="2"
+                                        Height="1"
+                                        Background="{DynamicResource DividerColor}"
+                                        Margin="0,16,0,16"/>
+
+                                <StackPanel Grid.Row="2" Grid.Column="0" Margin="0,0,16,0">
+                                    <TextBlock Text="Record hotkey" Style="{StaticResource RowTitle}"/>
+                                    <TextBlock Text="Hold Shift and press this key to instantly start a whole-screen recording."
+                                               Style="{StaticResource RowDescription}"/>
+                                </StackPanel>
+                                <StackPanel Grid.Row="2" Grid.Column="1">
+                                    <StackPanel Orientation="Horizontal">
+                                        <StackPanel.Style>
+                                            <Style TargetType="StackPanel">
+                                                <Setter Property="Visibility" Value="Visible"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsRecordingRecordHotkey}" Value="True">
+                                                        <Setter Property="Visibility" Value="Collapsed"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </StackPanel.Style>
+                                        <Border Background="{DynamicResource KbdBadgeBackground}"
+                                                BorderBrush="{DynamicResource KbdBadgeBorder}"
+                                                BorderThickness="1,1,1,3"
+                                                CornerRadius="4"
+                                                Padding="8,4"
+                                                Margin="0,0,8,0">
+                                            <TextBlock Text="{Binding WholeScreenRecordHotkeyDisplayName}"
+                                                       FontFamily="Consolas"
+                                                       FontSize="11"
+                                                       VerticalAlignment="Center"
+                                                       Foreground="{DynamicResource PrimaryText}"/>
+                                        </Border>
+                                        <Button Content="Change"
+                                                Style="{StaticResource BrowseBtn}"
+                                                Command="{Binding StartRecordingRecordHotkeyCommand}"
+                                                Margin="0,0,6,0"/>
+                                        <Button Content="Reset key"
+                                                Style="{StaticResource BrowseBtn}"
+                                                Command="{Binding ResetRecordHotkeyCommand}"/>
+                                    </StackPanel>
+
+                                    <StackPanel x:Name="RecordHotkeyRecordingPanel"
+                                                Orientation="Horizontal"
+                                                Focusable="True"
+                                                Margin="0,10,0,0"
+                                                PreviewKeyDown="RecordHotkeyCapture_PreviewKeyDown"
+                                                IsVisibleChanged="RecordHotkeyRecordingPanel_IsVisibleChanged">
+                                        <StackPanel.Style>
+                                            <Style TargetType="StackPanel">
+                                                <Setter Property="Visibility" Value="Collapsed"/>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsRecordingRecordHotkey}" Value="True">
+                                                        <Setter Property="Visibility" Value="Visible"/>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </StackPanel.Style>
+                                        <Border BorderBrush="{DynamicResource HotkeyRecordingBorder}"
+                                                BorderThickness="2"
+                                                CornerRadius="4"
+                                                Padding="10,6"
+                                                Background="{DynamicResource HotkeyRecordingBackground}">
+                                            <TextBlock Text="Press a key... Esc to cancel"
+                                                       Foreground="{DynamicResource HotkeyRecordingText}"
+                                                       FontStyle="Italic"
+                                                       FontSize="11"
+                                                       VerticalAlignment="Center"/>
+                                        </Border>
+                                    </StackPanel>
+                                </StackPanel>
                             </Grid>
                         </StackPanel>
                     </Border>
