@@ -50,6 +50,7 @@ public partial class SettingsViewModel : ObservableObject
         _captureDelaySeconds = s.CaptureDelaySeconds;
         _defaultStrokeThickness = s.DefaultStrokeThickness;
         _regionCaptureHotkey = s.RegionCaptureHotkey;
+        _wholeScreenRecordHotkey = s.WholeScreenRecordHotkey;
         _autoUpdateCheckInterval = s.AutoUpdateCheckInterval;
         _appTheme = s.Theme;
         _originalTheme = s.Theme;
@@ -107,6 +108,13 @@ public partial class SettingsViewModel : ObservableObject
     private bool _isRecordingHotkey;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(WholeScreenRecordHotkeyDisplayName))]
+    private uint _wholeScreenRecordHotkey;
+
+    [ObservableProperty]
+    private bool _isCapturingWholeScreenRecordHotkey;
+
+    [ObservableProperty]
     private UpdateCheckInterval _autoUpdateCheckInterval;
 
     [ObservableProperty]
@@ -126,6 +134,7 @@ public partial class SettingsViewModel : ObservableObject
         Array.Find(SectionItems, item => item.Section == SelectedSection) ?? SectionItems[0];
 
     public string RegionCaptureHotkeyDisplayName => VkToDisplayName(RegionCaptureHotkey);
+    public string WholeScreenRecordHotkeyDisplayName => VkToShiftDisplayName(WholeScreenRecordHotkey);
     public string SelectedSectionDisplayName => SelectedSectionItem.DisplayName;
     public string SelectedSectionDescription => SelectedSectionItem.Description;
     public IReadOnlyList<string> AvailableMicrophoneDevices => _availableMicrophoneDevices;
@@ -199,6 +208,7 @@ public partial class SettingsViewModel : ObservableObject
             DefaultAnnotationColor = $"#{c.A:X2}{c.R:X2}{c.G:X2}{c.B:X2}",
             DefaultStrokeThickness = DefaultStrokeThickness,
             RegionCaptureHotkey = RegionCaptureHotkey,
+            WholeScreenRecordHotkey = WholeScreenRecordHotkey,
             AutoUpdateCheckInterval = AutoUpdateCheckInterval,
             LastAutoUpdateCheckUtc = _lastAutoUpdateCheckUtc,
             Theme = AppTheme,
@@ -214,6 +224,16 @@ public partial class SettingsViewModel : ObservableObject
     {
         RegionCaptureHotkey = 0x2C; // VK_SNAPSHOT (Print Screen)
         IsRecordingHotkey = false;
+    }
+
+    [RelayCommand]
+    private void StartCapturingWholeScreenRecordHotkey() => IsCapturingWholeScreenRecordHotkey = true;
+
+    [RelayCommand]
+    private void ResetRecordHotkey()
+    {
+        WholeScreenRecordHotkey = 0x52; // VK_R (Shift+R)
+        IsCapturingWholeScreenRecordHotkey = false;
     }
 
     [RelayCommand]
@@ -237,6 +257,8 @@ public partial class SettingsViewModel : ObservableObject
                 RecordingCursorHighlightEnabled = defaults.RecordingCursorHighlightEnabled;
                 RecordingClickRippleEnabled = defaults.RecordingClickRippleEnabled;
                 RecordingCursorHighlightSize = ClampRecordingCursorHighlightSize(defaults.RecordingCursorHighlightSize);
+                WholeScreenRecordHotkey = defaults.WholeScreenRecordHotkey;
+                IsCapturingWholeScreenRecordHotkey = false;
                 break;
             case SettingsSection.Annotation:
                 DefaultAnnotationColor = ParseAnnotationColorOrFallback(defaults.DefaultAnnotationColor);
@@ -270,6 +292,8 @@ public partial class SettingsViewModel : ObservableObject
         DefaultStrokeThickness = defaults.DefaultStrokeThickness;
         RegionCaptureHotkey = defaults.RegionCaptureHotkey;
         IsRecordingHotkey = false;
+        WholeScreenRecordHotkey = defaults.WholeScreenRecordHotkey;
+        IsCapturingWholeScreenRecordHotkey = false;
         AutoUpdateCheckInterval = defaults.AutoUpdateCheckInterval;
         AppTheme = defaults.Theme;
     }
@@ -288,6 +312,13 @@ public partial class SettingsViewModel : ObservableObject
         {
             0x2C => "Print Screen",
             _ => KeyInterop.KeyFromVirtualKey((int)vk).ToString(),
+        };
+
+    private static string VkToShiftDisplayName(uint vk) =>
+        vk switch
+        {
+            0 => "Not set",
+            _ => $"Shift+{KeyInterop.KeyFromVirtualKey((int)vk)}",
         };
 
     private static double ClampRecordingCursorHighlightSize(double size)

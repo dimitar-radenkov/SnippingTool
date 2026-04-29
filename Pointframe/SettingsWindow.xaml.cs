@@ -99,6 +99,38 @@ public partial class SettingsWindow : Window
         }
     }
 
+    private void RecordHotkeyCapture_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
+    {
+        e.Handled = true;
+        var key = e.Key == Key.System ? e.SystemKey : e.Key;
+        if (key == Key.Escape)
+        {
+            _vm.IsCapturingWholeScreenRecordHotkey = false;
+            return;
+        }
+
+        if (key is Key.Enter or Key.Tab
+                or Key.LeftShift or Key.RightShift
+                or Key.LeftCtrl or Key.RightCtrl
+                or Key.LeftAlt or Key.RightAlt
+                or Key.LWin or Key.RWin)
+        {
+            return;
+        }
+
+        var vk = (uint)KeyInterop.VirtualKeyFromKey(key);
+        _vm.WholeScreenRecordHotkey = vk;
+        _vm.IsCapturingWholeScreenRecordHotkey = false;
+    }
+
+    private void WholeScreenRecordHotkeyRecordingPanel_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+    {
+        if ((bool)e.NewValue)
+        {
+            RecordHotkeyRecordingPanel.Focus();
+        }
+    }
+
     private void SectionNavigation_SelectionChanged(object sender, SelectionChangedEventArgs e)
     {
         ContentScrollViewer?.ScrollToHome();

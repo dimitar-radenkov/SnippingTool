@@ -6,5 +6,7 @@ internal interface IGlobalHotkeyService : IDisposable
 
     event Action WholeScreenSnipRequested;
 
+    event Action WholeScreenRecordRequested;
+
     void Register();
 }

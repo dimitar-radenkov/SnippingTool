@@ -131,6 +131,7 @@ public sealed class UserSettingsService : IUserSettingsService
             DefaultStrokeThickness = settings.DefaultStrokeThickness,
             CaptureDelaySeconds = settings.CaptureDelaySeconds,
             RegionCaptureHotkey = settings.RegionCaptureHotkey,
+            WholeScreenRecordHotkey = settings.WholeScreenRecordHotkey,
             AutoUpdateCheckInterval = settings.AutoUpdateCheckInterval,
             LastAutoUpdateCheckUtc = settings.LastAutoUpdateCheckUtc,
             Theme = settings.Theme,

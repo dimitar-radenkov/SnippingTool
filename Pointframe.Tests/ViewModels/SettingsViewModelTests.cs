@@ -492,4 +492,61 @@ public sealed class SettingsViewModelTests
         vm.DefaultStrokeThickness = 3d;
         Assert.Equal(3d, vm.AnnotationPreviewThickness);
     }
+
+    [Fact]
+    public void UserSettings_Default_WholeScreenRecordHotkey_IsR()
+    {
+        var settings = new UserSettings();
+
+        Assert.Equal(0x52u, settings.WholeScreenRecordHotkey);
+    }
+
+    [Fact]
+    public void LoadsFromSettings_WholeScreenRecordHotkey()
+    {
+        var vm = CreateVm(new UserSettings { WholeScreenRecordHotkey = 0x4Bu }); // 'K'
+
+        Assert.Equal(0x4Bu, vm.WholeScreenRecordHotkey);
+    }
+
+    [Fact]
+    public void Save_PersistsWholeScreenRecordHotkey()
+    {
+        var mock = new Mock<IUserSettingsService>();
+        mock.SetupGet(s => s.Current).Returns(new UserSettings());
+        UserSettings? saved = null;
+        mock.Setup(s => s.Save(It.IsAny<UserSettings>())).Callback<UserSettings>(s => saved = s);
+        var vm = new SettingsViewModel(mock.Object, Mock.Of<IThemeService>(), Mock.Of<IDialogService>(), CreateMicrophoneDeviceService());
+        vm.WholeScreenRecordHotkey = 0x4Cu; // 'L'
+
+        vm.SaveCommand.Execute(null);
+
+        Assert.Equal(0x4Cu, saved?.WholeScreenRecordHotkey);
+    }
+
+    [Fact]
+    public void SetWholeScreenRecordHotkey_UpdatesDisplayName()
+    {
+        var vm = CreateVm();
+        var raised = new List<string?>();
+        vm.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
+
+        vm.WholeScreenRecordHotkey = 0x4Du; // 'M'
+
+        Assert.Contains(nameof(vm.WholeScreenRecordHotkeyDisplayName), raised);
+        Assert.NotEmpty(vm.WholeScreenRecordHotkeyDisplayName);
+    }
+
+    [Fact]
+    public void ResetRecordHotkeyCommand_RestoresDefaultAndCancelsCapture()
+    {
+        var vm = CreateVm(new UserSettings { WholeScreenRecordHotkey = 0x4Bu });
+        vm.StartCapturingWholeScreenRecordHotkeyCommand.Execute(null);
+        Assert.True(vm.IsCapturingWholeScreenRecordHotkey);
+
+        vm.ResetRecordHotkeyCommand.Execute(null);
+
+        Assert.Equal(0x52u, vm.WholeScreenRecordHotkey);
+        Assert.False(vm.IsCapturingWholeScreenRecordHotkey);
+    }
 }
