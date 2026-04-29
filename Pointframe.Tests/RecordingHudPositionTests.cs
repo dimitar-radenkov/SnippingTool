@@ -18,7 +18,7 @@ public sealed class RecordingHudPositionTests
         var region = new Rect(600, 200, 400, 300);
 
         // Act
-        var (left, top) = OverlayWindow.ComputeRecordingHudPosition(region, HudW, HudH, WorkArea);
+        var (left, top) = OverlayWindow.ComputeRecordingHudPosition(region, HudW, HudH, WorkArea, preferTopDock: false);
 
         // Assert
         Assert.Equal(730, left);
@@ -32,7 +32,7 @@ public sealed class RecordingHudPositionTests
         var region = new Rect(1850, 200, 400, 300);
 
         // Act
-        var (left, _) = OverlayWindow.ComputeRecordingHudPosition(region, HudW, HudH, WorkArea);
+        var (left, _) = OverlayWindow.ComputeRecordingHudPosition(region, HudW, HudH, WorkArea, preferTopDock: false);
 
         // Assert
         Assert.Equal(1780, left);
@@ -45,7 +45,7 @@ public sealed class RecordingHudPositionTests
         var region = new Rect(-300, 200, 200, 300);
 
         // Act
-        var (left, _) = OverlayWindow.ComputeRecordingHudPosition(region, HudW, HudH, WorkArea);
+        var (left, _) = OverlayWindow.ComputeRecordingHudPosition(region, HudW, HudH, WorkArea, preferTopDock: false);
 
         // Assert
         Assert.Equal(0, left);
@@ -58,7 +58,7 @@ public sealed class RecordingHudPositionTests
         var region = new Rect(600, 1020, 400, 60);
 
         // Act
-        var (_, top) = OverlayWindow.ComputeRecordingHudPosition(region, HudW, HudH, WorkArea);
+        var (_, top) = OverlayWindow.ComputeRecordingHudPosition(region, HudW, HudH, WorkArea, preferTopDock: false);
 
         // Assert
         Assert.Equal(WorkArea.Bottom - HudH, top);
@@ -72,7 +72,7 @@ public sealed class RecordingHudPositionTests
         var region = new Rect(2300, 200, 400, 300);
 
         // Act
-        var (left, top) = OverlayWindow.ComputeRecordingHudPosition(region, HudW, HudH, secondaryWorkArea);
+        var (left, top) = OverlayWindow.ComputeRecordingHudPosition(region, HudW, HudH, secondaryWorkArea, preferTopDock: false);
 
         // Assert
         Assert.Equal(2430, left);
@@ -87,10 +87,21 @@ public sealed class RecordingHudPositionTests
         var region = new Rect(-100, 100, 160, 200);
 
         // Act
-        var (left, top) = OverlayWindow.ComputeRecordingHudPosition(region, HudW, HudH, insetWorkArea);
+        var (left, top) = OverlayWindow.ComputeRecordingHudPosition(region, HudW, HudH, insetWorkArea, preferTopDock: false);
 
         // Assert
         Assert.Equal(40, left);
         Assert.Equal(308, top);
+    }
+
+    [Fact]
+    public void ComputePosition_FullScreenRegion_AnchorsToTopCenterOfWorkArea()
+    {
+        var region = new Rect(0, 0, 1920, 1040);
+
+        var (left, top) = OverlayWindow.ComputeRecordingHudPosition(region, HudW, HudH, WorkArea, preferTopDock: true);
+
+        Assert.Equal((WorkArea.Width - HudW) / 2d, left);
+        Assert.Equal(8, top);
     }
 }

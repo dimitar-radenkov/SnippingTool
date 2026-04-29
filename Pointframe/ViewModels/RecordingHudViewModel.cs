@@ -53,10 +53,15 @@ public partial class RecordingHudViewModel : ObservableObject
     [NotifyPropertyChangedFor(nameof(CurrentModeLabel))]
     private bool _isAnnotationInputArmed;
 
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(IsExpandedMode))]
+    private bool _isCompactMode;
+
     public string OutputPath { get; }
 
     public bool IsAnnotationPanelVisible => CanManageAnnotations && IsAnnotationInputArmed;
     public string CurrentModeLabel => IsAnnotationInputArmed ? "Drawing" : "Interactive";
+    public bool IsExpandedMode => !IsCompactMode;
     public string MicrophoneActionLabel => CanToggleMicrophone
         ? (IsMicrophoneMuted ? "Unmute" : "Mute")
         : "Mic off";
@@ -100,6 +105,11 @@ public partial class RecordingHudViewModel : ObservableObject
     }
 
     public void CancelElapsedTimer() => _elapsedCts?.Cancel();
+
+    public void InitializeDisplayMode(bool startCompact)
+    {
+        IsCompactMode = startCompact;
+    }
 
     private async Task RunElapsedTimer(CancellationToken ct)
     {
@@ -171,6 +181,18 @@ public partial class RecordingHudViewModel : ObservableObject
 
         IsMicrophoneMuted = nextMutedState;
         _logger.LogInformation("Recording microphone toggled from HUD: {State}", nextMutedState ? "muted" : "unmuted");
+    }
+
+    [RelayCommand]
+    private void ExpandHud()
+    {
+        IsCompactMode = false;
+    }
+
+    [RelayCommand]
+    private void MinimizeHud()
+    {
+        IsCompactMode = true;
     }
 
     [RelayCommand]

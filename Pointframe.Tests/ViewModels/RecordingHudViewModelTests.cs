@@ -63,6 +63,15 @@ public sealed class RecordingHudViewModelTests
     }
 
     [Fact]
+    public void InitialState_IsExpandedByDefault()
+    {
+        var vm = CreateVm();
+
+        Assert.False(vm.IsCompactMode);
+        Assert.True(vm.IsExpandedMode);
+    }
+
+    [Fact]
     public void InitialState_UsesMicrophoneStateFromService()
     {
         var svcMock = new Mock<IScreenRecordingService>();
@@ -252,6 +261,54 @@ public sealed class RecordingHudViewModelTests
         svcMock.Verify(service => service.TrySetMicrophoneMuted(It.IsAny<bool>()), Times.Never);
         Assert.False(vm.IsMicrophoneMuted);
         Assert.Equal("Mic off", vm.MicrophoneActionLabel);
+    }
+
+    [Fact]
+    public void InitializeDisplayMode_WhenCompactRequested_SetsCompactState()
+    {
+        var vm = CreateVm();
+
+        vm.InitializeDisplayMode(startCompact: true);
+
+        Assert.True(vm.IsCompactMode);
+        Assert.False(vm.IsExpandedMode);
+    }
+
+    [Fact]
+    public void MinimizeHudCommand_SetsCompactState()
+    {
+        var vm = CreateVm();
+
+        vm.MinimizeHudCommand.Execute(null);
+
+        Assert.True(vm.IsCompactMode);
+        Assert.False(vm.IsExpandedMode);
+    }
+
+    [Fact]
+    public void ExpandHudCommand_ClearsCompactState()
+    {
+        var vm = CreateVm();
+        vm.InitializeDisplayMode(startCompact: true);
+
+        vm.ExpandHudCommand.Execute(null);
+
+        Assert.False(vm.IsCompactMode);
+        Assert.True(vm.IsExpandedMode);
+    }
+
+    [Fact]
+    public void ExpandAndMinimizeCommands_RaiseDisplayModeProperties()
+    {
+        var vm = CreateVm();
+        var changed = new List<string?>();
+        vm.PropertyChanged += (_, e) => changed.Add(e.PropertyName);
+
+        vm.MinimizeHudCommand.Execute(null);
+        vm.ExpandHudCommand.Execute(null);
+
+        Assert.Contains(nameof(vm.IsCompactMode), changed);
+        Assert.Contains(nameof(vm.IsExpandedMode), changed);
     }
 
     [Fact]

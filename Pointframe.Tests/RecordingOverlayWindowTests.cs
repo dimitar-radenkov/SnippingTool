@@ -5,6 +5,7 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
+using System.Windows.Threading;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Pointframe.Models;
@@ -121,7 +122,7 @@ public sealed class RecordingOverlayWindowTests
     }
 
     [Fact]
-    public void ShowRecordingHudAndHideRecordingHud_UpdatesPanelBindingAndVisibility()
+    public void ShowRecordingHudAndHideRecordingHud_UpdatesActiveHudSurface()
     {
         StaTestHelper.Run(() =>
         {
@@ -129,15 +130,82 @@ public sealed class RecordingOverlayWindowTests
             try
             {
                 var panel = Assert.IsType<Border>(context.Window.FindName("RecordingHudPanel"));
+                var compactPanel = Assert.IsType<Border>(context.Window.FindName("RecordingHudCompactPanel"));
                 var hudViewModel = CreateHudViewModel(context.RecorderMock.Object, context.EventAggregator);
 
                 InvokePrivate(context.Window, "ShowRecordingHud", hudViewModel);
+                FlushUi();
+
                 Assert.Same(hudViewModel, panel.DataContext);
+                Assert.Same(hudViewModel, compactPanel.DataContext);
                 Assert.Equal(Visibility.Visible, panel.Visibility);
+                Assert.Equal(Visibility.Collapsed, compactPanel.Visibility);
 
                 InvokePrivate(context.Window, "HideRecordingHud");
+                FlushUi();
+
                 Assert.Null(panel.DataContext);
+                Assert.Null(compactPanel.DataContext);
                 Assert.Equal(Visibility.Collapsed, panel.Visibility);
+                Assert.Equal(Visibility.Collapsed, compactPanel.Visibility);
+            }
+            finally
+            {
+                context.Window.Close();
+                context.EventAggregator.Dispose();
+            }
+        });
+    }
+
+    [Fact]
+    public void ShowRecordingHud_WhenCompactModeRequested_ShowsCompactHudSurface()
+    {
+        StaTestHelper.Run(() =>
+        {
+            var context = CreateContext();
+            try
+            {
+                var panel = Assert.IsType<Border>(context.Window.FindName("RecordingHudPanel"));
+                var compactPanel = Assert.IsType<Border>(context.Window.FindName("RecordingHudCompactPanel"));
+                var hudViewModel = CreateHudViewModel(context.RecorderMock.Object, context.EventAggregator);
+                hudViewModel.InitializeDisplayMode(startCompact: true);
+
+                InvokePrivate(context.Window, "ShowRecordingHud", hudViewModel);
+                FlushUi();
+
+                Assert.Equal(Visibility.Collapsed, panel.Visibility);
+                Assert.Equal(Visibility.Visible, compactPanel.Visibility);
+            }
+            finally
+            {
+                context.Window.Close();
+                context.EventAggregator.Dispose();
+            }
+        });
+    }
+
+    [Fact]
+    public void FullScreenHudViewModel_StartsInCompactMode()
+    {
+        StaTestHelper.Run(() =>
+        {
+            var context = CreateContext(isFullScreenCapture: true);
+            try
+            {
+                Assert.True(context.Geometry.IsFullScreenCapture);
+
+                var panel = Assert.IsType<Border>(context.Window.FindName("RecordingHudPanel"));
+                var compactPanel = Assert.IsType<Border>(context.Window.FindName("RecordingHudCompactPanel"));
+                var hudViewModel = CreateHudViewModel(context.RecorderMock.Object, context.EventAggregator);
+
+                // Mirror what OnSourceInitialized does: pass IsFullScreenCapture to InitializeDisplayMode.
+                hudViewModel.InitializeDisplayMode(context.Geometry.IsFullScreenCapture);
+                InvokePrivate(context.Window, "ShowRecordingHud", hudViewModel);
+                FlushUi();
+
+                Assert.Equal(Visibility.Collapsed, panel.Visibility);
+                Assert.Equal(Visibility.Visible, compactPanel.Visibility);
+                Assert.Equal(Visibility.Visible, compactPanel.Visibility);
             }
             finally
             {
@@ -252,7 +320,8 @@ public sealed class RecordingOverlayWindowTests
 
     private static TestContext CreateContext(
         bool isRecorderRecording = false,
-        Point? cursorScreenPoint = null)
+        Point? cursorScreenPoint = null,
+        bool isFullScreenCapture = false)
     {
         var recorderMock = new Mock<IScreenRecordingService>();
         recorderMock.SetupGet(service => service.IsRecording).Returns(isRecorderRecording);
@@ -277,7 +346,7 @@ public sealed class RecordingOverlayWindowTests
             userSettingsMock.Object,
             eventAggregator);
 
-        var geometry = CreateGeometry();
+        var geometry = CreateGeometry(isFullScreenCapture);
         var window = new RecordingOverlayWindow(
             geometry,
             @"C:\\recordings\\sample.mp4",
@@ -298,8 +367,22 @@ public sealed class RecordingOverlayWindowTests
         return new TestContext(window, geometry, annotationViewModel, recorderMock, mouseHookMock, eventAggregator);
     }
 
-    private static RecordingSessionGeometry CreateGeometry()
+    private static RecordingSessionGeometry CreateGeometry(bool isFullScreenCapture = false)
     {
+        if (isFullScreenCapture)
+        {
+            return new RecordingSessionGeometry(
+                new Int32Rect(0, 0, 1920, 1040),
+                new Int32Rect(0, 0, 1920, 1040),
+                new Int32Rect(0, 0, 1920, 1040),
+                new Rect(0, 0, 1920, 1040),
+                new Rect(0, 0, 1920, 1040),
+                new Rect(0, 0, 1920, 1040),
+                "DISPLAY1",
+                1d,
+                1d);
+        }
+
         return new RecordingSessionGeometry(
             new Int32Rect(0, 0, 1000, 700),
             new Int32Rect(100, 100, 600, 400),
@@ -310,6 +393,12 @@ public sealed class RecordingOverlayWindowTests
             "DISPLAY1",
             1d,
             1d);
+    }
+
+    private static void FlushUi()
+    {
+        Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.Render);
+        Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.Background);
     }
 
     private static BitmapSource CreateBitmap()

@@ -9,10 +9,16 @@ public partial class OverlayWindow
         double hudWidth,
         double hudHeight,
         Rect workArea,
+        bool preferTopDock,
         int gapPixels = 8)
     {
-        var left = Math.Max(workArea.Left, Math.Min(region.Left + ((region.Width - hudWidth) / 2d), workArea.Right - hudWidth));
-        var top = Math.Min(region.Bottom + gapPixels, workArea.Bottom - hudHeight);
+        var horizontalAnchor = preferTopDock
+            ? workArea.Left + ((workArea.Width - hudWidth) / 2d)
+            : region.Left + ((region.Width - hudWidth) / 2d);
+        var left = Math.Max(workArea.Left, Math.Min(horizontalAnchor, workArea.Right - hudWidth));
+        var top = preferTopDock
+            ? Math.Max(workArea.Top, Math.Min(workArea.Top + gapPixels, workArea.Bottom - hudHeight))
+            : Math.Min(region.Bottom + gapPixels, workArea.Bottom - hudHeight);
         return (left, top);
     }
 

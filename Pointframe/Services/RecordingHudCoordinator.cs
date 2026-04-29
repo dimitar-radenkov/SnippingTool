@@ -1,3 +1,4 @@
+using System.ComponentModel;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Threading;
@@ -9,24 +10,30 @@ namespace Pointframe.Services;
 
 internal sealed class RecordingHudCoordinator
 {
-    private readonly Border _recordingHudPanel;
+    private readonly Border _expandedRecordingHudPanel;
+    private readonly Border _compactRecordingHudPanel;
     private readonly RecordingSessionGeometry _geometry;
     private readonly IUserSettingsService _userSettings;
     private readonly ILogger _logger;
+    private readonly Action _layoutChanged;
 
     private RecordingHudViewModel? _recordingHudViewModel;
     private bool _initialHudDiagnosticsLogged;
 
     public RecordingHudCoordinator(
-        Border recordingHudPanel,
+        Border expandedRecordingHudPanel,
+        Border compactRecordingHudPanel,
         RecordingSessionGeometry geometry,
         IUserSettingsService userSettings,
-        ILogger logger)
+        ILogger logger,
+        Action layoutChanged)
     {
-        _recordingHudPanel = recordingHudPanel;
+        _expandedRecordingHudPanel = expandedRecordingHudPanel;
+        _compactRecordingHudPanel = compactRecordingHudPanel;
         _geometry = geometry;
         _userSettings = userSettings;
         _logger = logger;
+        _layoutChanged = layoutChanged;
     }
 
     public void Show(RecordingHudViewModel hudViewModel, Action closeRequestedHandler)
@@ -34,10 +41,11 @@ internal sealed class RecordingHudCoordinator
         Hide(closeRequestedHandler);
         _recordingHudViewModel = hudViewModel;
         _recordingHudViewModel.CloseRequested += closeRequestedHandler;
+        _recordingHudViewModel.PropertyChanged += HandleHudViewModelPropertyChanged;
         _recordingHudViewModel.StartElapsedTimer();
-        _recordingHudPanel.DataContext = hudViewModel;
-        _recordingHudPanel.Visibility = Visibility.Visible;
-        _recordingHudPanel.Dispatcher.BeginInvoke(DispatcherPriority.Render, new Action(Position));
+        _expandedRecordingHudPanel.DataContext = hudViewModel;
+        _compactRecordingHudPanel.DataContext = hudViewModel;
+        SchedulePosition();
     }
 
     public void Hide(Action closeRequestedHandler)
@@ -45,35 +53,39 @@ internal sealed class RecordingHudCoordinator
         if (_recordingHudViewModel is not null)
         {
             _recordingHudViewModel.CloseRequested -= closeRequestedHandler;
+            _recordingHudViewModel.PropertyChanged -= HandleHudViewModelPropertyChanged;
             _recordingHudViewModel.CancelElapsedTimer();
             _recordingHudViewModel = null;
         }
 
-        _recordingHudPanel.DataContext = null;
-        _recordingHudPanel.Visibility = Visibility.Collapsed;
+        _expandedRecordingHudPanel.DataContext = null;
+        _compactRecordingHudPanel.DataContext = null;
+        _layoutChanged();
     }
 
     public void Position()
     {
-        if (_recordingHudPanel.Visibility != Visibility.Visible
-            || _recordingHudPanel.ActualWidth <= 0
-            || _recordingHudPanel.ActualHeight <= 0)
+        var activeHudPanel = GetActiveHudPanel();
+        if (activeHudPanel is null
+            || activeHudPanel.ActualWidth <= 0
+            || activeHudPanel.ActualHeight <= 0)
         {
             return;
         }
 
         var (left, top) = OverlayWindow.ComputeRecordingHudPosition(
             _geometry.CaptureRectDips,
-            _recordingHudPanel.ActualWidth,
-            _recordingHudPanel.ActualHeight,
+            activeHudPanel.ActualWidth,
+            activeHudPanel.ActualHeight,
             _geometry.WorkAreaBoundsDips,
+            _geometry.IsFullScreenCapture,
             _userSettings.Current.HudGapPixels);
-        Canvas.SetLeft(_recordingHudPanel, left);
-        Canvas.SetTop(_recordingHudPanel, top);
+        Canvas.SetLeft(activeHudPanel, left);
+        Canvas.SetTop(activeHudPanel, top);
 
         if (!_initialHudDiagnosticsLogged)
         {
-            var hudBounds = new Rect(left, top, _recordingHudPanel.ActualWidth, _recordingHudPanel.ActualHeight);
+            var hudBounds = new Rect(left, top, activeHudPanel.ActualWidth, activeHudPanel.ActualHeight);
             var hudBoundsPixels = _geometry.MapHostDipRectToScreenPixels(hudBounds);
             _logger.LogDebug(
                 "Recording overlay HUD positioned: hudDips={HudX},{HudY},{HudW},{HudH} hudPx={HudPxX},{HudPxY},{HudPxW},{HudPxH} workAreaDips={WorkX},{WorkY},{WorkW},{WorkH}",
@@ -91,6 +103,8 @@ internal sealed class RecordingHudCoordinator
                 _geometry.WorkAreaBoundsDips.Height);
             _initialHudDiagnosticsLogged = true;
         }
+
+        _layoutChanged();
     }
 
     public bool TrySelectTool(string tag)
@@ -102,5 +116,36 @@ internal sealed class RecordingHudCoordinator
 
         _recordingHudViewModel.SelectToolCommand.Execute(tag);
         return true;
+    }
+
+    private void HandleHudViewModelPropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(RecordingHudViewModel.IsCompactMode)
+            && e.PropertyName != nameof(RecordingHudViewModel.IsExpandedMode))
+        {
+            return;
+        }
+
+        SchedulePosition();
+    }
+
+    private void SchedulePosition()
+    {
+        _expandedRecordingHudPanel.Dispatcher.BeginInvoke(DispatcherPriority.Render, new Action(Position));
+    }
+
+    private Border? GetActiveHudPanel()
+    {
+        if (_compactRecordingHudPanel.Visibility == Visibility.Visible)
+        {
+            return _compactRecordingHudPanel;
+        }
+
+        if (_expandedRecordingHudPanel.Visibility == Visibility.Visible)
+        {
+            return _expandedRecordingHudPanel;
+        }
+
+        return null;
     }
 }
