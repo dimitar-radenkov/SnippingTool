@@ -192,15 +192,19 @@ public sealed class RecordingOverlayWindowTests
             var context = CreateContext(isFullScreenCapture: true);
             try
             {
-                context.Window.Show();
-                FlushUi();
+                Assert.True(context.Geometry.IsFullScreenCapture);
 
                 var panel = Assert.IsType<Border>(context.Window.FindName("RecordingHudPanel"));
                 var compactPanel = Assert.IsType<Border>(context.Window.FindName("RecordingHudCompactPanel"));
+                var hudViewModel = CreateHudViewModel(context.RecorderMock.Object, context.EventAggregator);
 
-                Assert.IsType<RecordingHudViewModel>(panel.DataContext);
-                Assert.Same(panel.DataContext, compactPanel.DataContext);
+                // Mirror what OnSourceInitialized does: pass IsFullScreenCapture to InitializeDisplayMode.
+                hudViewModel.InitializeDisplayMode(context.Geometry.IsFullScreenCapture);
+                InvokePrivate(context.Window, "ShowRecordingHud", hudViewModel);
+                FlushUi();
+
                 Assert.Equal(Visibility.Collapsed, panel.Visibility);
+                Assert.Equal(Visibility.Visible, compactPanel.Visibility);
                 Assert.Equal(Visibility.Visible, compactPanel.Visibility);
             }
             finally
