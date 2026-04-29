@@ -462,7 +462,7 @@
                                             <Style TargetType="StackPanel">
                                                 <Setter Property="Visibility" Value="Visible"/>
                                                 <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsRecordingRecordHotkey}" Value="True">
+                                                    <DataTrigger Binding="{Binding IsCapturingWholeScreenRecordHotkey}" Value="True">
                                                         <Setter Property="Visibility" Value="Collapsed"/>
                                                     </DataTrigger>
                                                 </Style.Triggers>
@@ -494,12 +494,12 @@
                                                 Focusable="True"
                                                 Margin="0,10,0,0"
                                                 PreviewKeyDown="RecordHotkeyCapture_PreviewKeyDown"
-                                                IsVisibleChanged="RecordHotkeyRecordingPanel_IsVisibleChanged">
+                                                IsVisibleChanged="WholeScreenRecordHotkeyRecordingPanel_IsVisibleChanged">
                                         <StackPanel.Style>
                                             <Style TargetType="StackPanel">
                                                 <Setter Property="Visibility" Value="Collapsed"/>
                                                 <Style.Triggers>
-                                                    <DataTrigger Binding="{Binding IsRecordingRecordHotkey}" Value="True">
+                                                    <DataTrigger Binding="{Binding IsCapturingWholeScreenRecordHotkey}" Value="True">
                                                         <Setter Property="Visibility" Value="Visible"/>
                                                     </DataTrigger>
                                                 </Style.Triggers>

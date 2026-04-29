@@ -105,7 +105,7 @@ public partial class SettingsWindow : Window
         var key = e.Key == Key.System ? e.SystemKey : e.Key;
         if (key == Key.Escape)
         {
-            _vm.IsRecordingRecordHotkey = false;
+            _vm.IsCapturingWholeScreenRecordHotkey = false;
             return;
         }
 
@@ -120,10 +120,10 @@ public partial class SettingsWindow : Window
 
         var vk = (uint)KeyInterop.VirtualKeyFromKey(key);
         _vm.WholeScreenRecordHotkey = vk;
-        _vm.IsRecordingRecordHotkey = false;
+        _vm.IsCapturingWholeScreenRecordHotkey = false;
     }
 
-    private void RecordHotkeyRecordingPanel_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
+    private void WholeScreenRecordHotkeyRecordingPanel_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
     {
         if ((bool)e.NewValue)
         {

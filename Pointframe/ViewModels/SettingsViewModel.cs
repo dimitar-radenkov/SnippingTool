@@ -112,7 +112,7 @@ public partial class SettingsViewModel : ObservableObject
     private uint _wholeScreenRecordHotkey;
 
     [ObservableProperty]
-    private bool _isRecordingRecordHotkey;
+    private bool _isCapturingWholeScreenRecordHotkey;
 
     [ObservableProperty]
     private UpdateCheckInterval _autoUpdateCheckInterval;
@@ -227,13 +227,13 @@ public partial class SettingsViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void StartRecordingRecordHotkey() => IsRecordingRecordHotkey = true;
+    private void StartCapturingWholeScreenRecordHotkey() => IsCapturingWholeScreenRecordHotkey = true;
 
     [RelayCommand]
     private void ResetRecordHotkey()
     {
         WholeScreenRecordHotkey = 0x52; // VK_R (Shift+R)
-        IsRecordingRecordHotkey = false;
+        IsCapturingWholeScreenRecordHotkey = false;
     }
 
     [RelayCommand]
@@ -258,7 +258,7 @@ public partial class SettingsViewModel : ObservableObject
                 RecordingClickRippleEnabled = defaults.RecordingClickRippleEnabled;
                 RecordingCursorHighlightSize = ClampRecordingCursorHighlightSize(defaults.RecordingCursorHighlightSize);
                 WholeScreenRecordHotkey = defaults.WholeScreenRecordHotkey;
-                IsRecordingRecordHotkey = false;
+                IsCapturingWholeScreenRecordHotkey = false;
                 break;
             case SettingsSection.Annotation:
                 DefaultAnnotationColor = ParseAnnotationColorOrFallback(defaults.DefaultAnnotationColor);
@@ -293,7 +293,7 @@ public partial class SettingsViewModel : ObservableObject
         RegionCaptureHotkey = defaults.RegionCaptureHotkey;
         IsRecordingHotkey = false;
         WholeScreenRecordHotkey = defaults.WholeScreenRecordHotkey;
-        IsRecordingRecordHotkey = false;
+        IsCapturingWholeScreenRecordHotkey = false;
         AutoUpdateCheckInterval = defaults.AutoUpdateCheckInterval;
         AppTheme = defaults.Theme;
     }
