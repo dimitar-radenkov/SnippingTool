@@ -8,6 +8,7 @@ internal static class NativeMethods
     internal const int WM_KEYDOWN = 0x0100;
     internal const uint VK_PRINTSCREEN = 0x2C;
     internal const int VK_SHIFT = 0x10;
+    internal const int VK_CONTROL = 0x11;
 
     internal delegate IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam);
 

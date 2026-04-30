@@ -453,7 +453,7 @@
 
                                 <StackPanel Grid.Row="2" Grid.Column="0" Margin="0,0,16,0">
                                     <TextBlock Text="Record hotkey" Style="{StaticResource RowTitle}"/>
-                                    <TextBlock Text="Hold Shift and press this key to instantly start a whole-screen recording."
+                                    <TextBlock Text="Hold Ctrl and press this key to instantly start a whole-screen recording."
                                                Style="{StaticResource RowDescription}"/>
                                 </StackPanel>
                                 <StackPanel Grid.Row="2" Grid.Column="1">
