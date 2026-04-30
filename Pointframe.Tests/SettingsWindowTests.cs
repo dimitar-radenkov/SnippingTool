@@ -6,6 +6,7 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using Moq;
+using Pointframe;
 using Pointframe.Models;
 using Pointframe.Services;
 using Pointframe.Tests.Services.Handlers;
@@ -75,33 +76,29 @@ public sealed class SettingsWindowTests
     }
 
     [Fact]
-    public void HotkeyCapture_PreviewKeyDown_Escape_CancelsRecording()
+    public void OnCaptureHotkeyKeyPressed_Escape_CancelsRecording()
     {
         StaTestHelper.Run(() =>
         {
             var window = CreateWindow(out var viewModel);
             viewModel.IsRecordingHotkey = true;
-            var args = CreateKeyArgs(Key.Escape);
 
-            InvokePrivateHandler(window, "HotkeyCapture_PreviewKeyDown", window, args);
+            InvokeCallback(window, "OnCaptureHotkeyKeyPressed", NativeMethods.VK_ESCAPE, HotkeyModifiers.None);
 
-            Assert.True(args.Handled);
             Assert.False(viewModel.IsRecordingHotkey);
         });
     }
 
     [Fact]
-    public void HotkeyCapture_PreviewKeyDown_StoresNewHotkey()
+    public void OnCaptureHotkeyKeyPressed_StoresNewHotkey()
     {
         StaTestHelper.Run(() =>
         {
             var window = CreateWindow(out var viewModel);
             viewModel.IsRecordingHotkey = true;
-            var args = CreateKeyArgs(Key.A);
 
-            InvokePrivateHandler(window, "HotkeyCapture_PreviewKeyDown", window, args);
+            InvokeCallback(window, "OnCaptureHotkeyKeyPressed", (uint)KeyInterop.VirtualKeyFromKey(Key.A), HotkeyModifiers.None);
 
-            Assert.True(args.Handled);
             Assert.Equal((uint)KeyInterop.VirtualKeyFromKey(Key.A), viewModel.RegionCaptureHotkey);
             Assert.False(viewModel.IsRecordingHotkey);
         });
@@ -190,7 +187,7 @@ public sealed class SettingsWindowTests
             Mock.Of<IMicrophoneDeviceService>(service =>
                 service.GetAvailableCaptureDeviceNames() == new[] { "Studio Mic", "USB Mic" } &&
                 service.GetDefaultCaptureDeviceName() == "Studio Mic"));
-        return new SettingsWindow(viewModel);
+        return new SettingsWindow(viewModel, Mock.Of<IGlobalHotkeyService>());
     }
 
     private static SettingsWindow CreateWindow() => CreateWindow(out _);
@@ -200,6 +197,13 @@ public sealed class SettingsWindowTests
         var method = target.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic);
         Assert.NotNull(method);
         method.Invoke(target, [sender, args]);
+    }
+
+    private static void InvokeCallback(object target, string methodName, uint vk, HotkeyModifiers modifiers)
+    {
+        var method = target.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.NotNull(method);
+        method.Invoke(target, [vk, modifiers]);
     }
 
     private static TextCompositionEventArgs CreateTextInputArgs(TextBox textBox, string text)
