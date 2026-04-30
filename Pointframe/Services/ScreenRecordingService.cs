@@ -1,6 +1,7 @@
 using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Drawing.Imaging;
+using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading.Channels;
 using Microsoft.Extensions.Logging;
@@ -463,7 +464,16 @@ public sealed class ScreenRecordingService : IScreenRecordingService
             var frameCopy = new byte[paddingSource.Length];
             Buffer.BlockCopy(paddingSource, 0, frameCopy, 0, frameCopy.Length);
             Interlocked.Increment(ref _attemptedFrameCount);
-            _writer?.WriteFrame(frameCopy);
+            try
+            {
+                _writer?.WriteFrame(frameCopy);
+            }
+            catch (IOException ex)
+            {
+                _logger.LogWarning(ex, "Padding aborted at frame {Index}/{Total} — writer pipe broken (ffmpeg exited early)", index + 1, framesToPad);
+                return;
+            }
+
             Interlocked.Increment(ref _writtenFrameCount);
         }
     }
