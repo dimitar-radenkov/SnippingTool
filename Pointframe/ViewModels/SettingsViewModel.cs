@@ -134,7 +134,7 @@ public partial class SettingsViewModel : ObservableObject
         Array.Find(SectionItems, item => item.Section == SelectedSection) ?? SectionItems[0];
 
     public string RegionCaptureHotkeyDisplayName => VkToDisplayName(RegionCaptureHotkey);
-    public string WholeScreenRecordHotkeyDisplayName => VkToShiftDisplayName(WholeScreenRecordHotkey);
+    public string WholeScreenRecordHotkeyDisplayName => VkToCtrlDisplayName(WholeScreenRecordHotkey);
     public string SelectedSectionDisplayName => SelectedSectionItem.DisplayName;
     public string SelectedSectionDescription => SelectedSectionItem.Description;
     public IReadOnlyList<string> AvailableMicrophoneDevices => _availableMicrophoneDevices;
@@ -232,7 +232,7 @@ public partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     private void ResetRecordHotkey()
     {
-        WholeScreenRecordHotkey = 0x52; // VK_R (Shift+R)
+        WholeScreenRecordHotkey = 0x52; // VK_R (Ctrl+R)
         IsCapturingWholeScreenRecordHotkey = false;
     }
 
@@ -314,11 +314,11 @@ public partial class SettingsViewModel : ObservableObject
             _ => KeyInterop.KeyFromVirtualKey((int)vk).ToString(),
         };
 
-    private static string VkToShiftDisplayName(uint vk) =>
+    private static string VkToCtrlDisplayName(uint vk) =>
         vk switch
         {
             0 => "Not set",
-            _ => $"Shift+{KeyInterop.KeyFromVirtualKey((int)vk)}",
+            _ => $"Ctrl+{KeyInterop.KeyFromVirtualKey((int)vk)}",
         };
 
     private static double ClampRecordingCursorHighlightSize(double size)

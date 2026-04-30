@@ -44,9 +44,10 @@ internal sealed class GlobalHotkeyService : IGlobalHotkeyService
         {
             var kb = Marshal.PtrToStructure<NativeMethods.KBDLLHOOKSTRUCT>(lParam);
             var shiftHeld = NativeMethods.GetAsyncKeyState(NativeMethods.VK_SHIFT) < 0;
+            var ctrlHeld = NativeMethods.GetAsyncKeyState(NativeMethods.VK_CONTROL) < 0;
 
             var recordHotkey = _userSettings.Current.WholeScreenRecordHotkey;
-            if (recordHotkey != 0 && kb.vkCode == recordHotkey && shiftHeld)
+            if (recordHotkey != 0 && kb.vkCode == recordHotkey && ctrlHeld)
             {
                 WpfApplication.Current.Dispatcher.InvokeAsync(() => WholeScreenRecordRequested?.Invoke());
                 return (IntPtr)1;
