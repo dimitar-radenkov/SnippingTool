@@ -141,8 +141,8 @@ public partial class RecordingHudViewModel : ObservableObject
         await Task.Run(() => _svc.Stop()).ConfigureAwait(true);
         _logger.LogInformation("Recording saved to {Path}", OutputPath);
 
-        await _eventAggregator.Publish(new RecordingCompletedMessage(OutputPath, ElapsedText)).ConfigureAwait(true);
         CloseRequested?.Invoke();
+        await _eventAggregator.Publish(new RecordingCompletedMessage(OutputPath, ElapsedText)).ConfigureAwait(true);
     }
 
     [RelayCommand]

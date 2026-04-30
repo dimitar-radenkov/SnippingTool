@@ -161,6 +161,27 @@ public sealed class RecordingHudViewModelTests
     }
 
     [Fact]
+    public async Task StopCommand_FiresCloseRequestedBeforePublishingRecordingCompletedMessage()
+    {
+        // Arrange: track the order in which CloseRequested and Publish are called.
+        var order = new List<string>();
+        var eventAggregatorMock = new Mock<IEventAggregator>();
+        eventAggregatorMock
+            .Setup(aggregator => aggregator.Publish(It.IsAny<RecordingCompletedMessage>()))
+            .Callback(() => order.Add("Publish"))
+            .Returns(ValueTask.CompletedTask);
+
+        var vm = CreateVm(eventAggregator: eventAggregatorMock.Object);
+        vm.CloseRequested += () => order.Add("CloseRequested");
+
+        // Act
+        await vm.StopCommand.ExecuteAsync(null);
+
+        // Assert: overlay must be closed before the balloon notification fires.
+        Assert.Equal(["CloseRequested", "Publish"], order);
+    }
+
+    [Fact]
     public void PauseResumeCommand_WhenNotPaused_CallsPause()
     {
         var svcMock = new Mock<IScreenRecordingService>();
