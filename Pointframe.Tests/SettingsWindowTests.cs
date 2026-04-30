@@ -105,6 +105,51 @@ public sealed class SettingsWindowTests
     }
 
     [Fact]
+    public void OnCaptureHotkeyKeyPressed_StoresModifiers()
+    {
+        StaTestHelper.Run(() =>
+        {
+            var window = CreateWindow(out var viewModel);
+            viewModel.IsRecordingHotkey = true;
+
+            InvokeCallback(window, "OnCaptureHotkeyKeyPressed", (uint)KeyInterop.VirtualKeyFromKey(Key.A), HotkeyModifiers.Ctrl | HotkeyModifiers.Shift);
+
+            Assert.Equal(HotkeyModifiers.Ctrl | HotkeyModifiers.Shift, viewModel.RegionCaptureHotkeyModifiers);
+            Assert.False(viewModel.IsRecordingHotkey);
+        });
+    }
+
+    [Fact]
+    public void OnRecordHotkeyKeyPressed_StoresNewHotkey()
+    {
+        StaTestHelper.Run(() =>
+        {
+            var window = CreateWindow(out var viewModel);
+            viewModel.IsCapturingWholeScreenRecordHotkey = true;
+
+            InvokeCallback(window, "OnRecordHotkeyKeyPressed", (uint)KeyInterop.VirtualKeyFromKey(Key.R), HotkeyModifiers.None);
+
+            Assert.Equal((uint)KeyInterop.VirtualKeyFromKey(Key.R), viewModel.WholeScreenRecordHotkey);
+            Assert.False(viewModel.IsCapturingWholeScreenRecordHotkey);
+        });
+    }
+
+    [Fact]
+    public void OnRecordHotkeyKeyPressed_StoresModifiers()
+    {
+        StaTestHelper.Run(() =>
+        {
+            var window = CreateWindow(out var viewModel);
+            viewModel.IsCapturingWholeScreenRecordHotkey = true;
+
+            InvokeCallback(window, "OnRecordHotkeyKeyPressed", (uint)KeyInterop.VirtualKeyFromKey(Key.R), HotkeyModifiers.Ctrl | HotkeyModifiers.Alt);
+
+            Assert.Equal(HotkeyModifiers.Ctrl | HotkeyModifiers.Alt, viewModel.WholeScreenRecordHotkeyModifiers);
+            Assert.False(viewModel.IsCapturingWholeScreenRecordHotkey);
+        });
+    }
+
+    [Fact]
     public void HotkeyCapture_PreviewKeyDown_IgnoresModifierKeys()
     {
         StaTestHelper.Run(() =>

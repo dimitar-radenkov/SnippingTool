@@ -6,6 +6,7 @@ internal static class NativeMethods
 {
     internal const int WH_KEYBOARD_LL = 13;
     internal const int WM_KEYDOWN = 0x0100;
+    internal const int WM_SYSKEYDOWN = 0x0104;
     internal const uint VK_ESCAPE = 0x1B;
     internal const uint VK_PRINTSCREEN = 0x2C;
     internal const int VK_SHIFT = 0x10;

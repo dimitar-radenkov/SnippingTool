@@ -51,7 +51,7 @@ internal sealed class GlobalHotkeyService : IGlobalHotkeyService
         var captureCallback = _keyCaptureCallback;
         if (captureCallback != null)
         {
-            if (wParam == (IntPtr)NativeMethods.WM_KEYDOWN)
+            if (wParam == (IntPtr)NativeMethods.WM_KEYDOWN || wParam == (IntPtr)NativeMethods.WM_SYSKEYDOWN)
             {
                 var kb = Marshal.PtrToStructure<NativeMethods.KBDLLHOOKSTRUCT>(lParam);
                 if (!IsModifierVk(kb.vkCode))
@@ -83,7 +83,7 @@ internal sealed class GlobalHotkeyService : IGlobalHotkeyService
             return NativeMethods.CallNextHookEx(_keyboardHook, nCode, wParam, lParam);
         }
 
-        if (wParam == (IntPtr)NativeMethods.WM_KEYDOWN)
+        if (wParam == (IntPtr)NativeMethods.WM_KEYDOWN || wParam == (IntPtr)NativeMethods.WM_SYSKEYDOWN)
         {
             var kb = Marshal.PtrToStructure<NativeMethods.KBDLLHOOKSTRUCT>(lParam);
             var shiftHeld = NativeMethods.GetAsyncKeyState(NativeMethods.VK_SHIFT) < 0;
