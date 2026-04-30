@@ -134,10 +134,19 @@ public sealed class FFMpegVideoWriter : IVideoWriter
     {
         try
         {
-            var stderr = await process.StandardError.ReadToEndAsync().ConfigureAwait(false);
-            if (!string.IsNullOrWhiteSpace(stderr))
+            string? line;
+            while ((line = await process.StandardError.ReadLineAsync().ConfigureAwait(false)) is not null)
             {
-                _logger.LogDebug("ffmpeg stderr: {Stderr}", stderr);
+                if (line.Contains("error", StringComparison.OrdinalIgnoreCase) ||
+                    line.Contains("warning", StringComparison.OrdinalIgnoreCase) ||
+                    line.Contains("failed", StringComparison.OrdinalIgnoreCase))
+                {
+                    _logger.LogWarning("ffmpeg: {Line}", line);
+                }
+                else
+                {
+                    _logger.LogDebug("ffmpeg: {Line}", line);
+                }
             }
         }
         catch (Exception ex)
