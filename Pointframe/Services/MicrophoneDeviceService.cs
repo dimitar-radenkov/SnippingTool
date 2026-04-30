@@ -1,6 +1,5 @@
 using Microsoft.Extensions.Logging;
 using NAudio.CoreAudioApi;
-using NAudio.Wave;
 
 namespace Pointframe.Services;
 
@@ -17,17 +16,13 @@ public sealed class MicrophoneDeviceService : IMicrophoneDeviceService
     {
         try
         {
-            var names = new List<string>();
-            for (var index = 0; index < WaveIn.DeviceCount; index++)
-            {
-                var name = WaveIn.GetCapabilities(index).ProductName?.Trim();
-                if (!string.IsNullOrWhiteSpace(name) && !names.Contains(name, StringComparer.OrdinalIgnoreCase))
-                {
-                    names.Add(name);
-                }
-            }
-
-            return names;
+            using var enumerator = new MMDeviceEnumerator();
+            return enumerator
+                .EnumerateAudioEndPoints(DataFlow.Capture, DeviceState.Active)
+                .Select(device => device.FriendlyName?.Trim())
+                .Where(name => !string.IsNullOrWhiteSpace(name))
+                .Distinct(StringComparer.OrdinalIgnoreCase)
+                .ToList()!;
         }
         catch (Exception ex)
         {
@@ -40,12 +35,9 @@ public sealed class MicrophoneDeviceService : IMicrophoneDeviceService
     {
         try
         {
-            if (WaveIn.DeviceCount <= 0)
-            {
-                return null;
-            }
-
-            return WaveIn.GetCapabilities(-1).ProductName?.Trim();
+            using var enumerator = new MMDeviceEnumerator();
+            using var device = enumerator.GetDefaultAudioEndpoint(DataFlow.Capture, Role.Communications);
+            return device?.FriendlyName?.Trim();
         }
         catch (Exception ex)
         {
