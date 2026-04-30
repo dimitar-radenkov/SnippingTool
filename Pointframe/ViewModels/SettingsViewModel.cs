@@ -50,7 +50,9 @@ public partial class SettingsViewModel : ObservableObject
         _captureDelaySeconds = s.CaptureDelaySeconds;
         _defaultStrokeThickness = s.DefaultStrokeThickness;
         _regionCaptureHotkey = s.RegionCaptureHotkey;
+        _regionCaptureHotkeyModifiers = s.RegionCaptureHotkeyModifiers;
         _wholeScreenRecordHotkey = s.WholeScreenRecordHotkey;
+        _wholeScreenRecordHotkeyModifiers = s.WholeScreenRecordHotkeyModifiers;
         _autoUpdateCheckInterval = s.AutoUpdateCheckInterval;
         _appTheme = s.Theme;
         _originalTheme = s.Theme;
@@ -105,11 +107,19 @@ public partial class SettingsViewModel : ObservableObject
     private uint _regionCaptureHotkey;
 
     [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(RegionCaptureHotkeyDisplayName))]
+    private HotkeyModifiers _regionCaptureHotkeyModifiers;
+
+    [ObservableProperty]
     private bool _isRecordingHotkey;
 
     [ObservableProperty]
     [NotifyPropertyChangedFor(nameof(WholeScreenRecordHotkeyDisplayName))]
     private uint _wholeScreenRecordHotkey;
+
+    [ObservableProperty]
+    [NotifyPropertyChangedFor(nameof(WholeScreenRecordHotkeyDisplayName))]
+    private HotkeyModifiers _wholeScreenRecordHotkeyModifiers;
 
     [ObservableProperty]
     private bool _isCapturingWholeScreenRecordHotkey;
@@ -133,8 +143,8 @@ public partial class SettingsViewModel : ObservableObject
     public SettingsSectionItem SelectedSectionItem =>
         Array.Find(SectionItems, item => item.Section == SelectedSection) ?? SectionItems[0];
 
-    public string RegionCaptureHotkeyDisplayName => VkToDisplayName(RegionCaptureHotkey);
-    public string WholeScreenRecordHotkeyDisplayName => VkToCtrlDisplayName(WholeScreenRecordHotkey);
+    public string RegionCaptureHotkeyDisplayName => BuildHotkeyDisplayName(RegionCaptureHotkey, RegionCaptureHotkeyModifiers);
+    public string WholeScreenRecordHotkeyDisplayName => BuildHotkeyDisplayName(WholeScreenRecordHotkey, WholeScreenRecordHotkeyModifiers);
     public string SelectedSectionDisplayName => SelectedSectionItem.DisplayName;
     public string SelectedSectionDescription => SelectedSectionItem.Description;
     public IReadOnlyList<string> AvailableMicrophoneDevices => _availableMicrophoneDevices;
@@ -208,7 +218,9 @@ public partial class SettingsViewModel : ObservableObject
             DefaultAnnotationColor = $"#{c.A:X2}{c.R:X2}{c.G:X2}{c.B:X2}",
             DefaultStrokeThickness = DefaultStrokeThickness,
             RegionCaptureHotkey = RegionCaptureHotkey,
+            RegionCaptureHotkeyModifiers = RegionCaptureHotkeyModifiers,
             WholeScreenRecordHotkey = WholeScreenRecordHotkey,
+            WholeScreenRecordHotkeyModifiers = WholeScreenRecordHotkeyModifiers,
             AutoUpdateCheckInterval = AutoUpdateCheckInterval,
             LastAutoUpdateCheckUtc = _lastAutoUpdateCheckUtc,
             Theme = AppTheme,
@@ -223,6 +235,7 @@ public partial class SettingsViewModel : ObservableObject
     private void ResetHotkey()
     {
         RegionCaptureHotkey = 0x2C; // VK_SNAPSHOT (Print Screen)
+        RegionCaptureHotkeyModifiers = HotkeyModifiers.None;
         IsRecordingHotkey = false;
     }
 
@@ -232,7 +245,8 @@ public partial class SettingsViewModel : ObservableObject
     [RelayCommand]
     private void ResetRecordHotkey()
     {
-        WholeScreenRecordHotkey = 0x52; // VK_R (Ctrl+R)
+        WholeScreenRecordHotkey = 0x52; // VK_R
+        WholeScreenRecordHotkeyModifiers = HotkeyModifiers.Ctrl | HotkeyModifiers.Shift;
         IsCapturingWholeScreenRecordHotkey = false;
     }
 
@@ -247,6 +261,7 @@ public partial class SettingsViewModel : ObservableObject
                 AutoSaveScreenshots = defaults.AutoSaveScreenshots;
                 CaptureDelaySeconds = defaults.CaptureDelaySeconds;
                 RegionCaptureHotkey = defaults.RegionCaptureHotkey;
+                RegionCaptureHotkeyModifiers = defaults.RegionCaptureHotkeyModifiers;
                 IsRecordingHotkey = false;
                 break;
             case SettingsSection.Recording:
@@ -258,6 +273,7 @@ public partial class SettingsViewModel : ObservableObject
                 RecordingClickRippleEnabled = defaults.RecordingClickRippleEnabled;
                 RecordingCursorHighlightSize = ClampRecordingCursorHighlightSize(defaults.RecordingCursorHighlightSize);
                 WholeScreenRecordHotkey = defaults.WholeScreenRecordHotkey;
+                WholeScreenRecordHotkeyModifiers = defaults.WholeScreenRecordHotkeyModifiers;
                 IsCapturingWholeScreenRecordHotkey = false;
                 break;
             case SettingsSection.Annotation:
@@ -291,8 +307,10 @@ public partial class SettingsViewModel : ObservableObject
         DefaultAnnotationColor = ParseAnnotationColorOrFallback(defaults.DefaultAnnotationColor);
         DefaultStrokeThickness = defaults.DefaultStrokeThickness;
         RegionCaptureHotkey = defaults.RegionCaptureHotkey;
+        RegionCaptureHotkeyModifiers = defaults.RegionCaptureHotkeyModifiers;
         IsRecordingHotkey = false;
         WholeScreenRecordHotkey = defaults.WholeScreenRecordHotkey;
+        WholeScreenRecordHotkeyModifiers = defaults.WholeScreenRecordHotkeyModifiers;
         IsCapturingWholeScreenRecordHotkey = false;
         AutoUpdateCheckInterval = defaults.AutoUpdateCheckInterval;
         AppTheme = defaults.Theme;
@@ -307,19 +325,35 @@ public partial class SettingsViewModel : ObservableObject
 
     internal void RevertThemePreview() => _themeService.Apply(_originalTheme);
 
-    private static string VkToDisplayName(uint vk) =>
-        vk switch
-        {
-            0x2C => "Print Screen",
-            _ => KeyInterop.KeyFromVirtualKey((int)vk).ToString(),
-        };
+    private static string VkToKeyName(uint vk) =>
+        vk == 0x2C ? "Print Screen" : KeyInterop.KeyFromVirtualKey((int)vk).ToString();
 
-    private static string VkToCtrlDisplayName(uint vk) =>
-        vk switch
+    private static string BuildHotkeyDisplayName(uint vk, HotkeyModifiers modifiers)
+    {
+        if (vk == 0)
         {
-            0 => "Not set",
-            _ => $"Ctrl+{KeyInterop.KeyFromVirtualKey((int)vk)}",
-        };
+            return "Not set";
+        }
+
+        var parts = new List<string>();
+        if (modifiers.HasFlag(HotkeyModifiers.Ctrl))
+        {
+            parts.Add("Ctrl");
+        }
+
+        if (modifiers.HasFlag(HotkeyModifiers.Shift))
+        {
+            parts.Add("Shift");
+        }
+
+        if (modifiers.HasFlag(HotkeyModifiers.Alt))
+        {
+            parts.Add("Alt");
+        }
+
+        parts.Add(VkToKeyName(vk));
+        return string.Join("+", parts);
+    }
 
     private static double ClampRecordingCursorHighlightSize(double size)
     {

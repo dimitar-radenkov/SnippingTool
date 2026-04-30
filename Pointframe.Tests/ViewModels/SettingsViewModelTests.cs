@@ -97,16 +97,18 @@ public sealed class SettingsViewModelTests
 
         // Assert
         Assert.Equal(0x2Cu, settings.RegionCaptureHotkey);
+        Assert.Equal(HotkeyModifiers.None, settings.RegionCaptureHotkeyModifiers);
     }
 
     [Fact]
     public void LoadsFromSettings_RegionCaptureHotkey()
     {
         // Arrange
-        var vm = CreateVm(new UserSettings { RegionCaptureHotkey = 0x41 }); // 'A'
+        var vm = CreateVm(new UserSettings { RegionCaptureHotkey = 0x41, RegionCaptureHotkeyModifiers = HotkeyModifiers.Ctrl }); // Ctrl+A
 
         // Assert
         Assert.Equal(0x41u, vm.RegionCaptureHotkey);
+        Assert.Equal(HotkeyModifiers.Ctrl, vm.RegionCaptureHotkeyModifiers);
     }
 
     [Fact]
@@ -119,12 +121,14 @@ public sealed class SettingsViewModelTests
         mock.Setup(s => s.Save(It.IsAny<UserSettings>())).Callback<UserSettings>(s => saved = s);
         var vm = new SettingsViewModel(mock.Object, Mock.Of<IThemeService>(), Mock.Of<IDialogService>(), CreateMicrophoneDeviceService());
         vm.RegionCaptureHotkey = 0x42u; // 'B'
+        vm.RegionCaptureHotkeyModifiers = HotkeyModifiers.Shift;
 
         // Act
         vm.SaveCommand.Execute(null);
 
         // Assert
         Assert.Equal(0x42u, saved?.RegionCaptureHotkey);
+        Assert.Equal(HotkeyModifiers.Shift, saved?.RegionCaptureHotkeyModifiers);
     }
 
     [Fact]
@@ -160,12 +164,13 @@ public sealed class SettingsViewModelTests
     [Fact]
     public void ResetHotkeyCommand_RestoresPrintScreenAndCancelsRecording()
     {
-        var vm = CreateVm(new UserSettings { RegionCaptureHotkey = 0x41 });
+        var vm = CreateVm(new UserSettings { RegionCaptureHotkey = 0x41, RegionCaptureHotkeyModifiers = HotkeyModifiers.Ctrl });
         vm.StartRecordingHotkeyCommand.Execute(null);
 
         vm.ResetHotkeyCommand.Execute(null);
 
         Assert.Equal(0x2Cu, vm.RegionCaptureHotkey);
+        Assert.Equal(HotkeyModifiers.None, vm.RegionCaptureHotkeyModifiers);
         Assert.False(vm.IsRecordingHotkey);
     }
 
@@ -192,6 +197,20 @@ public sealed class SettingsViewModelTests
 
         Assert.Contains(nameof(vm.RegionCaptureHotkeyDisplayName), raised);
         Assert.NotEmpty(vm.RegionCaptureHotkeyDisplayName);
+    }
+
+    [Fact]
+    public void SetRegionCaptureHotkeyModifiers_UpdatesDisplayName()
+    {
+        var vm = CreateVm();
+        var raised = new List<string?>();
+        vm.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
+
+        vm.RegionCaptureHotkeyModifiers = HotkeyModifiers.Ctrl | HotkeyModifiers.Shift;
+
+        Assert.Contains(nameof(vm.RegionCaptureHotkeyDisplayName), raised);
+        Assert.Contains("Ctrl", vm.RegionCaptureHotkeyDisplayName);
+        Assert.Contains("Shift", vm.RegionCaptureHotkeyDisplayName);
     }
 
     [Fact]
@@ -494,19 +513,25 @@ public sealed class SettingsViewModelTests
     }
 
     [Fact]
-    public void UserSettings_Default_WholeScreenRecordHotkey_IsR()
+    public void UserSettings_Default_WholeScreenRecordHotkey_IsCtrlShiftR()
     {
         var settings = new UserSettings();
 
         Assert.Equal(0x52u, settings.WholeScreenRecordHotkey);
+        Assert.Equal(HotkeyModifiers.Ctrl | HotkeyModifiers.Shift, settings.WholeScreenRecordHotkeyModifiers);
     }
 
     [Fact]
     public void LoadsFromSettings_WholeScreenRecordHotkey()
     {
-        var vm = CreateVm(new UserSettings { WholeScreenRecordHotkey = 0x4Bu }); // 'K'
+        var vm = CreateVm(new UserSettings
+        {
+            WholeScreenRecordHotkey = 0x4Bu, // 'K'
+            WholeScreenRecordHotkeyModifiers = HotkeyModifiers.Shift,
+        });
 
         Assert.Equal(0x4Bu, vm.WholeScreenRecordHotkey);
+        Assert.Equal(HotkeyModifiers.Shift, vm.WholeScreenRecordHotkeyModifiers);
     }
 
     [Fact]
@@ -518,10 +543,12 @@ public sealed class SettingsViewModelTests
         mock.Setup(s => s.Save(It.IsAny<UserSettings>())).Callback<UserSettings>(s => saved = s);
         var vm = new SettingsViewModel(mock.Object, Mock.Of<IThemeService>(), Mock.Of<IDialogService>(), CreateMicrophoneDeviceService());
         vm.WholeScreenRecordHotkey = 0x4Cu; // 'L'
+        vm.WholeScreenRecordHotkeyModifiers = HotkeyModifiers.Ctrl | HotkeyModifiers.Shift;
 
         vm.SaveCommand.Execute(null);
 
         Assert.Equal(0x4Cu, saved?.WholeScreenRecordHotkey);
+        Assert.Equal(HotkeyModifiers.Ctrl | HotkeyModifiers.Shift, saved?.WholeScreenRecordHotkeyModifiers);
     }
 
     [Fact]
@@ -534,19 +561,80 @@ public sealed class SettingsViewModelTests
         vm.WholeScreenRecordHotkey = 0x4Du; // 'M'
 
         Assert.Contains(nameof(vm.WholeScreenRecordHotkeyDisplayName), raised);
+        Assert.Contains("Ctrl", vm.WholeScreenRecordHotkeyDisplayName);
+        Assert.Contains("Shift", vm.WholeScreenRecordHotkeyDisplayName);
         Assert.NotEmpty(vm.WholeScreenRecordHotkeyDisplayName);
+    }
+
+    [Fact]
+    public void SetWholeScreenRecordHotkeyModifiers_UpdatesDisplayName()
+    {
+        var vm = CreateVm();
+        var raised = new List<string?>();
+        vm.PropertyChanged += (_, e) => raised.Add(e.PropertyName);
+
+        vm.WholeScreenRecordHotkeyModifiers = HotkeyModifiers.Shift;
+
+        Assert.Contains(nameof(vm.WholeScreenRecordHotkeyDisplayName), raised);
+        Assert.Contains("Shift", vm.WholeScreenRecordHotkeyDisplayName);
+        Assert.DoesNotContain("Ctrl", vm.WholeScreenRecordHotkeyDisplayName);
     }
 
     [Fact]
     public void ResetRecordHotkeyCommand_RestoresDefaultAndCancelsCapture()
     {
-        var vm = CreateVm(new UserSettings { WholeScreenRecordHotkey = 0x4Bu });
+        var vm = CreateVm(new UserSettings { WholeScreenRecordHotkey = 0x4Bu, WholeScreenRecordHotkeyModifiers = HotkeyModifiers.Shift });
         vm.StartCapturingWholeScreenRecordHotkeyCommand.Execute(null);
         Assert.True(vm.IsCapturingWholeScreenRecordHotkey);
 
         vm.ResetRecordHotkeyCommand.Execute(null);
 
         Assert.Equal(0x52u, vm.WholeScreenRecordHotkey);
+        Assert.Equal(HotkeyModifiers.Ctrl | HotkeyModifiers.Shift, vm.WholeScreenRecordHotkeyModifiers);
+        Assert.False(vm.IsCapturingWholeScreenRecordHotkey);
+    }
+
+    [Fact]
+    public void RegionCaptureHotkeyDisplayName_WhenVkIsZero_ReturnsNotSet()
+    {
+        var vm = CreateVm(new UserSettings { RegionCaptureHotkey = 0 });
+
+        Assert.Equal("Not set", vm.RegionCaptureHotkeyDisplayName);
+    }
+
+    [Fact]
+    public void RegionCaptureHotkeyDisplayName_WithAltModifier_IncludesAlt()
+    {
+        var vm = CreateVm(new UserSettings { RegionCaptureHotkey = 0x41, RegionCaptureHotkeyModifiers = HotkeyModifiers.Alt });
+
+        Assert.Contains("Alt", vm.RegionCaptureHotkeyDisplayName);
+    }
+
+    [Fact]
+    public void ResetCurrentSectionCommand_CaptureSection_ResetsHotkeyAndModifiers()
+    {
+        var vm = CreateVm(new UserSettings { RegionCaptureHotkey = 0x41, RegionCaptureHotkeyModifiers = HotkeyModifiers.Ctrl });
+        vm.SelectedSection = SettingsSection.Capture;
+        vm.StartRecordingHotkeyCommand.Execute(null);
+
+        vm.ResetCurrentSectionCommand.Execute(null);
+
+        Assert.Equal(new UserSettings().RegionCaptureHotkey, vm.RegionCaptureHotkey);
+        Assert.Equal(HotkeyModifiers.None, vm.RegionCaptureHotkeyModifiers);
+        Assert.False(vm.IsRecordingHotkey);
+    }
+
+    [Fact]
+    public void ResetCurrentSectionCommand_RecordingSection_ResetsWholeScreenRecordHotkeyAndModifiers()
+    {
+        var vm = CreateVm(new UserSettings { WholeScreenRecordHotkey = 0x41, WholeScreenRecordHotkeyModifiers = HotkeyModifiers.Alt });
+        vm.SelectedSection = SettingsSection.Recording;
+        vm.StartCapturingWholeScreenRecordHotkeyCommand.Execute(null);
+
+        vm.ResetCurrentSectionCommand.Execute(null);
+
+        Assert.Equal(new UserSettings().WholeScreenRecordHotkey, vm.WholeScreenRecordHotkey);
+        Assert.Equal(new UserSettings().WholeScreenRecordHotkeyModifiers, vm.WholeScreenRecordHotkeyModifiers);
         Assert.False(vm.IsCapturingWholeScreenRecordHotkey);
     }
 }

@@ -6,6 +6,7 @@ using System.Windows.Input;
 using System.Windows.Interop;
 using System.Windows.Media;
 using Moq;
+using Pointframe;
 using Pointframe.Models;
 using Pointframe.Services;
 using Pointframe.Tests.Services.Handlers;
@@ -75,35 +76,160 @@ public sealed class SettingsWindowTests
     }
 
     [Fact]
-    public void HotkeyCapture_PreviewKeyDown_Escape_CancelsRecording()
+    public void OnCaptureHotkeyKeyPressed_Escape_CancelsRecording()
     {
         StaTestHelper.Run(() =>
         {
             var window = CreateWindow(out var viewModel);
             viewModel.IsRecordingHotkey = true;
-            var args = CreateKeyArgs(Key.Escape);
 
-            InvokePrivateHandler(window, "HotkeyCapture_PreviewKeyDown", window, args);
+            InvokeCallback(window, "OnCaptureHotkeyKeyPressed", NativeMethods.VK_ESCAPE, HotkeyModifiers.None);
 
-            Assert.True(args.Handled);
             Assert.False(viewModel.IsRecordingHotkey);
         });
     }
 
     [Fact]
-    public void HotkeyCapture_PreviewKeyDown_StoresNewHotkey()
+    public void OnCaptureHotkeyKeyPressed_StoresNewHotkey()
     {
         StaTestHelper.Run(() =>
         {
             var window = CreateWindow(out var viewModel);
             viewModel.IsRecordingHotkey = true;
-            var args = CreateKeyArgs(Key.A);
 
-            InvokePrivateHandler(window, "HotkeyCapture_PreviewKeyDown", window, args);
+            InvokeCallback(window, "OnCaptureHotkeyKeyPressed", (uint)KeyInterop.VirtualKeyFromKey(Key.A), HotkeyModifiers.None);
 
-            Assert.True(args.Handled);
             Assert.Equal((uint)KeyInterop.VirtualKeyFromKey(Key.A), viewModel.RegionCaptureHotkey);
             Assert.False(viewModel.IsRecordingHotkey);
+        });
+    }
+
+    [Fact]
+    public void OnCaptureHotkeyKeyPressed_StoresModifiers()
+    {
+        StaTestHelper.Run(() =>
+        {
+            var window = CreateWindow(out var viewModel);
+            viewModel.IsRecordingHotkey = true;
+
+            InvokeCallback(window, "OnCaptureHotkeyKeyPressed", (uint)KeyInterop.VirtualKeyFromKey(Key.A), HotkeyModifiers.Ctrl | HotkeyModifiers.Shift);
+
+            Assert.Equal(HotkeyModifiers.Ctrl | HotkeyModifiers.Shift, viewModel.RegionCaptureHotkeyModifiers);
+            Assert.False(viewModel.IsRecordingHotkey);
+        });
+    }
+
+    [Fact]
+    public void OnRecordHotkeyKeyPressed_StoresNewHotkey()
+    {
+        StaTestHelper.Run(() =>
+        {
+            var window = CreateWindow(out var viewModel);
+            viewModel.IsCapturingWholeScreenRecordHotkey = true;
+
+            InvokeCallback(window, "OnRecordHotkeyKeyPressed", (uint)KeyInterop.VirtualKeyFromKey(Key.R), HotkeyModifiers.None);
+
+            Assert.Equal((uint)KeyInterop.VirtualKeyFromKey(Key.R), viewModel.WholeScreenRecordHotkey);
+            Assert.False(viewModel.IsCapturingWholeScreenRecordHotkey);
+        });
+    }
+
+    [Fact]
+    public void OnRecordHotkeyKeyPressed_StoresModifiers()
+    {
+        StaTestHelper.Run(() =>
+        {
+            var window = CreateWindow(out var viewModel);
+            viewModel.IsCapturingWholeScreenRecordHotkey = true;
+
+            InvokeCallback(window, "OnRecordHotkeyKeyPressed", (uint)KeyInterop.VirtualKeyFromKey(Key.R), HotkeyModifiers.Ctrl | HotkeyModifiers.Alt);
+
+            Assert.Equal(HotkeyModifiers.Ctrl | HotkeyModifiers.Alt, viewModel.WholeScreenRecordHotkeyModifiers);
+            Assert.False(viewModel.IsCapturingWholeScreenRecordHotkey);
+        });
+    }
+
+    [Fact]
+    public void OnRecordHotkeyKeyPressed_Escape_CancelsCapture()
+    {
+        StaTestHelper.Run(() =>
+        {
+            var window = CreateWindow(out var viewModel);
+            viewModel.IsCapturingWholeScreenRecordHotkey = true;
+
+            InvokeCallback(window, "OnRecordHotkeyKeyPressed", NativeMethods.VK_ESCAPE, HotkeyModifiers.None);
+
+            Assert.False(viewModel.IsCapturingWholeScreenRecordHotkey);
+        });
+    }
+
+    [Fact]
+    public void WholeScreenRecordHotkeyRecordingPanel_IsVisibleChanged_WhenVisible_FocusesPanel()
+    {
+        StaTestHelper.Run(() =>
+        {
+            var window = CreateWindow();
+            var panel = (StackPanel)window.FindName("RecordHotkeyRecordingPanel");
+            Assert.NotNull(panel);
+            var args = new DependencyPropertyChangedEventArgs(UIElement.IsVisibleProperty, false, true);
+
+            InvokePrivateHandler(window, "WholeScreenRecordHotkeyRecordingPanel_IsVisibleChanged", panel!, args);
+
+            Assert.True(panel!.Focusable);
+        });
+    }
+
+    [Fact]
+    public void HotkeyCapture_PreviewKeyUp_UpdatesLiveDisplay()
+    {
+        StaTestHelper.Run(() =>
+        {
+            var window = CreateWindow(out var viewModel);
+            viewModel.IsRecordingHotkey = true;
+            window.Show();
+            window.UpdateLayout();
+            var args = CreateKeyArgs(Key.LeftCtrl);
+
+            InvokePrivateHandler(window, "HotkeyCapture_PreviewKeyUp", window, args);
+
+            Assert.True(args.Handled);
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void RecordHotkeyCapture_PreviewKeyDown_UpdatesLiveDisplay()
+    {
+        StaTestHelper.Run(() =>
+        {
+            var window = CreateWindow(out var viewModel);
+            viewModel.IsCapturingWholeScreenRecordHotkey = true;
+            window.Show();
+            window.UpdateLayout();
+            var args = CreateKeyArgs(Key.LeftCtrl);
+
+            InvokePrivateHandler(window, "RecordHotkeyCapture_PreviewKeyDown", window, args);
+
+            Assert.True(args.Handled);
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void RecordHotkeyCapture_PreviewKeyUp_UpdatesLiveDisplay()
+    {
+        StaTestHelper.Run(() =>
+        {
+            var window = CreateWindow(out var viewModel);
+            viewModel.IsCapturingWholeScreenRecordHotkey = true;
+            window.Show();
+            window.UpdateLayout();
+            var args = CreateKeyArgs(Key.LeftCtrl);
+
+            InvokePrivateHandler(window, "RecordHotkeyCapture_PreviewKeyUp", window, args);
+
+            Assert.True(args.Handled);
+            window.Close();
         });
     }
 
@@ -190,7 +316,7 @@ public sealed class SettingsWindowTests
             Mock.Of<IMicrophoneDeviceService>(service =>
                 service.GetAvailableCaptureDeviceNames() == new[] { "Studio Mic", "USB Mic" } &&
                 service.GetDefaultCaptureDeviceName() == "Studio Mic"));
-        return new SettingsWindow(viewModel);
+        return new SettingsWindow(viewModel, Mock.Of<IGlobalHotkeyService>());
     }
 
     private static SettingsWindow CreateWindow() => CreateWindow(out _);
@@ -200,6 +326,13 @@ public sealed class SettingsWindowTests
         var method = target.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic);
         Assert.NotNull(method);
         method.Invoke(target, [sender, args]);
+    }
+
+    private static void InvokeCallback(object target, string methodName, uint vk, HotkeyModifiers modifiers)
+    {
+        var method = target.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.NotNull(method);
+        method.Invoke(target, [vk, modifiers]);
     }
 
     private static TextCompositionEventArgs CreateTextInputArgs(TextBox textBox, string text)
