@@ -593,4 +593,48 @@ public sealed class SettingsViewModelTests
         Assert.Equal(HotkeyModifiers.Ctrl | HotkeyModifiers.Shift, vm.WholeScreenRecordHotkeyModifiers);
         Assert.False(vm.IsCapturingWholeScreenRecordHotkey);
     }
+
+    [Fact]
+    public void RegionCaptureHotkeyDisplayName_WhenVkIsZero_ReturnsNotSet()
+    {
+        var vm = CreateVm(new UserSettings { RegionCaptureHotkey = 0 });
+
+        Assert.Equal("Not set", vm.RegionCaptureHotkeyDisplayName);
+    }
+
+    [Fact]
+    public void RegionCaptureHotkeyDisplayName_WithAltModifier_IncludesAlt()
+    {
+        var vm = CreateVm(new UserSettings { RegionCaptureHotkey = 0x41, RegionCaptureHotkeyModifiers = HotkeyModifiers.Alt });
+
+        Assert.Contains("Alt", vm.RegionCaptureHotkeyDisplayName);
+    }
+
+    [Fact]
+    public void ResetCurrentSectionCommand_CaptureSection_ResetsHotkeyAndModifiers()
+    {
+        var vm = CreateVm(new UserSettings { RegionCaptureHotkey = 0x41, RegionCaptureHotkeyModifiers = HotkeyModifiers.Ctrl });
+        vm.SelectedSection = SettingsSection.Capture;
+        vm.StartRecordingHotkeyCommand.Execute(null);
+
+        vm.ResetCurrentSectionCommand.Execute(null);
+
+        Assert.Equal(new UserSettings().RegionCaptureHotkey, vm.RegionCaptureHotkey);
+        Assert.Equal(HotkeyModifiers.None, vm.RegionCaptureHotkeyModifiers);
+        Assert.False(vm.IsRecordingHotkey);
+    }
+
+    [Fact]
+    public void ResetCurrentSectionCommand_RecordingSection_ResetsWholeScreenRecordHotkeyAndModifiers()
+    {
+        var vm = CreateVm(new UserSettings { WholeScreenRecordHotkey = 0x41, WholeScreenRecordHotkeyModifiers = HotkeyModifiers.Alt });
+        vm.SelectedSection = SettingsSection.Recording;
+        vm.StartCapturingWholeScreenRecordHotkeyCommand.Execute(null);
+
+        vm.ResetCurrentSectionCommand.Execute(null);
+
+        Assert.Equal(new UserSettings().WholeScreenRecordHotkey, vm.WholeScreenRecordHotkey);
+        Assert.Equal(new UserSettings().WholeScreenRecordHotkeyModifiers, vm.WholeScreenRecordHotkeyModifiers);
+        Assert.False(vm.IsCapturingWholeScreenRecordHotkey);
+    }
 }

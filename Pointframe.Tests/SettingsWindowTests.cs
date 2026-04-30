@@ -150,6 +150,90 @@ public sealed class SettingsWindowTests
     }
 
     [Fact]
+    public void OnRecordHotkeyKeyPressed_Escape_CancelsCapture()
+    {
+        StaTestHelper.Run(() =>
+        {
+            var window = CreateWindow(out var viewModel);
+            viewModel.IsCapturingWholeScreenRecordHotkey = true;
+
+            InvokeCallback(window, "OnRecordHotkeyKeyPressed", NativeMethods.VK_ESCAPE, HotkeyModifiers.None);
+
+            Assert.False(viewModel.IsCapturingWholeScreenRecordHotkey);
+        });
+    }
+
+    [Fact]
+    public void WholeScreenRecordHotkeyRecordingPanel_IsVisibleChanged_WhenVisible_FocusesPanel()
+    {
+        StaTestHelper.Run(() =>
+        {
+            var window = CreateWindow();
+            var panel = (StackPanel)window.FindName("RecordHotkeyRecordingPanel");
+            Assert.NotNull(panel);
+            var args = new DependencyPropertyChangedEventArgs(UIElement.IsVisibleProperty, false, true);
+
+            InvokePrivateHandler(window, "WholeScreenRecordHotkeyRecordingPanel_IsVisibleChanged", panel!, args);
+
+            Assert.True(panel!.Focusable);
+        });
+    }
+
+    [Fact]
+    public void HotkeyCapture_PreviewKeyUp_UpdatesLiveDisplay()
+    {
+        StaTestHelper.Run(() =>
+        {
+            var window = CreateWindow(out var viewModel);
+            viewModel.IsRecordingHotkey = true;
+            window.Show();
+            window.UpdateLayout();
+            var args = CreateKeyArgs(Key.LeftCtrl);
+
+            InvokePrivateHandler(window, "HotkeyCapture_PreviewKeyUp", window, args);
+
+            Assert.True(args.Handled);
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void RecordHotkeyCapture_PreviewKeyDown_UpdatesLiveDisplay()
+    {
+        StaTestHelper.Run(() =>
+        {
+            var window = CreateWindow(out var viewModel);
+            viewModel.IsCapturingWholeScreenRecordHotkey = true;
+            window.Show();
+            window.UpdateLayout();
+            var args = CreateKeyArgs(Key.LeftCtrl);
+
+            InvokePrivateHandler(window, "RecordHotkeyCapture_PreviewKeyDown", window, args);
+
+            Assert.True(args.Handled);
+            window.Close();
+        });
+    }
+
+    [Fact]
+    public void RecordHotkeyCapture_PreviewKeyUp_UpdatesLiveDisplay()
+    {
+        StaTestHelper.Run(() =>
+        {
+            var window = CreateWindow(out var viewModel);
+            viewModel.IsCapturingWholeScreenRecordHotkey = true;
+            window.Show();
+            window.UpdateLayout();
+            var args = CreateKeyArgs(Key.LeftCtrl);
+
+            InvokePrivateHandler(window, "RecordHotkeyCapture_PreviewKeyUp", window, args);
+
+            Assert.True(args.Handled);
+            window.Close();
+        });
+    }
+
+    [Fact]
     public void HotkeyCapture_PreviewKeyDown_IgnoresModifierKeys()
     {
         StaTestHelper.Run(() =>
