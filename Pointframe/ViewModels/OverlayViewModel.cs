@@ -14,6 +14,7 @@ public partial class OverlayViewModel : AnnotationViewModel
     private readonly IDialogService _dialogService;
     private readonly IFileSystemService _fileSystemService;
     private readonly IUserSettingsService _settings;
+    private readonly IEventAggregator _eventAggregator;
     private IOverlayBitmapCapture? _bitmapCapture;
 
     public OverlayViewModel(
@@ -30,6 +31,7 @@ public partial class OverlayViewModel : AnnotationViewModel
         _dialogService = dialogService;
         _fileSystemService = fileSystemService;
         _settings = settings;
+        _eventAggregator = eventAggregator;
     }
 
     public enum Phase { Selecting, Annotating }
@@ -105,16 +107,14 @@ public partial class OverlayViewModel : AnnotationViewModel
         var finalBitmap = bitmapCapture.ComposeBitmap();
         _clipboardService.SetImage(finalBitmap);
 
-        if (_settings.Current.AutoSaveScreenshots)
-        {
-            var saveDirectory = _settings.Current.ScreenshotSavePath;
-            _fileSystemService.CreateDirectory(saveDirectory);
-            var savePath = _fileSystemService.CombinePath(saveDirectory, $"Snip_{DateTime.Now:yyyyMMdd_HHmmss}.png");
-            using var outputStream = _fileSystemService.OpenWrite(savePath);
-            var encoder = new PngBitmapEncoder();
-            encoder.Frames.Add(BitmapFrame.Create(finalBitmap));
-            encoder.Save(outputStream);
-        }
+        var saveDirectory = _settings.Current.ScreenshotSavePath;
+        _fileSystemService.CreateDirectory(saveDirectory);
+        var savePath = _fileSystemService.CombinePath(saveDirectory, $"Snip_{DateTime.Now:yyyyMMdd_HHmmss}.png");
+        using var outputStream = _fileSystemService.OpenWrite(savePath);
+        var encoder = new PngBitmapEncoder();
+        encoder.Frames.Add(BitmapFrame.Create(finalBitmap));
+        encoder.Save(outputStream);
+        _ = _eventAggregator.Publish(new CaptureCompletedMessage(savePath));
 
         CloseRequested?.Invoke();
     }

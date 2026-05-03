@@ -32,6 +32,7 @@ public partial class App : Application
     private ICaptureLaunchService _captureLaunch = null!;
     private IEventSubscription? _updateAvailableSubscription;
     private IEventSubscription? _recordingCompletedSubscription;
+    private IEventSubscription? _captureCompletedSubscription;
     private SettingsWindow? _settingsWindow;
     private AboutWindow? _aboutWindow;
 
@@ -92,6 +93,7 @@ public partial class App : Application
             var eventAggregator = _host.Services.GetRequiredService<IEventAggregator>();
             _updateAvailableSubscription = eventAggregator.Subscribe<UpdateAvailableMessage>(HandleUpdateAvailable);
             _recordingCompletedSubscription = eventAggregator.Subscribe<RecordingCompletedMessage>(HandleRecordingCompleted);
+            _captureCompletedSubscription = eventAggregator.Subscribe<CaptureCompletedMessage>(HandleCaptureCompleted);
             _autoUpdate = _host.Services.GetRequiredService<IAutoUpdateService>();
         }
 
@@ -201,6 +203,7 @@ public partial class App : Application
         _logger?.LogInformation("Pointframe shutting down");
         _updateAvailableSubscription?.Dispose();
         _recordingCompletedSubscription?.Dispose();
+        _captureCompletedSubscription?.Dispose();
         _globalHotkey.Dispose();
         _trayIconManager?.Dispose();
         _host.StopAsync().GetAwaiter().GetResult();
@@ -375,6 +378,12 @@ public partial class App : Application
     private ValueTask HandleRecordingCompleted(RecordingCompletedMessage message)
     {
         _trayIconManager.HandleRecordingCompleted(message.OutputPath, message.ElapsedText);
+        return ValueTask.CompletedTask;
+    }
+
+    private ValueTask HandleCaptureCompleted(CaptureCompletedMessage message)
+    {
+        _trayIconManager.HandleCaptureCompleted(message.OutputPath);
         return ValueTask.CompletedTask;
     }
 }

@@ -168,12 +168,15 @@ public sealed class OverlayViewModelTests
     public void CopyCommand_SetsClipboardImage_AndRequestsClose()
     {
         var settingsMock = new Mock<IUserSettingsService>();
-        settingsMock.SetupGet(s => s.Current).Returns(new UserSettings { AutoSaveScreenshots = false });
+        settingsMock.SetupGet(s => s.Current).Returns(new UserSettings());
         var clipboardMock = new Mock<IClipboardService>();
         var captureMock = new Mock<IOverlayBitmapCapture>();
         var bitmap = CreateBitmap();
         captureMock.Setup(c => c.ComposeBitmap()).Returns(bitmap);
-        var vm = Vm(settingsMock, clipboardMock: clipboardMock);
+        var fileSystemMock = new Mock<IFileSystemService>();
+        fileSystemMock.Setup(f => f.OpenWrite(It.IsAny<string>())).Returns(new System.IO.MemoryStream());
+        fileSystemMock.Setup(f => f.CombinePath(It.IsAny<string>(), It.IsAny<string>())).Returns("snip.png");
+        var vm = Vm(settingsMock, clipboardMock: clipboardMock, fileSystemMock: fileSystemMock);
         var closed = false;
         vm.CloseRequested += () => closed = true;
         vm.SetBitmapCapture(captureMock.Object);
