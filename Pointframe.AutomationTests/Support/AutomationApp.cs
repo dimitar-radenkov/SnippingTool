@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using FlaUI.Core;
 using FlaUI.Core.AutomationElements;
+using FlaUI.Core.Input;
 using FlaUI.UIA3;
 
 namespace Pointframe.AutomationTests.Support;
@@ -152,6 +153,22 @@ public sealed class AutomationApp : IDisposable
     public void ClickButton(string automationId)
     {
         FindButton(automationId).Invoke();
+    }
+
+    public void HoverElement(string automationId)
+    {
+        var element = FindRequiredElement(automationId);
+        Mouse.MoveTo(element.GetClickablePoint());
+    }
+
+    public void SelectRadioButton(string automationId)
+    {
+        FindRequiredElement(automationId).AsRadioButton().Click();
+    }
+
+    public void SelectListItem(string automationId)
+    {
+        FindRequiredElement(automationId).AsListBoxItem().Select();
     }
 
     public void ClickFirstButton(params string[] automationIds)

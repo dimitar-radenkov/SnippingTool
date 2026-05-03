@@ -238,7 +238,8 @@
 
         <RadioButton Style="{StaticResource ToolBtn}"
                      GroupName="AnnotTool"
-                     Tag="Arrow" Click="Tool_Click" ToolTip="Arrow">
+                     Tag="Arrow" Click="Tool_Click" ToolTip="Arrow"
+                     AutomationProperties.AutomationId="OverlayWindow.Tool.Arrow">
           <Viewbox Width="15" Height="15">
             <Canvas Width="16" Height="16">
               <Path Data="M2.5,13.5 L11.2,4.8"
@@ -258,7 +259,8 @@
 
         <RadioButton Style="{StaticResource ToolBtn}"
                      GroupName="AnnotTool"
-                     Tag="Line" Click="Tool_Click" ToolTip="Line">
+                     Tag="Line" Click="Tool_Click" ToolTip="Line"
+                     AutomationProperties.AutomationId="OverlayWindow.Tool.Line">
           <Viewbox Width="15" Height="15">
             <Canvas Width="16" Height="16">
               <Path Data="M3,13 L13,3"
@@ -272,38 +274,44 @@
 
         <RadioButton Style="{StaticResource ToolBtn}"
                      GroupName="AnnotTool" IsChecked="True"
-                     Tag="Rectangle" Click="Tool_Click" ToolTip="Rectangle">
+                     Tag="Rectangle" Click="Tool_Click" ToolTip="Rectangle"
+                     AutomationProperties.AutomationId="OverlayWindow.Tool.Rectangle">
           <Border Width="16" Height="12" BorderBrush="{DynamicResource SubLabelText}" BorderThickness="1.5" Background="Transparent"/>
         </RadioButton>
 
         <RadioButton Style="{StaticResource ToolBtn}"
                      GroupName="AnnotTool"
-                     Tag="Circle" Click="Tool_Click" ToolTip="Circle">
+                     Tag="Circle" Click="Tool_Click" ToolTip="Circle"
+                     AutomationProperties.AutomationId="OverlayWindow.Tool.Circle">
           <Ellipse Width="14" Height="14" Stroke="{DynamicResource PrimaryText}" StrokeThickness="1.5" Fill="Transparent"/>
         </RadioButton>
 
         <RadioButton Style="{StaticResource ToolBtn}"
                      GroupName="AnnotTool"
-                     Tag="Pen" Click="Tool_Click" ToolTip="Pen">
+                     Tag="Pen" Click="Tool_Click" ToolTip="Pen"
+                     AutomationProperties.AutomationId="OverlayWindow.Tool.Pen">
           <TextBlock Text="&#xE70F;" Style="{StaticResource FluentToolIconText}"/>
         </RadioButton>
 
         <RadioButton Style="{StaticResource ToolBtn}"
                      GroupName="AnnotTool"
-                     Tag="Highlight" Click="Tool_Click" ToolTip="Highlight">
+                     Tag="Highlight" Click="Tool_Click" ToolTip="Highlight"
+                     AutomationProperties.AutomationId="OverlayWindow.Tool.Highlight">
           <Border Width="18" Height="8" Background="#99FFFF00"
                   BorderBrush="#A09010" BorderThickness="1" CornerRadius="1"/>
         </RadioButton>
 
         <RadioButton Style="{StaticResource ToolBtn}"
                      GroupName="AnnotTool"
-                     Tag="Text" Click="Tool_Click" ToolTip="Text">
+                     Tag="Text" Click="Tool_Click" ToolTip="Text"
+                     AutomationProperties.AutomationId="OverlayWindow.Tool.Text">
           <TextBlock Text="A" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryText}"/>
         </RadioButton>
 
         <RadioButton Style="{StaticResource ToolBtn}"
                      GroupName="AnnotTool"
-                     Tag="Number" Click="Tool_Click" ToolTip="Place numbered label">
+                     Tag="Number" Click="Tool_Click" ToolTip="Place numbered label"
+                     AutomationProperties.AutomationId="OverlayWindow.Tool.Number">
           <Border Width="16" Height="16" BorderBrush="{DynamicResource PrimaryText}" BorderThickness="1.4" CornerRadius="8" Background="Transparent">
             <TextBlock Text="1" FontSize="10" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryText}" HorizontalAlignment="Center" VerticalAlignment="Center"/>
           </Border>
@@ -311,7 +319,8 @@
 
         <RadioButton Style="{StaticResource ToolBtn}"
                      GroupName="AnnotTool"
-                     Tag="Blur" Click="Tool_Click" ToolTip="Blur / Pixelate">
+                     Tag="Blur" Click="Tool_Click" ToolTip="Blur / Pixelate"
+                     AutomationProperties.AutomationId="OverlayWindow.Tool.Blur">
           <UniformGrid Rows="3" Columns="3" Width="15" Height="15">
             <Rectangle Margin="0.6" RadiusX="0.6" RadiusY="0.6" Fill="{DynamicResource PrimaryText}" Opacity="0.25"/>
             <Rectangle Margin="0.6" RadiusX="0.6" RadiusY="0.6" Fill="{DynamicResource PrimaryText}" Opacity="0.5"/>
@@ -327,7 +336,8 @@
 
         <RadioButton Style="{StaticResource ToolBtn}"
                      GroupName="AnnotTool"
-                     Tag="Callout" Click="Tool_Click" ToolTip="Callout / Speech bubble">
+                     Tag="Callout" Click="Tool_Click" ToolTip="Callout / Speech bubble"
+                     AutomationProperties.AutomationId="OverlayWindow.Tool.Callout">
           <Viewbox Width="15" Height="15">
             <Canvas Width="16" Height="16">
               <Path Data="M3.5,3 H12.5 C13.33,3 14,3.67 14,4.5 V9 C14,9.83 13.33,10.5 12.5,10.5 H8.5 L5.5,13.5 V10.5 H3.5 C2.67,10.5 2,9.83 2,9 V4.5 C2,3.67 2.67,3 3.5,3 Z"

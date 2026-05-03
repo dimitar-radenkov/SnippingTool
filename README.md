@@ -48,7 +48,7 @@ winget install DimitarRadenkov.Pointframe
 
 If you find Pointframe useful, a ⭐ on GitHub helps others discover it — thank you!
 
-## ✨ Why use this over the built-in Windows tool?
+## ✨ Key highlights
 
 - **Live Video Annotations:** Draw, highlight, and redact *while* recording. No need for post-production video editing.
 - **Privacy First (Live Blur):** Drag over sensitive content (passwords, emails, API keys) to apply a live Gaussian blur that stays hidden in the final export.
@@ -95,28 +95,6 @@ If you find Pointframe useful, a ⭐ on GitHub helps others discover it — than
 - **Live workflow capture** — Record a selected region while drawing annotations on top of the recording as you work
 - **Sensitive content redaction** — Blur passwords, emails, and other private details before sharing screenshots or recordings
 - **Text extraction** — Select text in a screenshot with OCR and copy it directly to the clipboard
-
-## How does it compare?
-
-| Feature | Pointframe | Windows Snipping Tool | Greenshot | ShareX |
-|---|:---:|:---:|:---:|:---:|
-| Region capture | ✅ | ✅ | ✅ | ✅ |
-| Annotation (arrows, shapes, text) | ✅ | ✅ | ✅ | ✅ |
-| Numbered steps annotation | ✅ | ❌ | ❌ | ❌ |
-| Configurable capture hotkey | ✅ | ❌ | ✅ | ✅ |
-| Frozen snapshot (menus & popups) | ✅ | ❌ | ❌ | ❌ |
-| Blur / redact sensitive content | ✅ | ❌ | ❌ | ✅ |
-| OCR — copy text from screenshot | ✅ | ❌ | ❌ | ✅ |
-| Pin screenshot as floating window | ✅ | ❌ | ❌ | ❌ |
-| Undo / redo during annotation | ✅ | ❌ | ❌ | ❌ |
-| Screen recording (MP4) | ✅ | ✅ | ❌ | ✅ |
-| Recording-time annotations | ✅ | ❌ | ❌ | ❌ |
-| Recording HUD controls (pause / resume / stop / tools) | ✅ | ❌ | ❌ | ❌ |
-| Live blur capture during recording | ✅ | ❌ | ❌ | ❌ |
-| Capture delay / countdown | ✅ | ✅ | ✅ | ✅ |
-| Auto-save to folder | ✅ | ✅ | ✅ | ✅ |
-| Auto-updates (background, in-app install) | ✅ | ✅ | ❌ | ❌ |
-| Open source | ✅ | ❌ | ✅ | ✅ |
 
 ## Requirements
 
