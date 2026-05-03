@@ -154,6 +154,16 @@ public sealed class AutomationApp : IDisposable
         FindButton(automationId).Invoke();
     }
 
+    public void SelectRadioButton(string automationId)
+    {
+        FindRequiredElement(automationId).AsRadioButton().Click();
+    }
+
+    public void SelectListItem(string automationId)
+    {
+        FindRequiredElement(automationId).AsListBoxItem().Select();
+    }
+
     public void ClickFirstButton(params string[] automationIds)
     {
         FindFirstRequiredElement(automationIds).AsButton().Invoke();

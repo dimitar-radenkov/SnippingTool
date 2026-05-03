@@ -362,10 +362,12 @@
           </Grid.ColumnDefinitions>
 
           <StackPanel Orientation="Horizontal" Grid.Column="0" HorizontalAlignment="Left">
-            <RadioButton Style="{StaticResource ToolBtn}" GroupName="RecordingAnnotTool" Tag="Pen" IsChecked="True" Checked="RecordingToolButton_Checked" ToolTip="Pen">
+            <RadioButton Style="{StaticResource ToolBtn}" GroupName="RecordingAnnotTool" Tag="Pen" IsChecked="True" Checked="RecordingToolButton_Checked" ToolTip="Pen"
+                         AutomationProperties.AutomationId="RecordingOverlayWindow.Tool.Pen">
               <TextBlock Text="&#xE70F;" Style="{StaticResource FluentToolIconText}"/>
             </RadioButton>
-            <RadioButton Style="{StaticResource ToolBtn}" GroupName="RecordingAnnotTool" Tag="Arrow" Checked="RecordingToolButton_Checked" ToolTip="Arrow">
+            <RadioButton Style="{StaticResource ToolBtn}" GroupName="RecordingAnnotTool" Tag="Arrow" Checked="RecordingToolButton_Checked" ToolTip="Arrow"
+                         AutomationProperties.AutomationId="RecordingOverlayWindow.Tool.Arrow">
               <Viewbox Width="15" Height="15">
                 <Canvas Width="16" Height="16">
                   <Path Data="M2.5,13.5 L11.2,4.8"
@@ -382,13 +384,16 @@
                 </Canvas>
               </Viewbox>
             </RadioButton>
-            <RadioButton Style="{StaticResource ToolBtn}" GroupName="RecordingAnnotTool" Tag="Rectangle" Checked="RecordingToolButton_Checked" ToolTip="Rectangle">
+            <RadioButton Style="{StaticResource ToolBtn}" GroupName="RecordingAnnotTool" Tag="Rectangle" Checked="RecordingToolButton_Checked" ToolTip="Rectangle"
+                         AutomationProperties.AutomationId="RecordingOverlayWindow.Tool.Rectangle">
               <Border Width="16" Height="12" BorderBrush="{DynamicResource SubLabelText}" BorderThickness="1.5" Background="Transparent"/>
             </RadioButton>
-            <RadioButton Style="{StaticResource ToolBtn}" GroupName="RecordingAnnotTool" Tag="Text" Checked="RecordingToolButton_Checked" ToolTip="Text">
+            <RadioButton Style="{StaticResource ToolBtn}" GroupName="RecordingAnnotTool" Tag="Text" Checked="RecordingToolButton_Checked" ToolTip="Text"
+                         AutomationProperties.AutomationId="RecordingOverlayWindow.Tool.Text">
               <TextBlock Text="A" FontSize="14" FontWeight="SemiBold" Foreground="{DynamicResource PrimaryText}"/>
             </RadioButton>
-            <RadioButton Style="{StaticResource ToolBtn}" GroupName="RecordingAnnotTool" Tag="Blur" Checked="RecordingToolButton_Checked" ToolTip="Blur / Redact">
+            <RadioButton Style="{StaticResource ToolBtn}" GroupName="RecordingAnnotTool" Tag="Blur" Checked="RecordingToolButton_Checked" ToolTip="Blur / Redact"
+                         AutomationProperties.AutomationId="RecordingOverlayWindow.Tool.Blur">
               <UniformGrid Rows="3" Columns="3" Width="15" Height="15">
                 <Rectangle Margin="0.6" RadiusX="0.6" RadiusY="0.6" Fill="{DynamicResource PrimaryText}" Opacity="0.25"/>
                 <Rectangle Margin="0.6" RadiusX="0.6" RadiusY="0.6" Fill="{DynamicResource PrimaryText}" Opacity="0.5"/>
