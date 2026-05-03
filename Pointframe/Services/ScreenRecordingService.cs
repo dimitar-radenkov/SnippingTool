@@ -130,8 +130,9 @@ public sealed class ScreenRecordingService : IScreenRecordingService
 
         // Bounded channel: if the encode loop falls behind, CaptureFrameToChannel will
         // skip frames (TryWrite returns false) rather than stalling the capture thread.
-        _encodeChannel = Channel.CreateUnbounded<byte[]>(new UnboundedChannelOptions
+        _encodeChannel = Channel.CreateBounded<byte[]>(new BoundedChannelOptions(PoolSize)
         {
+            FullMode = BoundedChannelFullMode.DropOldest,
             SingleReader = true,
             SingleWriter = true,
             AllowSynchronousContinuations = false,

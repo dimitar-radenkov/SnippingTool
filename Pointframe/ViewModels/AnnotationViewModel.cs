@@ -28,8 +28,10 @@ public partial class AnnotationViewModel : ObservableObject
         {
             _activeColor = (Color)System.Windows.Media.ColorConverter.ConvertFromString(settings.Current.DefaultAnnotationColor);
         }
-        catch
+        catch (Exception ex)
         {
+            _logger.LogWarning(ex, "Invalid DefaultAnnotationColor '{Color}' in settings — falling back to red",
+                settings.Current.DefaultAnnotationColor);
             _activeColor = Colors.Red;
         }
 

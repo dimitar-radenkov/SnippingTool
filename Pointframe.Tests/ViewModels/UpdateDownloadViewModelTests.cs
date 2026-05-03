@@ -25,7 +25,9 @@ public sealed class UpdateDownloadViewModelTests : IDisposable
     {
         var handler = new FakeHttpMessageHandler(responseBody, statusCode, contentLength);
         var http = new HttpClient(handler);
-        return new UpdateDownloadViewModel(http, new Mock<IProcessService>().Object);
+        var vm = new UpdateDownloadViewModel(http, new Mock<IProcessService>().Object);
+        vm.InstallerSignatureVerifier = _ => true;
+        return vm;
     }
 
     [Fact]

@@ -127,47 +127,51 @@ public sealed class FFMpegVideoWriterTests
     [Fact]
     public void BuildArguments_WithoutMicrophone_DoesNotAddAudioInput()
     {
-        var args = FFMpegVideoWriter.BuildArguments(128, 72, 20, "capture.mp4", null);
+        var args = new List<string>();
+        FFMpegVideoWriter.BuildArguments(args, 128, 72, 20, "capture.mp4", null);
 
-        Assert.DoesNotContain("-use_wallclock_as_timestamps 1", args, StringComparison.Ordinal);
-        Assert.DoesNotContain("-f dshow", args, StringComparison.Ordinal);
-        Assert.DoesNotContain("-map 0:v:0", args, StringComparison.Ordinal);
-        Assert.DoesNotContain("-map 1:a:0", args, StringComparison.Ordinal);
-        Assert.DoesNotContain("-c:a aac", args, StringComparison.Ordinal);
-        Assert.DoesNotContain("-shortest", args, StringComparison.Ordinal);
+        Assert.DoesNotContain("-use_wallclock_as_timestamps", args);
+        Assert.DoesNotContain("dshow", args);
+        Assert.DoesNotContain("-map", args);
+        Assert.DoesNotContain("aac", args);
+        Assert.DoesNotContain("-shortest", args);
     }
 
     [Fact]
     public void BuildArguments_WithMicrophone_AddsDirectShowAudioInput()
     {
-        var args = FFMpegVideoWriter.BuildArguments(128, 72, 20, "capture.mp4", "Studio Mic");
+        var args = new List<string>();
+        FFMpegVideoWriter.BuildArguments(args, 128, 72, 20, "capture.mp4", "Studio Mic");
 
-        Assert.Contains("-use_wallclock_as_timestamps 1", args, StringComparison.Ordinal);
-        Assert.Contains("-f dshow", args, StringComparison.Ordinal);
-        Assert.Contains("-i audio=\"Studio Mic\"", args, StringComparison.Ordinal);
-        Assert.Contains("-map 0:v:0", args, StringComparison.Ordinal);
-        Assert.Contains("-map 1:a:0", args, StringComparison.Ordinal);
-        Assert.Contains("-c:a aac", args, StringComparison.Ordinal);
-        Assert.Contains("-shortest", args, StringComparison.Ordinal);
+        Assert.Contains("-use_wallclock_as_timestamps", args);
+        Assert.Contains("dshow", args);
+        Assert.Contains("audio=Studio Mic", args);
+        Assert.Contains("0:v:0", args);
+        Assert.Contains("1:a:0", args);
+        Assert.Contains("aac", args);
+        Assert.Contains("-shortest", args);
     }
 
     [Fact]
     public void BuildArguments_WithMicrophone_AddsWallclockTimestampOptionBeforeRawVideoInput()
     {
-        var args = FFMpegVideoWriter.BuildArguments(128, 72, 20, "capture.mp4", "Studio Mic");
-        var wallclockOptionIndex = args.IndexOf("-use_wallclock_as_timestamps 1", StringComparison.Ordinal);
-        var rawVideoInputIndex = args.IndexOf("-i pipe:0", StringComparison.Ordinal);
+        var args = new List<string>();
+        FFMpegVideoWriter.BuildArguments(args, 128, 72, 20, "capture.mp4", "Studio Mic");
 
-        Assert.True(wallclockOptionIndex >= 0);
-        Assert.True(rawVideoInputIndex > wallclockOptionIndex);
+        var wallclockIndex = args.IndexOf("-use_wallclock_as_timestamps");
+        var pipeInputIndex = args.IndexOf("pipe:0");
+
+        Assert.True(wallclockIndex >= 0);
+        Assert.True(pipeInputIndex > wallclockIndex);
     }
 
     [Fact]
     public void BuildArguments_WithQuotedMicrophone_EscapesDeviceName()
     {
-        var args = FFMpegVideoWriter.BuildArguments(128, 72, 20, "capture.mp4", "Studio \"Mic\"");
+        var args = new List<string>();
+        FFMpegVideoWriter.BuildArguments(args, 128, 72, 20, "capture.mp4", "Studio \"Mic\"");
 
-        Assert.Contains("-i audio=\"Studio \\\"Mic\\\"\"", args, StringComparison.Ordinal);
+        Assert.Contains("audio=Studio \"Mic\"", args);
     }
 
     private static string InvokeResolveFfmpegPath()

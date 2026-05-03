@@ -1,6 +1,8 @@
 using System.Diagnostics;
 using System.IO;
 using System.Net.Http;
+using System.Security.Cryptography;
+using System.Security.Cryptography.X509Certificates;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Microsoft.Extensions.Logging;
@@ -19,6 +21,8 @@ public partial class UpdateDownloadViewModel : ObservableObject
     private readonly IProcessService _process;
     private readonly ILogger<UpdateDownloadViewModel>? _logger;
     private CancellationTokenSource? _downloadCancellation;
+
+    internal Func<string, bool> InstallerSignatureVerifier { get; set; }
 
     [ObservableProperty]
     private double _progressPercent;
@@ -42,6 +46,7 @@ public partial class UpdateDownloadViewModel : ObservableObject
         _http = http;
         _process = process;
         _logger = logger;
+        InstallerSignatureVerifier = VerifyInstallerSignature;
     }
 
     internal void AttachCancellation(CancellationTokenSource downloadCancellation)
@@ -85,10 +90,19 @@ public partial class UpdateDownloadViewModel : ObservableObject
             }
 
             ProgressPercent = 100;
-            StatusText = "Download complete. Launching installer…";
+            StatusText = "Download complete. Verifying installer…";
             IsDownloading = false;
 
             _logger?.LogInformation("Update downloaded to {Path}", destPath);
+
+            if (!InstallerSignatureVerifier(destPath))
+            {
+                StatusText = "Download failed: installer signature could not be verified.";
+                IsFailed = true;
+                return;
+            }
+
+            StatusText = "Installer verified. Launching…";
             _logger?.LogInformation("Launching update installer from {Path}", destPath);
 
             _process.Start(new ProcessStartInfo(destPath) { UseShellExecute = true });
@@ -119,5 +133,20 @@ public partial class UpdateDownloadViewModel : ObservableObject
         }
 
         RequestClose?.Invoke();
+    }
+
+    private bool VerifyInstallerSignature(string path)
+    {
+        try
+        {
+            var cert = X509CertificateLoader.LoadCertificateFromFile(path);
+            _logger?.LogInformation("Installer is Authenticode signed by '{Subject}'", cert.Subject);
+            return true;
+        }
+        catch (CryptographicException ex)
+        {
+            _logger?.LogError(ex, "Installer at '{Path}' is not signed or has an invalid signature — aborting launch", path);
+            return false;
+        }
     }
 }

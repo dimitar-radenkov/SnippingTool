@@ -65,7 +65,9 @@ public sealed class UpdateDownloadWindowServiceTests : IDisposable
     private static UpdateDownloadViewModel CreateViewModel(IProcessService process, string responseBody)
     {
         var http = new HttpClient(new FakeHttpMessageHandler(responseBody));
-        return new UpdateDownloadViewModel(http, process);
+        var vm = new UpdateDownloadViewModel(http, process);
+        vm.InstallerSignatureVerifier = _ => true;
+        return vm;
     }
 
     private static UpdateDownloadWindow CreateWindow(UpdateDownloadViewModel vm)

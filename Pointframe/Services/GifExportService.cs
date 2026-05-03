@@ -20,25 +20,24 @@ public sealed class GifExportService : IGifExportService
         // Two-pass palette filtergraph: palettegen + paletteuse gives near-lossless colour fidelity
         // compared to the default 256-colour GIF quantisation.
         var filter = $"fps={fps},split[s0][s1];[s0]palettegen=stats_mode=diff[p];[s1][p]paletteuse=dither=bayer:bayer_scale=5:diff_mode=rectangle";
-        var args = string.Join(" ",
-            "-y",
-            $"-i \"{inputPath}\"",
-            $"-vf \"{filter}\"",
-            $"\"{outputPath}\"");
 
         _logger.LogInformation("Starting GIF export: {Input} → {Output} @ {Fps}fps", inputPath, outputPath, fps);
 
-        var process = new Process
+        var psi = new ProcessStartInfo
         {
-            StartInfo = new ProcessStartInfo
-            {
-                FileName = ffmpegPath,
-                Arguments = args,
-                UseShellExecute = false,
-                CreateNoWindow = true,
-                RedirectStandardError = true,
-            }
+            FileName = ffmpegPath,
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            RedirectStandardError = true,
         };
+        psi.ArgumentList.Add("-y");
+        psi.ArgumentList.Add("-i");
+        psi.ArgumentList.Add(inputPath);
+        psi.ArgumentList.Add("-vf");
+        psi.ArgumentList.Add(filter);
+        psi.ArgumentList.Add(outputPath);
+
+        using var process = new Process { StartInfo = psi };
 
         try
         {
@@ -49,9 +48,10 @@ public sealed class GifExportService : IGifExportService
             throw FfmpegResolver.CreateMissingException("GIF export", ffmpegPath, ex);
         }
 
-        _ = ConsumeStderr(process);
+        var consumeTask = ConsumeStderr(process);
 
         await process.WaitForExitAsync(ct).ConfigureAwait(false);
+        await consumeTask.ConfigureAwait(false);
 
         if (process.ExitCode != 0)
         {
