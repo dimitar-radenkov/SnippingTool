@@ -48,6 +48,7 @@ public sealed class RecordingHudInteractionTests : IClassFixture<DesktopAutomati
 
         Assert.NotNull(app.FindRequiredElement(AutomationIds.RecordingOverlayWindowHudCompact));
 
+        app.HoverElement(AutomationIds.RecordingOverlayWindowHudCompact);
         app.ClickButton(AutomationIds.RecordingOverlayWindowCompactStop);
         app.WaitForExit();
     }
@@ -66,6 +67,7 @@ public sealed class RecordingHudInteractionTests : IClassFixture<DesktopAutomati
         app.ClickButton(AutomationIds.RecordingOverlayWindowMinimizeHud);
         Assert.NotNull(app.FindRequiredElement(AutomationIds.RecordingOverlayWindowHudCompact));
 
+        app.HoverElement(AutomationIds.RecordingOverlayWindowHudCompact);
         app.ClickButton(AutomationIds.RecordingOverlayWindowExpandHud);
         Assert.NotNull(app.FindRequiredElement(AutomationIds.RecordingOverlayWindowStop));
 
@@ -85,6 +87,7 @@ public sealed class RecordingHudInteractionTests : IClassFixture<DesktopAutomati
         app.SwitchToTopLevelWindow(AutomationIds.RecordingOverlayWindowRoot);
 
         app.ClickButton(AutomationIds.RecordingOverlayWindowMinimizeHud);
+        app.HoverElement(AutomationIds.RecordingOverlayWindowHudCompact);
         app.ClickButton(AutomationIds.RecordingOverlayWindowCompactStop);
         app.WaitForExit();
     }
