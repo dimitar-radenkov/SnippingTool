@@ -35,9 +35,9 @@ public sealed class AutoUpdateService : BackgroundService, IAutoUpdateService
         _logger.LogInformation("Auto-update: running startup check");
         try
         {
-            await CheckAndNotifyAsync(stoppingToken);
+            await CheckAndNotifyAsync(stoppingToken).ConfigureAwait(false);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             _logger.LogError(ex, "Auto-update: startup check failed");
         }
@@ -60,7 +60,7 @@ public sealed class AutoUpdateService : BackgroundService, IAutoUpdateService
         try
         {
             using var timer = new PeriodicTimer(timerInterval);
-            while (await timer.WaitForNextTickAsync(stoppingToken))
+            while (await timer.WaitForNextTickAsync(stoppingToken).ConfigureAwait(false))
             {
                 if (_userSettings.Current.AutoUpdateCheckInterval == UpdateCheckInterval.Never)
                 {
@@ -71,9 +71,9 @@ public sealed class AutoUpdateService : BackgroundService, IAutoUpdateService
                 _logger.LogInformation("Auto-update: running periodic check");
                 try
                 {
-                    await CheckAndNotifyAsync(stoppingToken);
+                    await CheckAndNotifyAsync(stoppingToken).ConfigureAwait(false);
                 }
-                catch (Exception ex)
+                catch (Exception ex) when (ex is not OperationCanceledException)
                 {
                     _logger.LogError(ex, "Auto-update: periodic check failed");
                 }
@@ -111,11 +111,11 @@ public sealed class AutoUpdateService : BackgroundService, IAutoUpdateService
     private async Task CheckAndNotifyAsync(CancellationToken cancellationToken)
     {
         _logger.LogDebug("Auto-update: checking for updates");
-        var result = await _updateService.CheckForUpdates(cancellationToken);
+        var result = await _updateService.CheckForUpdates(cancellationToken).ConfigureAwait(false);
         if (result.IsUpdateAvailable)
         {
             _logger.LogInformation("Auto-update: update available ({Version})", result.LatestVersion);
-            await _eventAggregator.Publish(new UpdateAvailableMessage(result));
+            await _eventAggregator.Publish(new UpdateAvailableMessage(result)).ConfigureAwait(false);
         }
         else
         {

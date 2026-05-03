@@ -166,7 +166,10 @@ public sealed class ScreenRecordingService : IScreenRecordingService
 
         try
         {
-            _captureLoop?.Wait(TimeSpan.FromSeconds(3));
+            if (_captureLoop?.Wait(TimeSpan.FromSeconds(3)) == false)
+            {
+                _logger.LogWarning("Capture loop did not stop within 3 s");
+            }
         }
         catch (AggregateException ae) when (ae.InnerExceptions.All(ex => ex is OperationCanceledException))
         {
@@ -177,7 +180,10 @@ public sealed class ScreenRecordingService : IScreenRecordingService
 
         try
         {
-            _encodeLoop?.Wait(TimeSpan.FromSeconds(10));
+            if (_encodeLoop?.Wait(TimeSpan.FromSeconds(10)) == false)
+            {
+                _logger.LogWarning("Encode loop did not stop within 10 s");
+            }
         }
         catch (AggregateException ae) when (ae.InnerExceptions.All(ex => ex is OperationCanceledException))
         {
@@ -332,7 +338,7 @@ public sealed class ScreenRecordingService : IScreenRecordingService
                 _bufferPool.Enqueue(buffer);
             }
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             _logger.LogError(ex, "Encode loop failed");
         }

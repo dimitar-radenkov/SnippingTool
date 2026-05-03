@@ -62,6 +62,8 @@ internal sealed class OverlayBitmapCapture : IOverlayBitmapCapture
         {
             _overlayWindow.Visibility = Visibility.Hidden;
             FlushDispatcher(_overlayWindow.Dispatcher, DispatcherPriority.Render);
+            // ComposeBitmap is synchronous and called on the UI thread. A brief sleep lets the
+            // OS compositor finish hiding the overlay before GDI captures the screen.
             System.Threading.Thread.Sleep(CaptureHideDelayMs);
             screenBitmap = _screenCapture.Capture(screenX, screenY, screenWidth, screenHeight);
         }
