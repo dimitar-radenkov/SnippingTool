@@ -28,11 +28,15 @@ internal sealed class TrayIconManager : ITrayIconManager
     private readonly Action _onShowSettings;
     private readonly Action _onShowAbout;
 
+    private const int MaxRecentItems = 5;
+
     private TaskbarIcon? _trayIcon;
     private WpfMenuItem? _recentRecordingsMenuItem;
+    private WpfMenuItem? _recentCapturesMenuItem;
     private UpdateCheckResult? _pendingUpdate;
     private string? _pendingRecordingBalloonPath;
     private readonly List<RecentRecordingItem> _recentRecordings = [];
+    private readonly List<string> _recentCaptures = [];
 
     public TrayIconManager(
         ILogger<TrayIconManager> logger,
@@ -75,6 +79,7 @@ internal sealed class TrayIconManager : ITrayIconManager
         _trayIcon.TrayLeftMouseUp += TrayIcon_LeftClick;
         _trayIcon.TrayBalloonTipClicked += OnTrayBalloonClicked;
 
+        InitializeRecentCapturesMenu();
         InitializeRecentRecordingsMenu();
     }
 
@@ -95,13 +100,25 @@ internal sealed class TrayIconManager : ITrayIconManager
         var recentRecording = new RecentRecordingItem(outputPath, elapsedText);
         _recentRecordings.RemoveAll(item => string.Equals(item.OutputPath, recentRecording.OutputPath, StringComparison.OrdinalIgnoreCase));
         _recentRecordings.Insert(0, recentRecording);
-        if (_recentRecordings.Count > 5)
+        if (_recentRecordings.Count > MaxRecentItems)
         {
-            _recentRecordings.RemoveRange(5, _recentRecordings.Count - 5);
+            _recentRecordings.RemoveRange(MaxRecentItems, _recentRecordings.Count - MaxRecentItems);
         }
 
         RebuildRecentRecordingsMenu();
         ShowRecordingCompletedBalloon(recentRecording);
+    }
+
+    public void HandleCaptureCompleted(string outputPath)
+    {
+        _recentCaptures.RemoveAll(p => string.Equals(p, outputPath, StringComparison.OrdinalIgnoreCase));
+        _recentCaptures.Insert(0, outputPath);
+        if (_recentCaptures.Count > MaxRecentItems)
+        {
+            _recentCaptures.RemoveRange(MaxRecentItems, _recentCaptures.Count - MaxRecentItems);
+        }
+
+        RebuildRecentCapturesMenu();
     }
 
     public void AddDebugMenuItems()
@@ -159,6 +176,67 @@ internal sealed class TrayIconManager : ITrayIconManager
     private void OpenImage_Click(object sender, RoutedEventArgs e) => _onOpenImage();
     private void Exit_Click(object sender, RoutedEventArgs e) => WpfApplication.Current.Shutdown();
 
+    private void InitializeRecentCapturesMenu()
+    {
+        if (_trayIcon?.ContextMenu is not { } contextMenu)
+        {
+            return;
+        }
+
+        _recentCapturesMenuItem = new WpfMenuItem
+        {
+            Header = "Recent captures",
+        };
+
+        contextMenu.Items.Insert(2, _recentCapturesMenuItem);
+        RebuildRecentCapturesMenu();
+    }
+
+    private void RebuildRecentCapturesMenu()
+    {
+        if (_recentCapturesMenuItem is null)
+        {
+            return;
+        }
+
+        _recentCapturesMenuItem.Items.Clear();
+
+        if (_recentCaptures.Count == 0)
+        {
+            _recentCapturesMenuItem.Items.Add(new WpfMenuItem
+            {
+                Header = "No recent captures",
+                IsEnabled = false,
+            });
+            return;
+        }
+
+        foreach (var capturePath in _recentCaptures)
+        {
+            var captureItem = new WpfMenuItem
+            {
+                Header = Path.GetFileName(capturePath),
+            };
+            captureItem.Items.Add(CreateRecentCaptureActionMenuItem("Open", OpenRecentCapture_Click, capturePath));
+            captureItem.Items.Add(CreateRecentCaptureActionMenuItem("Open folder", OpenRecentCaptureFolder_Click, capturePath));
+            _recentCapturesMenuItem.Items.Add(captureItem);
+        }
+    }
+
+    private static WpfMenuItem CreateRecentCaptureActionMenuItem(
+        string header,
+        RoutedEventHandler clickHandler,
+        string capturePath)
+    {
+        var menuItem = new WpfMenuItem
+        {
+            Header = header,
+            Tag = capturePath,
+        };
+        menuItem.Click += clickHandler;
+        return menuItem;
+    }
+
     private void InitializeRecentRecordingsMenu()
     {
         if (_trayIcon?.ContextMenu is not { } contextMenu)
@@ -171,7 +249,7 @@ internal sealed class TrayIconManager : ITrayIconManager
             Header = "Recent recordings",
         };
 
-        contextMenu.Items.Insert(2, _recentRecordingsMenuItem);
+        contextMenu.Items.Insert(3, _recentRecordingsMenuItem);
         RebuildRecentRecordingsMenu();
     }
 
@@ -219,6 +297,30 @@ internal sealed class TrayIconManager : ITrayIconManager
         };
         menuItem.Click += clickHandler;
         return menuItem;
+    }
+
+    private void OpenRecentCapture_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not WpfMenuItem { Tag: string capturePath })
+        {
+            return;
+        }
+
+        OpenPath(capturePath);
+    }
+
+    private void OpenRecentCaptureFolder_Click(object sender, RoutedEventArgs e)
+    {
+        if (sender is not WpfMenuItem { Tag: string capturePath })
+        {
+            return;
+        }
+
+        var directory = Path.GetDirectoryName(capturePath);
+        if (!string.IsNullOrWhiteSpace(directory))
+        {
+            OpenFolder(directory);
+        }
     }
 
     private async void CheckForUpdates_Click(object sender, RoutedEventArgs e)
